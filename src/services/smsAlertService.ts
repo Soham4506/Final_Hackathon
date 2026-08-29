@@ -102,9 +102,9 @@ export class SMSAlertService {
     let networkStatusDesc = 'Simulated Delivery';
 
     // -------------------------------------------------------------
-    // REAL-TIME CELLULAR SMS DISPATCH VIA FAST2SMS
+    // REAL-TIME CELLULAR SMS DISPATCH VIA FAST2SMS (OPTIONAL LIVE GATEWAY)
     // -------------------------------------------------------------
-    const fast2smsKey = (import.meta as any).env?.VITE_FAST2SMS_API_KEY || 'PwLBD8jznGN4MpRHo7IrEVvyxsKQdfJFq6gtcXA0YUlbSmke1hUJf43uM8stOhFG2xqKYjCLAgvpmRHw';
+    const fast2smsKey = (import.meta as any).env?.VITE_FAST2SMS_API_KEY?.trim() || '';
     const cleanDigits = targetPhone.replace(/\D/g, '').slice(-10);
 
     if (fast2smsKey && cleanDigits.length === 10) {
