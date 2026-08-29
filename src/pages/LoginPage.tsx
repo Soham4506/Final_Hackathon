@@ -38,15 +38,31 @@ export const LoginPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
 
   const proceedWithLocalAuth = (roleToUse: UserRole, name?: string) => {
-    const derivedName = name || email.split('@')[0].replace(/[\._]/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()) || 'Municipal Officer';
+    let derivedName = name || email.split('@')[0].replace(/[\._]/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()) || 'Municipal Officer';
+    let designation = 'Citizen';
+    let employeeIdVal = undefined;
+
+    if (roleToUse === 'admin' || email.toLowerCase().includes('admin') || email.toLowerCase().includes('chief')) {
+      roleToUse = 'admin';
+      derivedName = 'Chief Municipal Officer (मुख्‍याधिकारी)';
+      designation = 'Chief Officer / Super Admin';
+      employeeIdVal = 'KMC-ADMIN-01';
+    } else if (roleToUse === 'officer') {
+      designation = 'Municipal Officer';
+      employeeIdVal = employeeId || 'KMC-OFF-101';
+    }
+
     const userObj: UserProfile = {
-      id: `usr-${Date.now()}`,
+      id: roleToUse === 'admin' ? 'usr-super-admin-01' : `usr-${Date.now()}`,
       role: roleToUse,
       fullName: derivedName,
-      phone: phone || '9822000000',
+      email: email.trim() || (roleToUse === 'admin' ? 'admin@kopargaon.gov.in' : undefined),
+      phone: phone || (roleToUse === 'admin' ? '9822011204' : '9822000000'),
       wardId: roleToUse === 'citizen' ? wardId : undefined,
       departmentId: roleToUse === 'officer' ? departmentId : undefined,
-      employeeId: roleToUse !== 'citizen' ? employeeId || 'KMC-001' : undefined,
+      employeeId: employeeIdVal,
+      designation,
+      status: 'active',
       isVerified: true,
     };
 
@@ -59,6 +75,9 @@ export const LoginPage: React.FC = () => {
     setAuthError('');
     setIsLoading(true);
 
+    const lowerEmail = email.trim().toLowerCase();
+    const isSuperAdminEmail = lowerEmail === 'admin@kopargaon.gov.in' || lowerEmail === 'chief.officer@kopargaon.gov.in' || lowerEmail === 'admin@koparniti.gov.in';
+
     if (isSupabaseConfigured) {
       try {
         const { data, error } = await supabase.auth.signInWithPassword({
@@ -67,6 +86,13 @@ export const LoginPage: React.FC = () => {
         });
 
         if (error) {
+          // If Supabase credentials fail for Super Admin demo password, allow local session fallback
+          if (isSuperAdminEmail && (password === 'Admin@KoparNiti2026' || password === 'Admin@123')) {
+            proceedWithLocalAuth('admin');
+            setIsLoading(false);
+            return;
+          }
+
           if (error.message.toLowerCase().includes('api key')) {
             setAuthError('Invalid Supabase Anon Key in .env. Please copy your anon public key from Supabase Dashboard -> Project Settings -> API.');
           } else {
@@ -98,19 +124,25 @@ export const LoginPage: React.FC = () => {
             profile = retryData;
           }
 
-          // Prioritize: 1. DB profile role -> 2. Auth user_metadata role -> 3. Citizen fallback
-          const rawRole = profile?.role || data.user.user_metadata?.role || 'citizen';
-          const role: UserRole = (rawRole as UserRole);
+          // Prioritize: 1. DB profile role -> 2. Auth user_metadata role -> 3. Super Admin email match -> 4. Citizen fallback
+          let rawRole = profile?.role || data.user.user_metadata?.role;
+          if (!rawRole && isSuperAdminEmail) {
+            rawRole = 'admin';
+          }
+          const role: UserRole = (rawRole as UserRole) || 'citizen';
 
           const userObj: UserProfile = {
             id: data.user.id,
             role,
-            fullName: profile?.full_name || data.user.user_metadata?.full_name || data.user.email?.split('@')[0] || 'Citizen User',
+            fullName: profile?.full_name || data.user.user_metadata?.full_name || (role === 'admin' ? 'Chief Municipal Officer (मुख्‍याधिकारी)' : data.user.email?.split('@')[0] || 'Municipal User'),
+            email: data.user.email,
             phone: profile?.phone || data.user.user_metadata?.phone || '',
             address: profile?.address || 'Kopargaon',
             wardId: profile?.ward_id || data.user.user_metadata?.ward_id,
             departmentId: profile?.department_id || data.user.user_metadata?.department_id,
-            employeeId: profile?.employee_id || data.user.user_metadata?.employee_id,
+            employeeId: profile?.employee_id || data.user.user_metadata?.employee_id || (role === 'admin' ? 'KMC-ADMIN-01' : undefined),
+            designation: profile?.designation || (role === 'admin' ? 'Chief Officer / Super Admin' : undefined),
+            status: profile?.status || 'active',
             isVerified: profile?.is_verified ?? true,
           };
 
@@ -125,11 +157,14 @@ export const LoginPage: React.FC = () => {
 
     // Direct local authentication fallback
     setTimeout(() => {
-      let resolvedRole = selectedRole;
-      const lowerEmail = email.toLowerCase();
-      if (lowerEmail.includes('citizen') || lowerEmail.includes('pawar')) resolvedRole = 'citizen';
-      else if (lowerEmail.includes('admin') || lowerEmail.includes('chief')) resolvedRole = 'admin';
-      else if (lowerEmail.includes('officer') || lowerEmail.includes('deshmukh')) resolvedRole = 'officer';
+      let resolvedRole: UserRole = selectedRole;
+      if (isSuperAdminEmail || lowerEmail.includes('admin') || lowerEmail.includes('chief')) {
+        resolvedRole = 'admin';
+      } else if (lowerEmail.includes('citizen') || lowerEmail.includes('pawar')) {
+        resolvedRole = 'citizen';
+      } else if (lowerEmail.includes('officer') || lowerEmail.includes('deshmukh')) {
+        resolvedRole = 'officer';
+      }
 
       proceedWithLocalAuth(resolvedRole);
       setIsLoading(false);
@@ -147,6 +182,9 @@ export const LoginPage: React.FC = () => {
       return;
     }
 
+    // Enforce that signup only allows citizen or officer (never admin)
+    const targetRole: UserRole = selectedRole === 'officer' ? 'officer' : 'citizen';
+
     if (isSupabaseConfigured) {
       try {
         // Pass metadata to signUp so handle_new_user() trigger receives user role and details
@@ -157,10 +195,10 @@ export const LoginPage: React.FC = () => {
             data: {
               full_name: fullName.trim(),
               phone: phone.trim(),
-              role: selectedRole,
-              ward_id: selectedRole === 'citizen' ? wardId : null,
-              department_id: selectedRole === 'officer' ? departmentId : null,
-              employee_id: selectedRole !== 'citizen' ? employeeId.trim() : null,
+              role: targetRole,
+              ward_id: targetRole === 'citizen' ? wardId : null,
+              department_id: targetRole === 'officer' ? departmentId : null,
+              employee_id: targetRole !== 'citizen' ? employeeId.trim() : null,
             },
           },
         });
@@ -182,12 +220,12 @@ export const LoginPage: React.FC = () => {
           try {
             await supabase.from('profiles').upsert({
               id: data.user.id,
-              role: selectedRole,
+              role: targetRole,
               full_name: fullName.trim(),
               phone: phone.trim(),
-              ward_id: selectedRole === 'citizen' ? wardId : null,
-              department_id: selectedRole === 'officer' ? departmentId : null,
-              employee_id: selectedRole !== 'citizen' ? employeeId.trim() : null,
+              ward_id: targetRole === 'citizen' ? wardId : null,
+              department_id: targetRole === 'officer' ? departmentId : null,
+              employee_id: targetRole !== 'citizen' ? employeeId.trim() : null,
               is_verified: true,
             }, { onConflict: 'id' });
           } catch (profileErr) {
@@ -196,17 +234,17 @@ export const LoginPage: React.FC = () => {
 
           const userObj: UserProfile = {
             id: data.user.id,
-            role: selectedRole,
+            role: targetRole,
             fullName: fullName.trim(),
             phone: phone.trim(),
-            wardId: selectedRole === 'citizen' ? wardId : undefined,
-            departmentId: selectedRole === 'officer' ? departmentId : undefined,
-            employeeId: selectedRole !== 'citizen' ? employeeId.trim() : undefined,
+            wardId: targetRole === 'citizen' ? wardId : undefined,
+            departmentId: targetRole === 'officer' ? departmentId : undefined,
+            employeeId: targetRole !== 'citizen' ? employeeId.trim() : undefined,
             isVerified: true,
           };
 
-          login(selectedRole, userObj);
-          navigate(selectedRole === 'citizen' ? '/citizen-portal' : '/');
+          login(targetRole, userObj);
+          navigate(targetRole === 'citizen' ? '/citizen-portal' : '/');
           return;
         }
       } catch (err: any) {
@@ -303,12 +341,12 @@ export const LoginPage: React.FC = () => {
           </button>
         </div>
 
-        {/* Role Selector Pill */}
+        {/* Role Selector Pill (Citizen & Officer only - Admin registration removed) */}
         <div className="space-y-1.5">
           <label className="block text-[11px] font-bold text-[#76777d] uppercase tracking-wider">
-            Target Role
+            {mode === 'signup' ? 'Account Type' : 'Select Portal'}
           </label>
-          <div className="grid grid-cols-3 gap-2 text-xs">
+          <div className="grid grid-cols-2 gap-2 text-xs">
             <button
               type="button"
               onClick={() => setSelectedRole('citizen')}
@@ -318,7 +356,7 @@ export const LoginPage: React.FC = () => {
                   : 'bg-[#f6f3f5] text-[#57657b] border-[#76777d]/20 hover:border-[#131b2e]'
               }`}
             >
-              Citizen
+              Citizen (नागरिक)
             </button>
             <button
               type="button"
@@ -329,18 +367,7 @@ export const LoginPage: React.FC = () => {
                   : 'bg-[#f6f3f5] text-[#57657b] border-[#76777d]/20 hover:border-[#131b2e]'
               }`}
             >
-              Officer
-            </button>
-            <button
-              type="button"
-              onClick={() => setSelectedRole('admin')}
-              className={`py-2 px-2 rounded-xl font-bold border transition-all text-center ${
-                selectedRole === 'admin'
-                  ? 'bg-[#131b2e] text-white border-[#131b2e] shadow-xs'
-                  : 'bg-[#f6f3f5] text-[#57657b] border-[#76777d]/20 hover:border-[#131b2e]'
-              }`}
-            >
-              Admin
+              Municipal Officer (अधिकारी)
             </button>
           </div>
         </div>
@@ -376,6 +403,24 @@ export const LoginPage: React.FC = () => {
                   className="w-full bg-[#f6f3f5] border border-[#76777d]/20 rounded-xl pl-10 pr-3 py-2.5 text-[#1b1b1d] placeholder:text-[#76777d]/70 focus:outline-none focus:border-[#131b2e] focus:ring-1 focus:ring-[#131b2e] font-medium"
                 />
               </div>
+            </div>
+
+            {/* Super Admin demo auto-fill */}
+            <div className="p-2.5 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between">
+              <div className="flex items-center gap-1.5 text-[11px] text-slate-600 font-medium">
+                <ShieldCheck size={14} className="text-emerald-600 shrink-0" />
+                <span>Super Admin Account</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setEmail('admin@kopargaon.gov.in');
+                  setPassword('Admin@KoparNiti2026');
+                }}
+                className="text-[11px] font-bold text-[#131b2e] hover:text-emerald-700 bg-white border border-slate-300 px-2 py-1 rounded-lg transition-colors shadow-2xs"
+              >
+                Auto-fill Admin
+              </button>
             </div>
 
             {authError && (

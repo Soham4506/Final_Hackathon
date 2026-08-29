@@ -31,6 +31,7 @@ export const App: React.FC = () => {
               <Route element={<ProtectedRoute allowedRoles={['officer', 'admin']} />}>
                 <Route index element={<DashboardPage />} />
                 <Route path="priority-engine" element={<PriorityEnginePage />} />
+                <Route path="issues" element={<IssuesQueuePage />} />
                 <Route path="resources" element={<ResourcesPage />} />
                 <Route path="analytics" element={<AnalyticsPage />} />
               </Route>
@@ -43,7 +44,6 @@ export const App: React.FC = () => {
               {/* Shared Routes (Citizen, Officer, Admin) */}
               <Route path="flood-priority" element={<FloodPriorityPage />} />
               <Route path="wastewater-reuse" element={<WastewaterReusePage />} />
-              <Route path="issues" element={<IssuesQueuePage />} />
               <Route path="map" element={<CivicMapPage />} />
               <Route path="citizen-portal" element={<CitizenPortalPage />} />
               <Route path="notifications" element={<NotificationsPage />} />

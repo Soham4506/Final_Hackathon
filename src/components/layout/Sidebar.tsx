@@ -76,7 +76,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ sidebarOpen, setSidebarOpen })
       icon: <ListTodo className="w-4 h-4" />,
       badge: issues.length > 0 ? issues.length : undefined,
       badgeColor: 'bg-[#3f465c] text-white',
-      allowedRoles: ['citizen', 'officer', 'admin'],
+      allowedRoles: ['officer', 'admin'],
     },
     {
       to: '/map',
