@@ -16,6 +16,7 @@ import { CitizenPortalPage } from './pages/CitizenPortalPage';
 import { NotificationsPage } from './pages/NotificationsPage';
 import { AnalyticsPage } from './pages/AnalyticsPage';
 import { SettingsPage } from './pages/SettingsPage';
+import { VerifiedAnswersPage } from './pages/VerifiedAnswersPage';
 
 export const App: React.FC = () => {
   return (
@@ -44,6 +45,7 @@ export const App: React.FC = () => {
               </Route>
 
               {/* Shared Routes (Citizen, Officer, Admin) */}
+              <Route path="verified-answers" element={<VerifiedAnswersPage />} />
               <Route path="flood-priority" element={<FloodPriorityPage />} />
               <Route path="wastewater-reuse" element={<WastewaterReusePage />} />
               <Route path="map" element={<CivicMapPage />} />

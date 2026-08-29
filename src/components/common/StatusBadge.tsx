@@ -71,6 +71,16 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({ status, size = 'md' })
       label = 'Officer Overridden';
       Icon = AlertCircle;
       break;
+    case 'pending_integrity_review':
+      color = 'bg-amber-50 text-amber-900 border-amber-300';
+      label = 'Under Verification';
+      Icon = AlertCircle;
+      break;
+    case 'rejected_fabricated':
+      color = 'bg-red-100 text-red-950 border-red-300';
+      label = 'Rejected (Fabricated)';
+      Icon = XCircle;
+      break;
     default:
       break;
   }

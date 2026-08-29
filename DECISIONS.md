@@ -95,3 +95,29 @@ When primary browser/server storage is wiped or corrupted mid-operation, KoparNi
    > *"⚠️ Data Store Integrity Failure Detected — State Reconstructed. Recovered 11 records from isolated append-only event ledger. 2 uncommitted events could not be recovered. 1 in-flight action requires officer re-verification."*
 5. Click **"View Recovery Report"** to inspect the full audit modal and tap **"✓ Confirm & Re-Verify Action"** on the in-flight ticket.
 6. Open **Citizen Portal** tracking for ticket `KMC-2026-00101` to show the reassuring plain-language resilience notice.
+
+---
+
+## 🛡️ 8. Challenge 2: "The Bad Reading" Trust & Integrity Architecture (Sybil / Smear Defense)
+
+### ⚖️ Explicit Design Decision: Throttling & Quarantine vs. Auto-Deletion / Auto-Banning
+> **Why KoparNiti does NOT auto-delete or auto-ban on algorithmic signals alone:**
+> An automated system that can be gamed to inflate priority can equally be weaponized by a malicious actor to get a competitor or rival automatically penalized (e.g. false coordinated sanitation complaints against a rival street food stall). 
+> 
+> False positives in civic governance carry severe economic, legal, and reputational harms. Therefore, **the algorithm's role is strictly to slow down, quarantine, and surface mathematical evidence (similarity %, perceptual photo hash matches, burst timing) for human officer adjudication — never to act as judge, jury, and executioner.**
+
+### 🛠️ Technical Pillars:
+1. **Intake Quarantine Gate (`pending_integrity_review`)**:
+   - Every submitted issue is evaluated by `CoordinationDetectionService` before entering the priority queue.
+   - Flagged issues are strictly excluded from `allocationEngine.ts` — **they cannot consume scarce municipal machinery (jetting machines, suction tankers) or displace real citizens while under review.**
+2. **Deterministic Tri-Factor Detection**:
+   - **Text Similarity Clustering**: Jaccard / Cosine token similarity across geographic radii detecting copy-paste smear campaigns ($\ge 75\%$ similarity threshold).
+   - **Perceptual Photo Hashing (pHash)**: 64-bit grayscale perceptual hashing detecting photo reuse across different citizen accounts ($H \le 4$ bit distance).
+   - **Coordinated Entity Burst**: Spatiotemporal burst detection ($\ge 3$ tickets targeting the same location within 60 min).
+   - **Unverified Sybil Tell**: Tracks whether reporting accounts have prior municipal verification history.
+3. **Officer Evidence Review Console**:
+   - Side-by-side evidence visualization (similarity scores, duplicate ticket numbers, side-by-side photo comparison, burst timestamps).
+   - Actions: **Clear & Release** (re-enters normal queue with permanent audit log) or **Reject as Fabricated** (status becomes `rejected_fabricated`, buried real issues automatically re-surface).
+4. **Authoritative "Verified Answers" Channel (Rumor Debunking)**:
+   - Official municipal clarification channel countering viral misinformation (e.g. fake tanker schedules).
+   - Publicly accessible without login, backed by bilingual SMS templates and spoken IVR script readouts.

@@ -16,6 +16,7 @@ import {
   Recycle,
   Droplets,
   Waves,
+  ShieldCheck,
 } from 'lucide-react';
 import { useCivic } from '../../context/CivicContext';
 
@@ -33,6 +34,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ sidebarOpen, setSidebarOpen })
     (i) => i.urgency === 'critical' && i.status !== 'resolved' && i.status !== 'rejected'
   ).length;
 
+  const quarantinedCount = issues.filter(
+    (i) => i.status === 'pending_integrity_review'
+  ).length;
+
   const activeFleetCount = resources.filter((r) => r.isOperational).length;
   const unreadNotifCount = notifications.filter((n) => !n.isRead).length;
 
@@ -42,6 +47,14 @@ export const Sidebar: React.FC<SidebarProps> = ({ sidebarOpen, setSidebarOpen })
       label: 'Overview',
       icon: <LayoutDashboard className="w-4 h-4" />,
       allowedRoles: ['officer', 'admin'],
+    },
+    {
+      to: '/verified-answers',
+      label: 'Verified Truth',
+      icon: <ShieldCheck className="w-4 h-4" />,
+      badge: 'TRUTH',
+      badgeColor: 'bg-emerald-700 text-white',
+      allowedRoles: ['citizen', 'officer', 'admin'],
     },
     {
       to: '/flood-priority',
@@ -74,8 +87,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ sidebarOpen, setSidebarOpen })
       to: '/issues',
       label: 'Issues Queue',
       icon: <ListTodo className="w-4 h-4" />,
-      badge: issues.length > 0 ? issues.length : undefined,
-      badgeColor: 'bg-[#3f465c] text-white',
+      badge: quarantinedCount > 0 ? `${quarantinedCount} Flagged` : (issues.length > 0 ? issues.length : undefined),
+      badgeColor: quarantinedCount > 0 ? 'bg-amber-600 text-white animate-pulse' : 'bg-[#3f465c] text-white',
       allowedRoles: ['officer', 'admin'],
     },
     {

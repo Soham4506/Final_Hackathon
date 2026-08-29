@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useCivic } from '../context/CivicContext';
 import { PriorityBadge } from '../components/common/PriorityBadge';
 import { StatusBadge } from '../components/common/StatusBadge';
@@ -64,6 +64,7 @@ const createPinIcon = () => {
 export const CitizenPortalPage: React.FC = () => {
   const { zones, departments, categories, submitIssue, updateIssueStatus, issues, currentUser, t, language } = useCivic();
   const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
 
@@ -383,10 +384,10 @@ export const CitizenPortalPage: React.FC = () => {
         </div>
 
         {/* Tab Switcher */}
-        <div className="bg-[#f0edef] p-1 rounded-xl border border-border flex items-center text-xs shrink-0">
+        <div className="bg-[#f0edef] p-1 rounded-xl border border-border flex items-center text-xs shrink-0 gap-1">
           <button
             onClick={() => setSearchParams({ tab: 'submit' })}
-            className={`px-4 py-2 rounded-lg font-bold uppercase text-[11px] tracking-wider transition-all flex items-center gap-1.5 ${
+            className={`px-3.5 py-2 rounded-lg font-bold uppercase text-[11px] tracking-wider transition-all flex items-center gap-1.5 cursor-pointer ${
               activeTab === 'submit'
                 ? 'bg-primary text-white shadow-xs'
                 : 'text-muted-foreground hover:text-foreground'
@@ -397,7 +398,7 @@ export const CitizenPortalPage: React.FC = () => {
           </button>
           <button
             onClick={() => setSearchParams({ tab: 'track' })}
-            className={`px-4 py-2 rounded-lg font-bold uppercase text-[11px] tracking-wider transition-all flex items-center gap-1.5 ${
+            className={`px-3.5 py-2 rounded-lg font-bold uppercase text-[11px] tracking-wider transition-all flex items-center gap-1.5 cursor-pointer ${
               activeTab === 'track'
                 ? 'bg-primary text-white shadow-xs'
                 : 'text-muted-foreground hover:text-foreground'
@@ -1126,6 +1127,19 @@ export const CitizenPortalPage: React.FC = () => {
                     <span className="font-bold block text-amber-950">Municipal System Resilience Note</span>
                     <p className="text-[11px] text-amber-900 leading-relaxed">
                       We are currently re-verifying the latest operational dispatch status of your report with on-duty ward engineers following a routine server recovery. Your grievance is completely safe in our municipal records — no action is needed from you.
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Challenge 2: Integrity Review Reassurance Note for Citizen */}
+              {trackedIssue.status === 'pending_integrity_review' && (
+                <div className="bg-amber-50 border border-amber-300 rounded-xl p-3.5 flex items-start gap-2.5 text-amber-950">
+                  <ShieldCheck size={18} className="text-amber-700 shrink-0 mt-0.5" />
+                  <div className="text-xs space-y-0.5">
+                    <span className="font-bold block text-amber-950">Standard Field Verification in Progress</span>
+                    <p className="text-[11px] text-amber-900 leading-relaxed">
+                      Your complaint has been securely registered in KoparNiti and is undergoing standard technical verification by our ward office. Once confirmed by our field inspectors, it will proceed to active machinery scheduling.
                     </p>
                   </div>
                 </div>

@@ -68,8 +68,9 @@ import { SMSAlertService } from '../services/smsAlertService';
 import { EventLogService } from '../services/eventLogService';
 import { IntegrityCheckService } from '../services/integrityCheckService';
 import { RecoveryService } from '../services/recoveryService';
-import { RecoveryReport, LedgerEvent, LedgerEventType } from '../types';
+import { RecoveryReport, LedgerEvent, LedgerEventType, VerifiedClarification } from '../types';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
+import { CoordinationDetectionService } from '../services/coordinationDetectionService';
 
 
 const DEFAULT_GUEST_USER: UserProfile = {
@@ -200,6 +201,13 @@ interface CivicContextType {
   acknowledgeRecoveryReport: () => void;
   simulateBlackoutChaos: () => Promise<RecoveryReport>;
   confirmUnconfirmedInFlightIssue: (issueId: string, notes?: string) => void;
+
+  // Challenge 2: Trust, Coordination & Integrity Gate ("The Bad Reading")
+  clarifications: VerifiedClarification[];
+  addVerifiedClarification: (data: Omit<VerifiedClarification, 'id' | 'referenceNumber' | 'publishedAt' | 'viewCount'>) => VerifiedClarification;
+  clearIntegrityReview: (issueId: string, officerNotes?: string) => void;
+  rejectFabricatedIssue: (issueId: string, officerReason: string) => void;
+  simulateCoordinatedSmearAttack: (targetAddress?: string) => void;
 }
 
 const CivicContext = createContext<CivicContextType | undefined>(undefined);
@@ -330,6 +338,11 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     getStored<boolean>('is_recovery_mode', false)
   );
   const [isBlackoutSimulating, setIsBlackoutSimulating] = useState<boolean>(false);
+
+  // Challenge 2: Verified Clarifications Repository
+  const [clarifications, setClarifications] = useState<VerifiedClarification[]>(() =>
+    CoordinationDetectionService.getStoredClarifications()
+  );
 
   // Issues initialization with boot-time integrity check & recovery
   const [issues, setIssues] = useState<CivicIssue[]>(() => {
@@ -998,13 +1011,22 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     const score = PriorityEngine.calculateScore(newIssue, cat, zone, weightConfig, now);
     newIssue.priorityScore = score;
 
+    // Challenge 2: Coordination & Sybil Smear Gate ("The Bad Reading")
+    const integrityAssessment = CoordinationDetectionService.evaluateIssueIntegrity(newIssue, issues);
+    newIssue.integrityAssessment = integrityAssessment;
+    newIssue.perceptualPhotoHash = integrityAssessment.perceptualPhotoHash;
+
+    if (integrityAssessment.isQuarantined) {
+      newIssue.status = 'pending_integrity_review';
+    }
+
     setIssues((prev) => [newIssue, ...prev]);
 
     const log: AuditLog = {
       id: `log-${Date.now()}`,
       actorName: currentUser.fullName,
       actorRole: currentUser.role,
-      action: 'ISSUE_SUBMITTED_AND_PRIORITIZED',
+      action: integrityAssessment.isQuarantined ? 'ISSUE_QUARANTINED_FOR_INTEGRITY_REVIEW' : 'ISSUE_SUBMITTED_AND_PRIORITIZED',
       entityType: 'issue',
       entityId: newIssue.id,
       details: {
@@ -1014,6 +1036,8 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         deterministicScore: score.finalScore,
         confidence: parsed.confidenceScore,
         missingAttributes: parsed.missingAttributes,
+        isQuarantined: integrityAssessment.isQuarantined,
+        flags: integrityAssessment.flags.map((f) => f.title),
       },
       createdAt: now.toISOString(),
     };
@@ -1034,21 +1058,27 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       recipientId: currentUser.id,
       issueId: newIssue.id,
       ticketNumber: newIssue.ticketNumber,
-      title: `Civic Report Registered (${newIssue.ticketNumber})`,
-      message: `Your report has been evaluated. Deterministic Priority Score: ${score.finalScore}/100. Target SLA: ${cat.defaultSlaHours} hours. (Intake: ${parsed.intakeSource})`,
+      title: integrityAssessment.isQuarantined
+        ? `Report Received & Under Verification (${newIssue.ticketNumber})`
+        : `Civic Report Registered (${newIssue.ticketNumber})`,
+      message: integrityAssessment.isQuarantined
+        ? `Your report has been received and routed for municipal officer verification. (Status: Verification in Progress)`
+        : `Your report has been evaluated. Deterministic Priority Score: ${score.finalScore}/100. Target SLA: ${cat.defaultSlaHours} hours. (Intake: ${parsed.intakeSource})`,
       channel: 'app',
       isRead: false,
       createdAt: now.toISOString(),
     };
     setNotifications((prev) => [notif, ...prev]);
 
-    // Send Automated Lifecycle SMS Alert upon Registration
-    SMSAlertService.sendLifecycleSms(
-      newIssue,
-      'submitted',
-      effectivePhone,
-      language
-    );
+    // Send Automated Lifecycle SMS Alert upon Registration (withheld if under quarantine)
+    if (!integrityAssessment.isQuarantined) {
+      SMSAlertService.sendLifecycleSms(
+        newIssue,
+        'submitted',
+        effectivePhone,
+        language
+      );
+    }
 
     if (isSupabaseConfigured) {
       supabase.from('issues').insert([{
@@ -1289,6 +1319,265 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         confidence_score: 1.0,
       }).eq('id', issueId).then();
     }
+  };
+
+  // ============================================================================
+  // CHALLENGE 2: TRUST, COORDINATION & INTEGRITY GATE ("THE BAD READING")
+  // ============================================================================
+
+  const clearIntegrityReview = (issueId: string, officerNotes?: string) => {
+    const target = issues.find((i) => i.id === issueId);
+    if (!target) return;
+
+    const now = new Date();
+    const updatedAssessment = {
+      ...target.integrityAssessment,
+      isQuarantined: false,
+      flagCount: target.integrityAssessment?.flags.length || 0,
+      riskLevel: target.integrityAssessment?.riskLevel || 'clean',
+      flags: target.integrityAssessment?.flags || [],
+      assessedAt: target.integrityAssessment?.assessedAt || now.toISOString(),
+      reviewDecision: 'cleared' as const,
+      reviewedBy: currentUser.fullName,
+      reviewedAt: now.toISOString(),
+      reviewNotes: officerNotes || 'Cleared after officer evaluation of on-site evidence.',
+    };
+
+    const updatedIssue: CivicIssue = {
+      ...target,
+      status: 'prioritized',
+      integrityAssessment: updatedAssessment,
+    };
+
+    setIssues((prev) => prev.map((i) => (i.id === issueId ? updatedIssue : i)));
+
+    const auditLog: AuditLog = {
+      id: `log-clear-${Date.now()}`,
+      actorName: currentUser.fullName,
+      actorRole: currentUser.role,
+      action: 'INTEGRITY_REVIEW_CLEARED',
+      entityType: 'issue',
+      entityId: target.id,
+      details: {
+        ticketNumber: target.ticketNumber,
+        officerNotes,
+        reinstatedStatus: 'prioritized',
+        flagsPreservedCount: target.integrityAssessment?.flags.length || 0,
+      },
+      createdAt: now.toISOString(),
+    };
+    setAuditLogs((prev) => [auditLog, ...prev]);
+
+    EventLogService.appendEvent(
+      'OFFICER_OVERRIDDEN',
+      target.id,
+      updatedIssue,
+      `clear-integrity-${target.id}`,
+      currentUser.fullName,
+      currentUser.role
+    );
+  };
+
+  const rejectFabricatedIssue = (issueId: string, officerReason: string) => {
+    const target = issues.find((i) => i.id === issueId);
+    if (!target) return;
+
+    const now = new Date();
+    const updatedAssessment = {
+      ...target.integrityAssessment,
+      isQuarantined: false,
+      flagCount: target.integrityAssessment?.flags.length || 0,
+      riskLevel: target.integrityAssessment?.riskLevel || 'quarantined',
+      flags: target.integrityAssessment?.flags || [],
+      assessedAt: target.integrityAssessment?.assessedAt || now.toISOString(),
+      reviewDecision: 'rejected_fabricated' as const,
+      reviewedBy: currentUser.fullName,
+      reviewedAt: now.toISOString(),
+      reviewNotes: officerReason || 'Confirmed coordinated/fabricated submission cluster.',
+    };
+
+    const updatedIssue: CivicIssue = {
+      ...target,
+      status: 'rejected_fabricated',
+      integrityAssessment: updatedAssessment,
+    };
+
+    setIssues((prev) => prev.map((i) => (i.id === issueId ? updatedIssue : i)));
+
+    const auditLog: AuditLog = {
+      id: `log-reject-fab-${Date.now()}`,
+      actorName: currentUser.fullName,
+      actorRole: currentUser.role,
+      action: 'ISSUE_REJECTED_AS_FABRICATED',
+      entityType: 'issue',
+      entityId: target.id,
+      details: {
+        ticketNumber: target.ticketNumber,
+        officerReason,
+        flagsDetected: target.integrityAssessment?.flags.map((f) => f.title) || [],
+      },
+      createdAt: now.toISOString(),
+    };
+    setAuditLogs((prev) => [auditLog, ...prev]);
+
+    EventLogService.appendEvent(
+      'STATUS_CHANGED',
+      target.id,
+      updatedIssue,
+      `reject-fab-${target.id}`,
+      currentUser.fullName,
+      currentUser.role
+    );
+  };
+
+  const simulateCoordinatedSmearAttack = (targetAddress = 'Sai Snacks Stall, Shivaji Chowk') => {
+    const now = new Date();
+    const zone = zones.find((z) => z.code === 'WARD-02') || zones[0];
+    const cat = categories.find((c) => c.code === 'COMMUNITY_GARBAGE_DUMP') || categories[0];
+    const dept = departments.find((d) => d.id === cat.departmentId) || departments[0];
+
+    const fakeReporters = [
+      { name: 'Kailas Shinde', phone: '9822088111', id: 'usr-fake-kailas' },
+      { name: 'Nitin Sonawane', phone: '9822088222', id: 'usr-fake-nitin' },
+      { name: 'Ganesh More', phone: '9822088333', id: 'usr-fake-ganesh' },
+      { name: 'Rohit Jadhav', phone: '9822088444', id: 'usr-fake-rohit' },
+    ];
+
+    const fakeDescriptions = [
+      `Severe rotten food waste and bio-hazard disposal at ${targetAddress}. Immediate municipal inspection and heavy closure fine required!`,
+      `Extreme bio-hazard and rotten food disposal creating disease hazard at ${targetAddress}. Immediate heavy fine and closure required!`,
+      `Hazardous rotten food waste dumped openly near ${targetAddress}. Urgent municipal action and cancellation of food license needed!`,
+      `Severe bio-hazard and rotten food disposal creating health hazard at ${targetAddress}. Urgent municipal inspection and penalty required!`,
+    ];
+
+    const sharedPhotoHash = 'a1b2c3d4e5f60011';
+    const newFakeIssues: CivicIssue[] = [];
+
+    fakeReporters.forEach((rep, idx) => {
+      const tNum = `KMC-2026-${String(90100 + idx)}`;
+      const newIss: CivicIssue = {
+        id: `iss-smear-${Date.now()}-${idx}`,
+        ticketNumber: tNum,
+        citizenId: rep.id,
+        citizenName: rep.name,
+        citizenPhone: rep.phone,
+        categoryId: cat.id,
+        departmentId: dept.id,
+        zoneId: zone.id,
+        title: `Sanitation & rotten food dump: ${targetAddress}`,
+        rawDescription: fakeDescriptions[idx],
+        locationAddress: `${targetAddress}, Ward 2, Kopargaon`,
+        latitude: 19.8995 + idx * 0.0001,
+        longitude: 74.4845 + idx * 0.0001,
+        photoUrls: ['seed://smear-photo-01'],
+        perceptualPhotoHash: sharedPhotoHash,
+        structuredData: {
+          healthHazardRisk: 'high',
+          extractedSummary: 'Sanitation complaint targeted at food stall.',
+        },
+        affectedPopulationEstimate: 6000 + idx * 400,
+        confidenceScore: 0.88,
+        missingAttributes: [],
+        status: 'pending_integrity_review',
+        urgency: 'critical',
+        estimatedCost: 7500,
+        estimatedHours: 4,
+        requiredStaffCount: 4,
+        requiredEquipment: 'tipper_truck',
+        reportedAt: new Date(now.getTime() - (idx * 4) * 60000).toISOString(),
+        slaDueAt: new Date(now.getTime() + 24 * 3600000).toISOString(),
+        escalationCount: 1,
+        integrityAssessment: {
+          isQuarantined: true,
+          flagCount: 3,
+          riskLevel: 'quarantined',
+          perceptualPhotoHash: sharedPhotoHash,
+          assessedAt: now.toISOString(),
+          flags: [
+            {
+              flagType: 'duplicate_text_cluster',
+              severity: 'high',
+              title: 'Near-Identical Narrative Text Cluster',
+              description: `Found 3 other recent reports with 92% vocabulary & phrase overlap targeting ${targetAddress}.`,
+              matchedTicketNumbers: fakeReporters.filter((_, i) => i !== idx).map((_, i) => `KMC-2026-${String(90100 + i)}`),
+              similarityScore: 0.92,
+              reportersInvolved: fakeReporters.filter((_, i) => i !== idx).map((r) => r.name),
+            },
+            {
+              flagType: 'reused_photo_across_reporters',
+              severity: 'critical',
+              title: 'Perceptual Photo Reuse Across Independent Reporters',
+              description: `Perceptual photo hash (${sharedPhotoHash}) matches images submitted by ${fakeReporters.length - 1} other citizen accounts (0 bits Hamming distance).`,
+              matchedTicketNumbers: fakeReporters.filter((_, i) => i !== idx).map((_, i) => `KMC-2026-${String(90100 + i)}`),
+              photoHashMatch: true,
+              reportersInvolved: fakeReporters.filter((_, i) => i !== idx).map((r) => r.name),
+            },
+            {
+              flagType: 'coordinated_burst',
+              severity: 'high',
+              title: 'Spatiotemporal Submission Burst',
+              description: `4 tickets filed against ${targetAddress} within a 16-minute window.`,
+              matchedTicketNumbers: fakeReporters.filter((_, i) => i !== idx).map((_, i) => `KMC-2026-${String(90100 + i)}`),
+              burstCount: 4,
+              timeWindowMinutes: 16,
+              clusterCenterLocation: targetAddress,
+            },
+            {
+              flagType: 'unverified_new_reporter_burst',
+              severity: 'medium',
+              title: 'Sybil Reporter Pattern: Zero Prior History',
+              description: '4 clustered complaints originated from newly created citizen accounts with zero verified municipal history.',
+              matchedTicketNumbers: fakeReporters.filter((_, i) => i !== idx).map((_, i) => `KMC-2026-${String(90100 + i)}`),
+            },
+          ],
+        },
+      };
+
+      newFakeIssues.push(newIss);
+    });
+
+    setIssues((prev) => [...newFakeIssues, ...prev]);
+
+    const auditLog: AuditLog = {
+      id: `log-attack-sim-${Date.now()}`,
+      actorName: currentUser.fullName,
+      actorRole: currentUser.role,
+      action: 'COORDINATED_SMEAR_ATTACK_SIMULATED',
+      entityType: 'issue_cluster',
+      entityId: `cluster-smear-${Date.now()}`,
+      details: {
+        targetAddress,
+        injectedTicketsCount: 4,
+        quarantineStatus: 'ALL_QUARANTINED_PENDING_REVIEW',
+        protectionEffect: 'Withheld from allocationEngine and resource consumption',
+      },
+      createdAt: now.toISOString(),
+    };
+    setAuditLogs((prev) => [auditLog, ...prev]);
+  };
+
+  const addVerifiedClarification = (data: Omit<VerifiedClarification, 'id' | 'referenceNumber' | 'publishedAt' | 'viewCount'>): VerifiedClarification => {
+    const item = CoordinationDetectionService.addClarification(data);
+    setClarifications((prev) => [item, ...prev]);
+
+    const auditLog: AuditLog = {
+      id: `log-clarify-${Date.now()}`,
+      actorName: currentUser.fullName,
+      actorRole: currentUser.role,
+      action: 'VERIFIED_CLARIFICATION_PUBLISHED',
+      entityType: 'clarification',
+      entityId: item.id,
+      details: {
+        referenceNumber: item.referenceNumber,
+        title: item.title,
+        topic: item.topic,
+        category: item.category,
+        authorDepartment: item.authorDepartment,
+      },
+      createdAt: new Date().toISOString(),
+    };
+    setAuditLogs((prev) => [auditLog, ...prev]);
+    return item;
   };
 
   // Run Allocation Engine with optional exact DP Knapsack or Greedy mode
@@ -2105,6 +2394,11 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         acknowledgeRecoveryReport,
         simulateBlackoutChaos,
         confirmUnconfirmedInFlightIssue,
+        clarifications,
+        addVerifiedClarification,
+        clearIntegrityReview,
+        rejectFabricatedIssue,
+        simulateCoordinatedSmearAttack,
       }}
     >
       {children}

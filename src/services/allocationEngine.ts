@@ -169,7 +169,14 @@ export class AllocationEngine {
     }
 
     const sortedIssues = [...candidateIssues]
-      .filter((iss) => iss.departmentId === department.id && iss.status !== 'resolved' && iss.status !== 'rejected')
+      .filter(
+        (iss) =>
+          iss.departmentId === department.id &&
+          iss.status !== 'resolved' &&
+          iss.status !== 'rejected' &&
+          iss.status !== 'pending_integrity_review' &&
+          iss.status !== 'rejected_fabricated'
+      )
       .sort((a, b) => {
         const scoreA = a.priorityScore?.finalScore ?? 0;
         const scoreB = b.priorityScore?.finalScore ?? 0;

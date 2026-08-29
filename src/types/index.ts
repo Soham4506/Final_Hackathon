@@ -13,7 +13,9 @@ export type IssueStatus =
   | 'in_progress'
   | 'resolved'
   | 'rejected'
-  | 'escalated';
+  | 'escalated'
+  | 'pending_integrity_review'
+  | 'rejected_fabricated';
 
 export type UrgencyLevel = 'critical' | 'high' | 'medium' | 'low';
 
@@ -186,6 +188,10 @@ export interface CivicIssue {
   recoveryStatus?: 'normal' | 'recovered' | 'unconfirmed_in_flight' | 'unrecoverable_partial';
   recoveryNote?: string;
   lastKnownAuditTimestamp?: string;
+
+  // Trust & Integrity Review Metadata (Challenge 2: The Bad Reading)
+  integrityAssessment?: IssueIntegrityAssessment;
+  perceptualPhotoHash?: string;
   
   status: IssueStatus;
   urgency: UrgencyLevel;
@@ -310,7 +316,7 @@ export interface AuditLog {
   actorName: string;
   actorRole: UserRole;
   action: string;
-  entityType: 'issue' | 'plan' | 'resource' | 'weight_config' | 'decision' | 'wastewater_batch' | 'reuse_plan' | 'quality_sample' | 'flood_dispatch';
+  entityType: 'issue' | 'plan' | 'resource' | 'weight_config' | 'decision' | 'wastewater_batch' | 'reuse_plan' | 'quality_sample' | 'flood_dispatch' | 'clarification' | 'issue_cluster';
   entityId?: string;
   details: Record<string, any>;
   ipAddress?: string;
@@ -361,6 +367,65 @@ export interface RecoveryReport {
   details: string[];
   acknowledgedByOfficer?: boolean;
   acknowledgedAt?: string;
+}
+
+// ==============================================================================
+// CHALLENGE 2: TRUST, COORDINATION & INTEGRITY DEFENSE TYPES ("THE BAD READING")
+// ==============================================================================
+
+export type IntegrityFlagType =
+  | 'duplicate_text_cluster'
+  | 'reused_photo_across_reporters'
+  | 'coordinated_burst'
+  | 'unverified_new_reporter_burst'
+  | 'inflated_population_anomaly';
+
+export interface IntegrityEvidenceItem {
+  flagType: IntegrityFlagType;
+  severity: 'high' | 'critical' | 'medium';
+  title: string;
+  description: string;
+  matchedTicketNumbers: string[];
+  similarityScore?: number; // 0.0 to 1.0 (e.g. 0.94 = 94% text similarity)
+  photoHashMatch?: boolean;
+  burstCount?: number;
+  timeWindowMinutes?: number;
+  clusterCenterLocation?: string;
+  reportersInvolved?: string[];
+}
+
+export interface IssueIntegrityAssessment {
+  isQuarantined: boolean;
+  flagCount: number;
+  riskLevel: 'clean' | 'suspicious' | 'quarantined';
+  flags: IntegrityEvidenceItem[];
+  perceptualPhotoHash?: string;
+  assessedAt: string;
+  reviewedBy?: string;
+  reviewedAt?: string;
+  reviewDecision?: 'cleared' | 'rejected_fabricated';
+  reviewNotes?: string;
+}
+
+export interface VerifiedClarification {
+  id: string;
+  referenceNumber: string; // e.g. 'KMC-AUTH-2026-012'
+  title: string;
+  category: string; // e.g. 'Water Supply', 'Sanitation', 'Public Health', 'Roads'
+  wardId?: string;
+  wardName?: string;
+  topic: string; // e.g. 'WhatsApp Tanker Rotation Rumor'
+  officialStatementEn: string;
+  officialStatementMr: string;
+  circulatingRumorSummary?: string;
+  verifiedFactSummary: string;
+  authorDepartment: string; // e.g. 'Water Supply & Sanitation Department'
+  authorOfficerName: string; // e.g. 'Er. S. B. Deshmukh (Chief Engineer)'
+  publishedAt: string;
+  isPinned: boolean;
+  viewCount: number;
+  audioIvrScriptEn: string;
+  audioIvrScriptMr: string;
 }
 
 export * from './wastewater';

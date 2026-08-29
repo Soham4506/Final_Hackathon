@@ -6,6 +6,8 @@ import { PriorityBadge } from '../components/common/PriorityBadge';
 import { StatusBadge } from '../components/common/StatusBadge';
 import { ExplainabilityModal } from '../components/common/ExplainabilityModal';
 import { OfficerOverrideModal } from '../components/common/OfficerOverrideModal';
+import { IntegrityEvidenceModal } from '../components/integrity/IntegrityEvidenceModal';
+import { IntegrityReviewQueue } from '../components/integrity/IntegrityReviewQueue';
 import {
   Search,
   Filter,
@@ -25,11 +27,21 @@ import {
   ArrowUpDown,
   X,
   FileText,
+  ShieldCheck,
+  AlertTriangle,
 } from 'lucide-react';
 
 export const IssuesQueuePage: React.FC = () => {
   const { issues, departments, zones, categories, updateIssueStatus, verifyIssueOnSite, userRole } = useCivic();
   const [searchParams, setSearchParams] = useSearchParams();
+
+  // Tab View: Standard Queue vs. Integrity Quarantine Review
+  const [viewTab, setViewTab] = useState<'queue' | 'integrity'>('queue');
+  const [integrityModalIssue, setIntegrityModalIssue] = useState<CivicIssue | null>(null);
+
+  const quarantinedCount = issues.filter(
+    (i) => i.status === 'pending_integrity_review'
+  ).length;
 
   // Filters state
   const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || '');
@@ -108,9 +120,42 @@ export const IssuesQueuePage: React.FC = () => {
             Inspect incoming complaints, audit mathematical scoring drivers, and trigger shift dispatches.
           </p>
         </div>
+
+        {/* Tab Switcher */}
+        <div className="bg-[#f0edef] dark:bg-slate-800 p-1 rounded-xl border border-border flex items-center text-xs shrink-0 gap-1">
+          <button
+            type="button"
+            onClick={() => setViewTab('queue')}
+            className={`px-3.5 py-2 rounded-lg font-bold uppercase text-[11px] tracking-wider transition-all flex items-center gap-1.5 cursor-pointer ${
+              viewTab === 'queue'
+                ? 'bg-[#131b2e] text-white shadow-xs'
+                : 'text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            <Layers size={14} />
+            <span>Active Queue ({filteredIssues.length})</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setViewTab('integrity')}
+            className={`px-3.5 py-2 rounded-lg font-bold uppercase text-[11px] tracking-wider transition-all flex items-center gap-1.5 cursor-pointer ${
+              viewTab === 'integrity'
+                ? 'bg-amber-600 text-white shadow-xs'
+                : 'text-amber-800 hover:text-amber-950 bg-amber-50/50'
+            }`}
+          >
+            <ShieldAlert size={14} className={quarantinedCount > 0 ? 'text-amber-300' : ''} />
+            <span>Trust & Quarantine ({quarantinedCount})</span>
+          </button>
+        </div>
       </div>
 
-      {/* Filter Control Bar */}
+      {viewTab === 'integrity' ? (
+        <IntegrityReviewQueue />
+      ) : (
+        <>
+          {/* Filter Control Bar */}
       <div className="bg-card border border-border rounded-2xl p-4 shadow-xs space-y-3">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 text-xs">
           {/* Search */}
@@ -275,6 +320,27 @@ export const IssuesQueuePage: React.FC = () => {
                 </div>
               )}
 
+              {/* Quarantine Alert Card */}
+              {activeIssue.status === 'pending_integrity_review' && (
+                <div className="p-3.5 bg-amber-50 border border-amber-300 rounded-xl space-y-2 text-xs">
+                  <div className="flex items-center gap-1.5 font-bold text-amber-900">
+                    <ShieldAlert size={16} className="text-amber-600 shrink-0" />
+                    <span>Quarantined: Coordination Flag</span>
+                  </div>
+                  <p className="text-[11px] text-amber-800 leading-relaxed">
+                    This ticket triggered algorithmic duplicate or burst signals. It is withheld from allocation pending officer decision.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setIntegrityModalIssue(activeIssue)}
+                    className="w-full py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg font-bold text-xs flex items-center justify-center gap-1.5 shadow-xs transition-colors cursor-pointer"
+                  >
+                    <Eye size={13} />
+                    <span>Inspect Forensic Evidence & Adjudicate</span>
+                  </button>
+                </div>
+              )}
+
               {/* Priority Score Breakdown Card */}
               <div className="p-3 bg-muted/30 dark:bg-slate-900/60 border border-border rounded-xl space-y-2">
                 <div className="flex justify-between items-center">
@@ -375,6 +441,8 @@ export const IssuesQueuePage: React.FC = () => {
           )}
         </div>
       </div>
+      </>
+      )}
 
       {/* Modals */}
       {explainIssue && (
@@ -388,6 +456,14 @@ export const IssuesQueuePage: React.FC = () => {
         <OfficerOverrideModal
           issue={overrideIssue}
           onClose={() => setOverrideIssue(null)}
+        />
+      )}
+
+      {integrityModalIssue && (
+        <IntegrityEvidenceModal
+          issue={integrityModalIssue}
+          isOpen={Boolean(integrityModalIssue)}
+          onClose={() => setIntegrityModalIssue(null)}
         />
       )}
     </div>
