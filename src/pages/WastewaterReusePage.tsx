@@ -258,22 +258,22 @@ export const WastewaterReusePage: React.FC = () => {
   return (
     <div className="space-y-5">
       {/* 1. Header Banner */}
-      <div className="bg-white border border-[#76777d]/20 rounded-2xl p-5 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="bg-card border border-border rounded-2xl p-5 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2 mb-1">
             <span className="bg-emerald-50 text-emerald-800 border border-emerald-200 text-[10px] font-mono uppercase font-bold px-2 py-0.5 rounded flex items-center gap-1">
               <Sparkles size={12} className="text-emerald-600" />
               <span>Circular Economy</span>
             </span>
-            <span className="text-xs text-[#76777d]">Kopargaon MC</span>
+            <span className="text-xs text-muted-foreground">Kopargaon MC</span>
           </div>
 
-          <h1 className="text-xl sm:text-2xl font-bold text-[#1b1b1d] tracking-tight flex items-center gap-2">
+          <h1 className="text-xl sm:text-2xl font-bold text-foreground tracking-tight flex items-center gap-2">
             <Sprout className="text-emerald-700" size={24} />
             <span>Wastewater-to-Agriculture Reuse</span>
           </h1>
 
-          <p className="text-xs text-[#57657b] mt-1">
+          <p className="text-xs text-muted-foreground mt-1">
             Treating municipal wastewater for certified agriculture and agroforestry irrigation under CPCB norms.
           </p>
         </div>
@@ -282,7 +282,7 @@ export const WastewaterReusePage: React.FC = () => {
         <div className="flex flex-wrap gap-2 shrink-0">
           <button
             onClick={() => setShowBookingModal(true)}
-            className="flex items-center gap-1.5 bg-[#131b2e] hover:bg-[#1e2a47] text-white text-xs font-bold uppercase tracking-wider px-3.5 py-2 rounded-xl shadow-xs transition-all"
+            className="flex items-center gap-1.5 bg-primary hover:bg-primary/90 text-white text-xs font-bold uppercase tracking-wider px-3.5 py-2 rounded-xl shadow-xs transition-all"
           >
             <PlusCircle size={14} />
             <span>{t.bookWaterQuota || 'Book Quota'}</span>
@@ -290,7 +290,7 @@ export const WastewaterReusePage: React.FC = () => {
 
           <button
             onClick={handleCreateSampleIntake}
-            className="flex items-center gap-1.5 bg-white hover:bg-slate-50 text-[#131b2e] border border-[#76777d]/30 text-xs font-bold uppercase tracking-wider px-3.5 py-2 rounded-xl shadow-xs transition-all"
+            className="flex items-center gap-1.5 bg-card hover:bg-slate-50 text-[#131b2e] border border-border text-xs font-bold uppercase tracking-wider px-3.5 py-2 rounded-xl shadow-xs transition-all"
           >
             <Droplets size={14} className="text-cyan-700" />
             <span>New Batch</span>
@@ -300,9 +300,9 @@ export const WastewaterReusePage: React.FC = () => {
 
       {/* 2. Circular Economy Impact Counters (6 Cards) */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-        <div className="bg-white border border-[#76777d]/20 p-4 rounded-xl shadow-xs flex flex-col justify-between">
-          <span className="text-[11px] font-bold uppercase tracking-wider text-[#76777d] mb-1">Treated Water</span>
-          <div className="text-2xl font-bold text-[#1b1b1d] font-mono">
+        <div className="bg-card border border-border p-4 rounded-xl shadow-xs flex flex-col justify-between">
+          <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground mb-1">Treated Water</span>
+          <div className="text-2xl font-bold text-foreground font-mono">
             {circularMetrics.totalWastewaterTreatedMLD} MLD
           </div>
           <span className="text-[10px] text-cyan-700 font-bold flex items-center gap-1 mt-1 font-mono">
@@ -310,8 +310,8 @@ export const WastewaterReusePage: React.FC = () => {
           </span>
         </div>
 
-        <div className="bg-white border border-[#76777d]/20 p-4 rounded-xl shadow-xs flex flex-col justify-between">
-          <span className="text-[11px] font-bold uppercase tracking-wider text-[#76777d] mb-1">Agri Water Reused</span>
+        <div className="bg-card border border-border p-4 rounded-xl shadow-xs flex flex-col justify-between">
+          <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground mb-1">Agri Water Reused</span>
           <div className="text-2xl font-bold text-emerald-700 font-mono">
             {circularMetrics.totalAgriculturalReuseKLD.toLocaleString()} KL
           </div>
@@ -320,18 +320,18 @@ export const WastewaterReusePage: React.FC = () => {
           </span>
         </div>
 
-        <div className="bg-white border border-[#76777d]/20 p-4 rounded-xl shadow-xs flex flex-col justify-between">
-          <span className="text-[11px] font-bold uppercase tracking-wider text-[#76777d] mb-1">Groundwater Saved</span>
+        <div className="bg-card border border-border p-4 rounded-xl shadow-xs flex flex-col justify-between">
+          <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground mb-1">Groundwater Saved</span>
           <div className="text-2xl font-bold text-blue-700 font-mono">
             {(circularMetrics.totalGroundwaterSavedLiters / 1000000).toFixed(1)}M L
           </div>
-          <span className="text-[10px] text-[#76777d] flex items-center gap-1 mt-1 font-mono">
+          <span className="text-[10px] text-muted-foreground flex items-center gap-1 mt-1 font-mono">
             <TrendingUp size={11} /> Aquifer Recharge
           </span>
         </div>
 
-        <div className="bg-white border border-[#76777d]/20 p-4 rounded-xl shadow-xs flex flex-col justify-between">
-          <span className="text-[11px] font-bold uppercase tracking-wider text-[#76777d] mb-1">River Pollution Cut</span>
+        <div className="bg-card border border-border p-4 rounded-xl shadow-xs flex flex-col justify-between">
+          <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground mb-1">River Pollution Cut</span>
           <div className="text-2xl font-bold text-emerald-700 font-mono">
             {circularMetrics.godavariRiverPollutionDivertedPercent}%
           </div>
@@ -340,8 +340,8 @@ export const WastewaterReusePage: React.FC = () => {
           </span>
         </div>
 
-        <div className="bg-white border border-[#76777d]/20 p-4 rounded-xl shadow-xs flex flex-col justify-between">
-          <span className="text-[11px] font-bold uppercase tracking-wider text-[#76777d] mb-1">Fertilizer Saved</span>
+        <div className="bg-card border border-border p-4 rounded-xl shadow-xs flex flex-col justify-between">
+          <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground mb-1">Fertilizer Saved</span>
           <div className="text-2xl font-bold text-amber-700 font-mono">
             ₹{(circularMetrics.totalFarmerFertilizerSavingsInr / 100000).toFixed(2)}L
           </div>
@@ -350,36 +350,36 @@ export const WastewaterReusePage: React.FC = () => {
           </span>
         </div>
 
-        <div className="bg-white border border-[#76777d]/20 p-4 rounded-xl shadow-xs flex flex-col justify-between">
-          <span className="text-[11px] font-bold uppercase tracking-wider text-[#76777d] mb-1">Beneficiaries</span>
-          <div className="text-2xl font-bold text-[#1b1b1d] font-mono">
+        <div className="bg-card border border-border p-4 rounded-xl shadow-xs flex flex-col justify-between">
+          <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground mb-1">Beneficiaries</span>
+          <div className="text-2xl font-bold text-foreground font-mono">
             {circularMetrics.totalFarmersBenefited + farmerBookings.filter(b => b.status === 'allocated' || b.status === 'fulfilled').length}
           </div>
-          <span className="text-[10px] text-[#76777d] flex items-center gap-1 mt-1 font-mono">
+          <span className="text-[10px] text-muted-foreground flex items-center gap-1 mt-1 font-mono">
             <Award size={11} /> Kopargaon Growers
           </span>
         </div>
       </div>
 
       {/* 3. Interactive 6-Stage Workflow Pipeline Stepper */}
-      <div className="bg-white border border-[#76777d]/20 rounded-2xl p-5 shadow-xs space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[#76777d]/15 pb-3">
+      <div className="bg-card border border-border rounded-2xl p-5 shadow-xs space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-border pb-3">
           <div>
-            <span className="text-xs uppercase font-bold tracking-wider text-[#76777d]">
+            <span className="text-xs uppercase font-bold tracking-wider text-muted-foreground">
               6-Stage Circular Water Lifecycle Pipeline
             </span>
-            <h2 className="text-sm font-bold text-[#1b1b1d] mt-0.5">
+            <h2 className="text-sm font-bold text-foreground mt-0.5">
               Municipal Waste ➔ Wastewater ➔ Treatment ➔ Quality Check ➔ Reuse Plan ➔ Agriculture
             </h2>
           </div>
 
           {/* Active Batch Selector */}
           <div className="flex items-center gap-2 text-xs">
-            <span className="text-[#76777d] font-bold">Select Batch:</span>
+            <span className="text-muted-foreground font-bold">Select Batch:</span>
             <select
               value={selectedBatchId}
               onChange={(e) => setSelectedBatchId(e.target.value)}
-              className="bg-[#f6f3f5] border border-[#76777d]/20 rounded-xl px-3 py-1.5 text-[#1b1b1d] font-mono text-xs font-semibold focus:outline-none focus:border-[#131b2e]"
+              className="bg-muted/60 dark:bg-slate-900 border border-border rounded-xl px-3 py-1.5 text-foreground font-mono text-xs font-semibold focus:outline-none focus:border-primary"
             >
               {wastewaterBatches.map((b) => (
                 <option key={b.id} value={b.id}>
@@ -405,14 +405,14 @@ export const WastewaterReusePage: React.FC = () => {
                 onClick={() => setActiveStageTab(st.id)}
                 className={`p-3 rounded-xl text-left border transition-all flex flex-col justify-between min-h-[90px] ${
                   isSelected
-                    ? 'bg-[#131b2e] text-white border-[#131b2e] shadow-xs ring-1 ring-[#131b2e]/20'
-                    : 'bg-[#fcf8fa] text-[#1b1b1d] border-[#76777d]/15 hover:border-slate-400'
+                    ? 'bg-primary text-white border-[#131b2e] shadow-xs ring-1 ring-[#131b2e]/20'
+                    : 'bg-muted/30 dark:bg-slate-900/60 text-foreground border-border hover:border-slate-400'
                 }`}
               >
                 <div className="flex items-center justify-between w-full mb-1">
                   <div
                     className={`w-7 h-7 rounded-lg flex items-center justify-center ${
-                      isSelected ? 'bg-white/20 text-white' : 'bg-slate-200 text-[#131b2e]'
+                      isSelected ? 'bg-card/20 text-white' : 'bg-slate-200 text-[#131b2e]'
                     }`}
                   >
                     <Icon size={16} />
@@ -424,10 +424,10 @@ export const WastewaterReusePage: React.FC = () => {
                 </div>
 
                 <div>
-                  <div className={`text-xs font-bold truncate ${isSelected ? 'text-white' : 'text-[#1b1b1d]'}`}>
+                  <div className={`text-xs font-bold truncate ${isSelected ? 'text-white' : 'text-foreground'}`}>
                     {st.titleEn}
                   </div>
-                  <div className={`text-[10px] line-clamp-1 ${isSelected ? 'text-white/80' : 'text-[#76777d]'}`}>
+                  <div className={`text-[10px] line-clamp-1 ${isSelected ? 'text-white/80' : 'text-muted-foreground'}`}>
                     {st.desc}
                   </div>
                 </div>
@@ -438,14 +438,14 @@ export const WastewaterReusePage: React.FC = () => {
 
         {/* Selected Batch Progress Bar & Advance Control */}
         {selectedBatch && (
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-3 border-t border-[#76777d]/15 text-xs">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-3 border-t border-border text-xs">
             <div className="flex items-center gap-3 w-full sm:w-auto">
               <span className="text-[#131b2e] font-mono text-[11px] font-bold">
                 BATCH {selectedBatch.batchNumber}:
               </span>
               <div className="w-48 bg-[#eae7e9] rounded-full h-2 overflow-hidden">
                 <div
-                  className="bg-[#131b2e] h-full rounded-full transition-all duration-500"
+                  className="bg-primary h-full rounded-full transition-all duration-500"
                   style={{ width: `${selectedBatch.currentProgressPercent}%` }}
                 ></div>
               </div>
@@ -458,7 +458,7 @@ export const WastewaterReusePage: React.FC = () => {
               {selectedBatch.currentStage !== 'agriculture' && (
                 <button
                   onClick={() => advanceWastewaterStage(selectedBatch.id)}
-                  className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-[#131b2e] hover:bg-[#1e2a47] text-white font-bold text-xs uppercase tracking-wider shadow-xs transition-all"
+                  className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-primary hover:bg-primary/90 text-white font-bold text-xs uppercase tracking-wider shadow-xs transition-all"
                 >
                   <Play size={13} />
                   <span>Advance to Next Stage</span>
@@ -480,23 +480,23 @@ export const WastewaterReusePage: React.FC = () => {
       </div>
 
       {/* 4. Active Stage Drilldown Component */}
-      <div className="bg-white border border-[#76777d]/20 rounded-2xl p-6 shadow-xs space-y-6 text-[#1b1b1d]">
+      <div className="bg-card border border-border rounded-2xl p-6 shadow-xs space-y-6 text-foreground">
         {/* STAGE 1: MUNICIPAL WASTE INTAKE */}
         {activeStageTab === 'municipal_waste' && (
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="text-base font-bold text-[#1b1b1d] flex items-center gap-2">
+                <h3 className="text-base font-bold text-foreground flex items-center gap-2">
                   <Trash2 size={20} className="text-amber-600" />
                   <span>Stage 1: Waste Inflow & Segregation</span>
                 </h3>
-                <p className="text-xs text-[#57657b]">
+                <p className="text-xs text-muted-foreground">
                   Ward-wise sewage lines and coarse solids screening before STP intake.
                 </p>
               </div>
               <button
                 onClick={() => advanceWastewaterStage(selectedBatch?.id || '')}
-                className="flex items-center gap-1.5 bg-[#131b2e] hover:bg-[#1e2a47] text-white text-xs font-bold uppercase tracking-wider px-3.5 py-2 rounded-xl transition-all"
+                className="flex items-center gap-1.5 bg-primary hover:bg-primary/90 text-white text-xs font-bold uppercase tracking-wider px-3.5 py-2 rounded-xl transition-all"
               >
                 <span>To Intake</span>
                 <ArrowRight size={14} />
@@ -505,17 +505,17 @@ export const WastewaterReusePage: React.FC = () => {
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3.5">
               {wasteSources.map((src) => (
-                <div key={src.id} className="bg-[#fcf8fa] border border-[#76777d]/15 p-3.5 rounded-xl space-y-2">
+                <div key={src.id} className="bg-muted/30 dark:bg-slate-900/60 border border-border p-3.5 rounded-xl space-y-2">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-[#1b1b1d] truncate">{src.wardName}</span>
+                    <span className="text-xs font-bold text-foreground truncate">{src.wardName}</span>
                     <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-200 text-slate-800 uppercase font-mono font-bold">
                       {src.sourceType.replace('_', ' ')}
                     </span>
                   </div>
-                  <div className="space-y-1 text-xs text-[#57657b]">
+                  <div className="space-y-1 text-xs text-muted-foreground">
                     <div className="flex justify-between">
                       <span>Daily Inflow:</span>
-                      <strong className="text-[#1b1b1d] font-mono">{src.dailyVolumeKLD.toLocaleString()} KL/day</strong>
+                      <strong className="text-foreground font-mono">{src.dailyVolumeKLD.toLocaleString()} KL/day</strong>
                     </div>
                     <div className="flex justify-between">
                       <span>Turbidity:</span>
@@ -523,7 +523,7 @@ export const WastewaterReusePage: React.FC = () => {
                     </div>
                     <div className="flex justify-between">
                       <span>Baseline BOD:</span>
-                      <strong className="text-[#1b1b1d] font-mono">{src.initialBOD} mg/L</strong>
+                      <strong className="text-foreground font-mono">{src.initialBOD} mg/L</strong>
                     </div>
                   </div>
                 </div>
@@ -537,17 +537,17 @@ export const WastewaterReusePage: React.FC = () => {
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="text-base font-bold text-[#1b1b1d] flex items-center gap-2">
+                <h3 className="text-base font-bold text-foreground flex items-center gap-2">
                   <Droplets size={20} className="text-cyan-700" />
                   <span>Stage 2: Raw Intake & Diagnostics</span>
                 </h3>
-                <p className="text-xs text-[#57657b]">
+                <p className="text-xs text-muted-foreground">
                   Inflow parameter profiling before biological reactor injection.
                 </p>
               </div>
               <button
                 onClick={() => advanceWastewaterStage(selectedBatch?.id || '')}
-                className="flex items-center gap-1.5 bg-[#131b2e] hover:bg-[#1e2a47] text-white text-xs font-bold uppercase tracking-wider px-3.5 py-2 rounded-xl transition-all"
+                className="flex items-center gap-1.5 bg-primary hover:bg-primary/90 text-white text-xs font-bold uppercase tracking-wider px-3.5 py-2 rounded-xl transition-all"
               >
                 <span>To MBBR Treatment</span>
                 <ArrowRight size={14} />
@@ -556,32 +556,32 @@ export const WastewaterReusePage: React.FC = () => {
 
             {selectedBatch && (
               <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
-                <div className="p-3 bg-[#fcf8fa] rounded-xl border border-[#76777d]/15 text-xs">
-                  <span className="text-[#76777d] font-bold block text-[10px] uppercase">Batch Inflow</span>
-                  <span className="text-base font-bold text-[#1b1b1d] font-mono">
+                <div className="p-3 bg-muted/30 dark:bg-slate-900/60 rounded-xl border border-border text-xs">
+                  <span className="text-muted-foreground font-bold block text-[10px] uppercase">Batch Inflow</span>
+                  <span className="text-base font-bold text-foreground font-mono">
                     {selectedBatch.intakeVolumeKLD.toLocaleString()} KL
                   </span>
                 </div>
-                <div className="p-3 bg-[#fcf8fa] rounded-xl border border-[#76777d]/15 text-xs">
-                  <span className="text-[#76777d] font-bold block text-[10px] uppercase">Baseline BOD</span>
+                <div className="p-3 bg-muted/30 dark:bg-slate-900/60 rounded-xl border border-border text-xs">
+                  <span className="text-muted-foreground font-bold block text-[10px] uppercase">Baseline BOD</span>
                   <span className="text-base font-bold text-amber-700 font-mono">
                     {selectedBatch.initialParameters.bod} mg/L
                   </span>
                 </div>
-                <div className="p-3 bg-[#fcf8fa] rounded-xl border border-[#76777d]/15 text-xs">
-                  <span className="text-[#76777d] font-bold block text-[10px] uppercase">Baseline COD</span>
-                  <span className="text-base font-bold text-[#1b1b1d] font-mono">
+                <div className="p-3 bg-muted/30 dark:bg-slate-900/60 rounded-xl border border-border text-xs">
+                  <span className="text-muted-foreground font-bold block text-[10px] uppercase">Baseline COD</span>
+                  <span className="text-base font-bold text-foreground font-mono">
                     {selectedBatch.initialParameters.cod} mg/L
                   </span>
                 </div>
-                <div className="p-3 bg-[#fcf8fa] rounded-xl border border-[#76777d]/15 text-xs">
-                  <span className="text-[#76777d] font-bold block text-[10px] uppercase">Turbidity</span>
+                <div className="p-3 bg-muted/30 dark:bg-slate-900/60 rounded-xl border border-border text-xs">
+                  <span className="text-muted-foreground font-bold block text-[10px] uppercase">Turbidity</span>
                   <span className="text-base font-bold text-cyan-800 font-mono">
                     {selectedBatch.initialParameters.turbidity} NTU
                   </span>
                 </div>
-                <div className="p-3 bg-[#fcf8fa] rounded-xl border border-[#76777d]/15 text-xs">
-                  <span className="text-[#76777d] font-bold block text-[10px] uppercase">Intake pH</span>
+                <div className="p-3 bg-muted/30 dark:bg-slate-900/60 rounded-xl border border-border text-xs">
+                  <span className="text-muted-foreground font-bold block text-[10px] uppercase">Intake pH</span>
                   <span className="text-base font-bold text-emerald-800 font-mono">
                     {selectedBatch.initialParameters.ph}
                   </span>
@@ -596,17 +596,17 @@ export const WastewaterReusePage: React.FC = () => {
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="text-base font-bold text-[#1b1b1d] flex items-center gap-2">
+                <h3 className="text-base font-bold text-foreground flex items-center gap-2">
                   <Cpu size={20} className="text-blue-700" />
                   <span>Stage 3: STP MBBR Treatment</span>
                 </h3>
-                <p className="text-xs text-[#57657b]">
+                <p className="text-xs text-muted-foreground">
                   Biofilm aeration, dual media sand/carbon filtration, and UV disinfection.
                 </p>
               </div>
               <button
                 onClick={() => advanceWastewaterStage(selectedBatch?.id || '')}
-                className="flex items-center gap-1.5 bg-[#131b2e] hover:bg-[#1e2a47] text-white text-xs font-bold uppercase tracking-wider px-3.5 py-2 rounded-xl transition-all"
+                className="flex items-center gap-1.5 bg-primary hover:bg-primary/90 text-white text-xs font-bold uppercase tracking-wider px-3.5 py-2 rounded-xl transition-all"
               >
                 <span>To Quality Lab</span>
                 <ArrowRight size={14} />
@@ -614,25 +614,25 @@ export const WastewaterReusePage: React.FC = () => {
             </div>
 
             {/* Plant Overview Banner */}
-            <div className="p-3.5 bg-[#fcf8fa] rounded-xl border border-[#76777d]/15 flex flex-col md:flex-row items-start md:items-center justify-between gap-3 text-xs">
+            <div className="p-3.5 bg-muted/30 dark:bg-slate-900/60 rounded-xl border border-border flex flex-col md:flex-row items-start md:items-center justify-between gap-3 text-xs">
               <div>
                 <span className="text-[10px] font-mono uppercase text-emerald-800 font-bold block">
                   Facility • {currentPlant.code}
                 </span>
-                <h4 className="text-sm font-bold text-[#1b1b1d]">{currentPlant.name}</h4>
+                <h4 className="text-sm font-bold text-foreground">{currentPlant.name}</h4>
               </div>
 
               <div className="flex items-center gap-4 text-xs">
                 <div>
-                  <span className="text-[10px] text-[#76777d] font-bold uppercase block">Capacity</span>
-                  <span className="font-bold text-[#1b1b1d]">{currentPlant.capacityMLD} MLD</span>
+                  <span className="text-[10px] text-muted-foreground font-bold uppercase block">Capacity</span>
+                  <span className="font-bold text-foreground">{currentPlant.capacityMLD} MLD</span>
                 </div>
                 <div>
-                  <span className="text-[10px] text-[#76777d] font-bold uppercase block">Daily Output</span>
+                  <span className="text-[10px] text-muted-foreground font-bold uppercase block">Daily Output</span>
                   <span className="font-bold text-emerald-800">{currentPlant.dailyTreatedKLD.toLocaleString()} KL</span>
                 </div>
                 <div>
-                  <span className="text-[10px] text-[#76777d] font-bold uppercase block">Energy</span>
+                  <span className="text-[10px] text-muted-foreground font-bold uppercase block">Energy</span>
                   <span className="font-bold text-cyan-800">{currentPlant.energyEfficiencyKWhPerKL} kWh/KL</span>
                 </div>
               </div>
@@ -641,18 +641,18 @@ export const WastewaterReusePage: React.FC = () => {
             {/* 4 Multi-Stage Reactors */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
               {currentPlant.stages.map((st, i) => (
-                <div key={i} className="p-3.5 bg-[#fcf8fa] rounded-xl border border-[#76777d]/15 space-y-2 text-xs">
+                <div key={i} className="p-3.5 bg-muted/30 dark:bg-slate-900/60 rounded-xl border border-border space-y-2 text-xs">
                   <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-mono text-[#76777d] font-bold">STAGE 0{i + 1}</span>
+                    <span className="text-[10px] font-mono text-muted-foreground font-bold">STAGE 0{i + 1}</span>
                     <span className="px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 border border-emerald-200 text-[10px] font-bold">
                       {st.efficiencyRating}%
                     </span>
                   </div>
-                  <h5 className="font-bold text-[#1b1b1d]">{st.stageName}</h5>
-                  <div className="space-y-1 text-[#57657b] text-[11px]">
+                  <h5 className="font-bold text-foreground">{st.stageName}</h5>
+                  <div className="space-y-1 text-muted-foreground text-[11px]">
                     <div className="flex justify-between">
                       <span>Retention:</span>
-                      <span className="text-[#1b1b1d] font-mono">{st.retentionHours}h</span>
+                      <span className="text-foreground font-mono">{st.retentionHours}h</span>
                     </div>
                     {st.monitoredParameters.dissolvedOxygen && (
                       <div className="flex justify-between">
@@ -687,18 +687,18 @@ export const WastewaterReusePage: React.FC = () => {
             <div className="space-y-5">
               <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
                 <div>
-                  <h3 className="text-base font-bold text-[#1b1b1d] flex items-center gap-2">
+                  <h3 className="text-base font-bold text-foreground flex items-center gap-2">
                     <ShieldCheck size={20} className="text-emerald-700" />
                     <span>Stage 4: Quality Check & Flow Decision</span>
                   </h3>
-                  <p className="text-xs text-[#57657b]">
+                  <p className="text-xs text-muted-foreground">
                     Evaluates CPCB lab parameters to route water to Food Crops, Sugarcane, Trees, or Construction.
                   </p>
                 </div>
 
                 {/* 5 Preset buttons */}
                 <div className="flex flex-wrap items-center gap-1.5 text-xs">
-                  <span className="text-[#76777d] font-bold text-[11px]">Scenarios:</span>
+                  <span className="text-muted-foreground font-bold text-[11px]">Scenarios:</span>
                   <button
                     onClick={() => applyPresetParams('grade_a')}
                     className="px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-900 border border-emerald-200 text-[11px] font-bold hover:bg-emerald-100 flex items-center gap-1"
@@ -738,11 +738,11 @@ export const WastewaterReusePage: React.FC = () => {
               </div>
 
               {/* 8 Interactive Parameter Sliders Grid */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 bg-[#fcf8fa] p-4 rounded-xl border border-[#76777d]/15 text-xs">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 bg-muted/30 dark:bg-slate-900/60 p-4 rounded-xl border border-border text-xs">
                 {/* BOD Control */}
                 <div className="space-y-1.5">
                   <div className="flex justify-between">
-                    <label className="text-[#1b1b1d] font-bold">BOD (mg/L)</label>
+                    <label className="text-foreground font-bold">BOD (mg/L)</label>
                     <span className="font-mono text-emerald-800 font-bold">{labParams.bod} mg/L</span>
                   </div>
                   <input
@@ -754,13 +754,13 @@ export const WastewaterReusePage: React.FC = () => {
                     onChange={(e) => setLabParams({ ...labParams, bod: parseFloat(e.target.value) })}
                     className="w-full accent-[#131b2e] cursor-pointer"
                   />
-                  <span className="text-[10px] text-[#76777d] block">&lt;10 Food, &lt;30 Sugar, &lt;55 Trees</span>
+                  <span className="text-[10px] text-muted-foreground block">&lt;10 Food, &lt;30 Sugar, &lt;55 Trees</span>
                 </div>
 
                 {/* COD Control */}
                 <div className="space-y-1.5">
                   <div className="flex justify-between">
-                    <label className="text-[#1b1b1d] font-bold">COD (mg/L)</label>
+                    <label className="text-foreground font-bold">COD (mg/L)</label>
                     <span className="font-mono text-emerald-800 font-bold">{labParams.cod} mg/L</span>
                   </div>
                   <input
@@ -772,13 +772,13 @@ export const WastewaterReusePage: React.FC = () => {
                     onChange={(e) => setLabParams({ ...labParams, cod: parseFloat(e.target.value) })}
                     className="w-full accent-[#131b2e] cursor-pointer"
                   />
-                  <span className="text-[10px] text-[#76777d] block">&lt;50 Food, &lt;100 Sugar, &lt;160 Trees</span>
+                  <span className="text-[10px] text-muted-foreground block">&lt;50 Food, &lt;100 Sugar, &lt;160 Trees</span>
                 </div>
 
                 {/* pH Control */}
                 <div className="space-y-1.5">
                   <div className="flex justify-between">
-                    <label className="text-[#1b1b1d] font-bold">pH Level</label>
+                    <label className="text-foreground font-bold">pH Level</label>
                     <span className="font-mono text-emerald-800 font-bold">{labParams.ph}</span>
                   </div>
                   <input
@@ -790,13 +790,13 @@ export const WastewaterReusePage: React.FC = () => {
                     onChange={(e) => setLabParams({ ...labParams, ph: parseFloat(e.target.value) })}
                     className="w-full accent-[#131b2e] cursor-pointer"
                   />
-                  <span className="text-[10px] text-[#76777d] block">Safe: 6.5 - 8.5 (Trees: 6.0-9.0)</span>
+                  <span className="text-[10px] text-muted-foreground block">Safe: 6.5 - 8.5 (Trees: 6.0-9.0)</span>
                 </div>
 
                 {/* Fecal Coliforms */}
                 <div className="space-y-1.5">
                   <div className="flex justify-between">
-                    <label className="text-[#1b1b1d] font-bold">Fecal Coliforms</label>
+                    <label className="text-foreground font-bold">Fecal Coliforms</label>
                     <span className="font-mono text-emerald-800 font-bold">{labParams.fecalColiforms} MPN</span>
                   </div>
                   <input
@@ -808,13 +808,13 @@ export const WastewaterReusePage: React.FC = () => {
                     onChange={(e) => setLabParams({ ...labParams, fecalColiforms: parseInt(e.target.value) })}
                     className="w-full accent-[#131b2e] cursor-pointer"
                   />
-                  <span className="text-[10px] text-[#76777d] block">&lt;100 Food, &lt;1000 Sugar, &lt;5000 Trees</span>
+                  <span className="text-[10px] text-muted-foreground block">&lt;100 Food, &lt;1000 Sugar, &lt;5000 Trees</span>
                 </div>
 
                 {/* Salinity EC */}
                 <div className="space-y-1.5">
                   <div className="flex justify-between">
-                    <label className="text-[#1b1b1d] font-bold">Salinity EC (dS/m)</label>
+                    <label className="text-foreground font-bold">Salinity EC (dS/m)</label>
                     <span className="font-mono text-emerald-800 font-bold">{labParams.electricalConductivity} dS/m</span>
                   </div>
                   <input
@@ -826,13 +826,13 @@ export const WastewaterReusePage: React.FC = () => {
                     onChange={(e) => setLabParams({ ...labParams, electricalConductivity: parseFloat(e.target.value) })}
                     className="w-full accent-[#131b2e] cursor-pointer"
                   />
-                  <span className="text-[10px] text-[#76777d] block">&lt;1.2 Food, &lt;2.0 Sugar, &lt;3.0 Trees</span>
+                  <span className="text-[10px] text-muted-foreground block">&lt;1.2 Food, &lt;2.0 Sugar, &lt;3.0 Trees</span>
                 </div>
 
                 {/* Heavy Metal: Lead (Pb) */}
                 <div className="space-y-1.5">
                   <div className="flex justify-between">
-                    <label className="text-[#1b1b1d] font-bold">Lead Heavy Metal (Pb)</label>
+                    <label className="text-foreground font-bold">Lead Heavy Metal (Pb)</label>
                     <span className={`font-mono font-bold ${labParams.heavyMetalsPpb.lead > 50 ? 'text-[#ba1a1a]' : 'text-emerald-800'}`}>
                       {labParams.heavyMetalsPpb.lead} ppb
                     </span>
@@ -849,13 +849,13 @@ export const WastewaterReusePage: React.FC = () => {
                     })}
                     className="w-full accent-[#131b2e] cursor-pointer"
                   />
-                  <span className="text-[10px] text-[#76777d] block">&lt;10 Food, &lt;50 CPCB, &gt;50 Toxic</span>
+                  <span className="text-[10px] text-muted-foreground block">&lt;10 Food, &lt;50 CPCB, &gt;50 Toxic</span>
                 </div>
 
                 {/* Total Suspended Solids (TSS) */}
                 <div className="space-y-1.5">
                   <div className="flex justify-between">
-                    <label className="text-[#1b1b1d] font-bold">TSS (mg/L)</label>
+                    <label className="text-foreground font-bold">TSS (mg/L)</label>
                     <span className="font-mono text-emerald-800 font-bold">{labParams.tss} mg/L</span>
                   </div>
                   <input
@@ -867,13 +867,13 @@ export const WastewaterReusePage: React.FC = () => {
                     onChange={(e) => setLabParams({ ...labParams, tss: parseFloat(e.target.value) })}
                     className="w-full accent-[#131b2e] cursor-pointer"
                   />
-                  <span className="text-[10px] text-[#76777d] block">&lt;10 Food, &lt;20 Sugar, &lt;40 Trees</span>
+                  <span className="text-[10px] text-muted-foreground block">&lt;10 Food, &lt;20 Sugar, &lt;40 Trees</span>
                 </div>
 
                 {/* Nitrogen Nutrient (N) */}
                 <div className="space-y-1.5">
                   <div className="flex justify-between">
-                    <label className="text-[#1b1b1d] font-bold">Nutrient Nitrogen (N)</label>
+                    <label className="text-foreground font-bold">Nutrient Nitrogen (N)</label>
                     <span className="font-mono text-emerald-800 font-bold">{labParams.nutrientsMgL.nitrogen} mg/L</span>
                   </div>
                   <input
@@ -888,18 +888,18 @@ export const WastewaterReusePage: React.FC = () => {
                     })}
                     className="w-full accent-[#131b2e] cursor-pointer"
                   />
-                  <span className="text-[10px] text-[#76777d] block">High N beneficial for Sugarcane & Trees</span>
+                  <span className="text-[10px] text-muted-foreground block">High N beneficial for Sugarcane & Trees</span>
                 </div>
               </div>
 
               {/* DYNAMIC WATER FLOW DESTINATION DECISION BANNER & SLUICE GATE MATRIX */}
-              <div className="p-5 rounded-2xl bg-white border border-emerald-300 space-y-4 shadow-xs">
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-[#76777d]/15 pb-3">
+              <div className="p-5 rounded-2xl bg-card border border-emerald-300 space-y-4 shadow-xs">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-border pb-3">
                   <div>
                     <span className="text-[10px] font-mono uppercase tracking-widest text-emerald-800 font-bold block">
                       Deterministic Flow Destination Decision
                     </span>
-                    <h4 className="text-lg font-bold text-[#1b1b1d] flex items-center gap-2 mt-0.5">
+                    <h4 className="text-lg font-bold text-foreground flex items-center gap-2 mt-0.5">
                       {liveRouting.primaryDestination === 'edible_agriculture' && <Apple className="text-green-600" size={22} />}
                       {liveRouting.primaryDestination === 'commercial_agriculture' && <Wheat className="text-amber-600" size={22} />}
                       {liveRouting.primaryDestination === 'big_trees_agroforestry' && <Trees className="text-teal-600" size={22} />}
@@ -912,7 +912,7 @@ export const WastewaterReusePage: React.FC = () => {
 
                   <div className="flex items-center gap-3">
                     <div className="text-right">
-                      <span className="text-[10px] uppercase text-[#76777d] font-bold block">Suitability Score</span>
+                      <span className="text-[10px] uppercase text-muted-foreground font-bold block">Suitability Score</span>
                       <span className="text-xl font-bold font-mono text-emerald-800">
                         {primaryDestInfo?.suitabilityScore || 0}/100
                       </span>
@@ -920,7 +920,7 @@ export const WastewaterReusePage: React.FC = () => {
 
                     <button
                       onClick={handleExecuteQualityCheck}
-                      className="flex items-center gap-2 bg-[#131b2e] hover:bg-[#1e2a47] text-white text-xs font-bold uppercase tracking-wider px-4 py-2.5 rounded-xl shadow-xs transition-all shrink-0"
+                      className="flex items-center gap-2 bg-primary hover:bg-primary/90 text-white text-xs font-bold uppercase tracking-wider px-4 py-2.5 rounded-xl shadow-xs transition-all shrink-0"
                     >
                       <ShieldCheck size={16} />
                       <span>Certify & Commit Flow</span>
@@ -928,7 +928,7 @@ export const WastewaterReusePage: React.FC = () => {
 
                     <button
                       onClick={() => setIsCertifyBoxMinimized(!isCertifyBoxMinimized)}
-                      className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-[#1b1b1d] transition-all flex items-center gap-1 text-xs font-semibold"
+                      className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-foreground transition-all flex items-center gap-1 text-xs font-semibold"
                       title={isCertifyBoxMinimized ? 'Expand flow details' : 'Minimize flow details'}
                     >
                       {isCertifyBoxMinimized ? (
@@ -950,12 +950,12 @@ export const WastewaterReusePage: React.FC = () => {
                 {!isCertifyBoxMinimized && (
                   <>
                     <div className="space-y-2">
-                      <div className="flex items-center justify-between text-xs font-bold text-[#1b1b1d]">
+                      <div className="flex items-center justify-between text-xs font-bold text-foreground">
                         <span className="flex items-center gap-1.5">
                           <Sliders size={14} className="text-[#131b2e]" />
                           <span>Automated Sluice Gate & Channel Distribution Splits</span>
                         </span>
-                        <span className="text-[#76777d] font-mono text-[11px]">
+                        <span className="text-muted-foreground font-mono text-[11px]">
                           Total Batch: {(selectedBatch?.intakeVolumeKLD || 3500).toLocaleString()} KL
                         </span>
                       </div>
@@ -964,10 +964,10 @@ export const WastewaterReusePage: React.FC = () => {
                         {liveRouting.flowSplits.map((split, idx) => (
                           <div
                             key={idx}
-                            className="p-3 bg-[#fcf8fa] rounded-xl border border-[#76777d]/15 space-y-2 text-xs overflow-hidden"
+                            className="p-3 bg-muted/30 dark:bg-slate-900/60 rounded-xl border border-border space-y-2 text-xs overflow-hidden"
                           >
                             <div className="flex items-center justify-between gap-2">
-                              <span className="font-bold text-[#1b1b1d] truncate min-w-0 flex-1" title={split.destinationName}>
+                              <span className="font-bold text-foreground truncate min-w-0 flex-1" title={split.destinationName}>
                                 {split.destinationName}
                               </span>
                               <span className="shrink-0 whitespace-nowrap px-2 py-0.5 rounded bg-emerald-100 text-emerald-900 border border-emerald-300 text-[10px] font-mono font-bold">
@@ -989,8 +989,8 @@ export const WastewaterReusePage: React.FC = () => {
                               />
                             </div>
 
-                            <div className="flex justify-between text-[11px] text-[#57657b] pt-0.5">
-                              <span>Volume: <strong className="text-[#1b1b1d] font-mono">{split.volumeKLD.toLocaleString()} KL</strong></span>
+                            <div className="flex justify-between text-[11px] text-muted-foreground pt-0.5">
+                              <span>Volume: <strong className="text-foreground font-mono">{split.volumeKLD.toLocaleString()} KL</strong></span>
                               <span className="capitalize font-mono text-emerald-800 font-bold">{split.distributionChannel.replace('_', ' ')}</span>
                             </div>
                           </div>
@@ -999,8 +999,8 @@ export const WastewaterReusePage: React.FC = () => {
                     </div>
 
                     {/* 6 Destination Comparative Suitability Grid */}
-                    <div className="space-y-2 pt-2 border-t border-[#76777d]/15">
-                      <span className="text-[11px] font-bold uppercase tracking-wider text-[#76777d] block">
+                    <div className="space-y-2 pt-2 border-t border-border">
+                      <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground block">
                         Comparative Destination Eligibility & Safety Criteria
                       </span>
 
@@ -1012,12 +1012,12 @@ export const WastewaterReusePage: React.FC = () => {
                               dest.isEligible
                                 ? dest.destination === liveRouting.primaryDestination
                                   ? 'bg-emerald-50 border-emerald-400 shadow-xs'
-                                  : 'bg-[#fcf8fa] border-[#76777d]/15'
+                                  : 'bg-muted/30 dark:bg-slate-900/60 border-border'
                                 : 'bg-red-50 border-red-200 opacity-90'
                             }`}
                           >
                             <div className="flex items-center justify-between gap-2">
-                              <div className="flex items-center gap-1.5 font-bold text-[#1b1b1d] min-w-0 flex-1">
+                              <div className="flex items-center gap-1.5 font-bold text-foreground min-w-0 flex-1">
                                 <span className="shrink-0">
                                   {dest.destination === 'edible_agriculture' && <Apple size={15} className="text-green-600" />}
                                   {dest.destination === 'commercial_agriculture' && <Wheat size={15} className="text-amber-600" />}
@@ -1060,9 +1060,9 @@ export const WastewaterReusePage: React.FC = () => {
                             </div>
 
                             {/* Species / Sites */}
-                            <div className="pt-1 border-t border-[#76777d]/10 text-[10px] text-[#76777d] flex justify-between">
+                            <div className="pt-1 border-t border-[#76777d]/10 text-[10px] text-muted-foreground flex justify-between">
                               <span className="truncate">Flora: {dest.suitableSpeciesOrUses.slice(0, 2).join(', ')}</span>
-                              <span className="font-bold text-[#1b1b1d] shrink-0">{dest.category}</span>
+                              <span className="font-bold text-foreground shrink-0">{dest.category}</span>
                             </div>
                           </div>
                         ))}
@@ -1073,8 +1073,8 @@ export const WastewaterReusePage: React.FC = () => {
               </div>
 
               {/* Verified Lab Certificates Table */}
-              <div className="space-y-2 pt-2 border-t border-[#76777d]/15">
-                <h4 className="text-xs font-bold uppercase tracking-wider text-[#1b1b1d] flex items-center gap-1.5">
+              <div className="space-y-2 pt-2 border-t border-border">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-foreground flex items-center gap-1.5">
                   <FileCheck size={15} className="text-emerald-700" />
                   <span>Verified Quality Lab Certificates ({qualitySamples.length})</span>
                 </h4>
@@ -1083,7 +1083,7 @@ export const WastewaterReusePage: React.FC = () => {
                   {qualitySamples.map((samp) => (
                     <div
                       key={samp.id}
-                      className="p-4 bg-[#fcf8fa] rounded-xl border border-[#76777d]/15 hover:border-slate-400 transition-all text-xs space-y-2.5"
+                      className="p-4 bg-muted/30 dark:bg-slate-900/60 rounded-xl border border-border hover:border-slate-400 transition-all text-xs space-y-2.5"
                     >
                       <div className="flex items-center justify-between">
                         <span className="font-mono font-bold text-[#131b2e]">{samp.batchNumber}</span>
@@ -1100,9 +1100,9 @@ export const WastewaterReusePage: React.FC = () => {
                         </span>
                       </div>
 
-                      <p className="text-[#57657b] text-[11px] line-clamp-2">{samp.restrictionNotes}</p>
+                      <p className="text-muted-foreground text-[11px] line-clamp-2">{samp.restrictionNotes}</p>
 
-                      <div className="flex items-center justify-between pt-1 border-t border-[#76777d]/10 text-[#76777d] text-[10px]">
+                      <div className="flex items-center justify-between pt-1 border-t border-[#76777d]/10 text-muted-foreground text-[10px]">
                         <span>WQI: {samp.waterQualityIndex}/100</span>
                         <button
                           onClick={() => setSelectedSampleForModal(samp)}
@@ -1125,11 +1125,11 @@ export const WastewaterReusePage: React.FC = () => {
           <div className="space-y-4">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
-                <h3 className="text-base font-bold text-[#1b1b1d] flex items-center gap-2">
+                <h3 className="text-base font-bold text-foreground flex items-center gap-2">
                   <ClipboardList size={20} className="text-purple-700" />
                   <span>Stage 5: Reuse Plan & Demand Allocation</span>
                 </h3>
-                <p className="text-xs text-[#57657b]">
+                <p className="text-xs text-muted-foreground">
                   Matches treated water inventory with registered farmer bookings.
                 </p>
               </div>
@@ -1138,7 +1138,7 @@ export const WastewaterReusePage: React.FC = () => {
                 <select
                   value={preferredDistMode}
                   onChange={(e) => setPreferredDistMode(e.target.value as DistributionMethod)}
-                  className="bg-[#f6f3f5] border border-[#76777d]/20 rounded-xl px-3 py-1.5 text-[#1b1b1d] text-xs font-semibold focus:outline-none focus:border-[#131b2e] capitalize"
+                  className="bg-muted/60 dark:bg-slate-900 border border-border rounded-xl px-3 py-1.5 text-foreground text-xs font-semibold focus:outline-none focus:border-primary capitalize"
                 >
                   <option value="gravity_canal">Gravity Canal (कालवा)</option>
                   <option value="underground_pipeline">Pipeline (पाइपलाइन)</option>
@@ -1147,7 +1147,7 @@ export const WastewaterReusePage: React.FC = () => {
 
                 <button
                   onClick={handleGeneratePlan}
-                  className="flex items-center gap-1.5 bg-[#131b2e] hover:bg-[#1e2a47] text-white text-xs font-bold uppercase tracking-wider px-3.5 py-2 rounded-xl shadow-xs transition-all"
+                  className="flex items-center gap-1.5 bg-primary hover:bg-primary/90 text-white text-xs font-bold uppercase tracking-wider px-3.5 py-2 rounded-xl shadow-xs transition-all"
                 >
                   <Cpu size={14} />
                   <span>Generate Plan</span>
@@ -1157,16 +1157,16 @@ export const WastewaterReusePage: React.FC = () => {
 
             {/* Active Reuse Plans List */}
             <div className="space-y-3">
-              <h4 className="text-xs font-bold uppercase tracking-wider text-[#76777d]">
+              <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
                 Generated Plans ({waterReusePlans.length})
               </h4>
 
               {waterReusePlans.map((plan) => (
-                <div key={plan.id} className="p-3.5 bg-[#fcf8fa] rounded-xl border border-[#76777d]/15 space-y-2.5 text-xs">
+                <div key={plan.id} className="p-3.5 bg-muted/30 dark:bg-slate-900/60 rounded-xl border border-border space-y-2.5 text-xs">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <span className="font-mono font-bold text-[#131b2e]">{plan.planCode}</span>
-                      <span className="text-[#76777d]">Batch {plan.batchNumber}</span>
+                      <span className="text-muted-foreground">Batch {plan.batchNumber}</span>
                     </div>
 
                     <span
@@ -1180,21 +1180,21 @@ export const WastewaterReusePage: React.FC = () => {
                     </span>
                   </div>
 
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 bg-white p-2.5 rounded-xl border border-[#76777d]/10 text-[11px]">
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 bg-card p-2.5 rounded-xl border border-[#76777d]/10 text-[11px]">
                     <div>
-                      <span className="text-[#76777d] block">Volume:</span>
-                      <strong className="text-[#1b1b1d] font-mono">{plan.totalVolumeAllocatedKLD.toLocaleString()} KL</strong>
+                      <span className="text-muted-foreground block">Volume:</span>
+                      <strong className="text-foreground font-mono">{plan.totalVolumeAllocatedKLD.toLocaleString()} KL</strong>
                     </div>
                     <div>
-                      <span className="text-[#76777d] block">Beneficiaries:</span>
+                      <span className="text-muted-foreground block">Beneficiaries:</span>
                       <strong className="text-emerald-800">{plan.totalFarmerBeneficiaries} Farmers</strong>
                     </div>
                     <div>
-                      <span className="text-[#76777d] block">Mode:</span>
-                      <strong className="capitalize text-[#1b1b1d]">{plan.distributionMethod.replace('_', ' ')}</strong>
+                      <span className="text-muted-foreground block">Mode:</span>
+                      <strong className="capitalize text-foreground">{plan.distributionMethod.replace('_', ' ')}</strong>
                     </div>
                     <div>
-                      <span className="text-[#76777d] block">Savings:</span>
+                      <span className="text-muted-foreground block">Savings:</span>
                       <strong className="text-emerald-800 font-mono">₹{plan.totalCommercialSavingsInr.toLocaleString()}</strong>
                     </div>
                   </div>
@@ -1229,18 +1229,18 @@ export const WastewaterReusePage: React.FC = () => {
           <div className="space-y-4">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
-                <h3 className="text-base font-bold text-[#1b1b1d] flex items-center gap-2">
+                <h3 className="text-base font-bold text-foreground flex items-center gap-2">
                   <Sprout size={20} className="text-emerald-700" />
                   <span>Stage 6: Agriculture & Farmland Delivery</span>
                 </h3>
-                <p className="text-xs text-[#57657b]">
+                <p className="text-xs text-muted-foreground">
                   Farmer quota fulfillments and fertilizer savings across Kopargaon.
                 </p>
               </div>
 
               <button
                 onClick={() => setShowBookingModal(true)}
-                className="flex items-center gap-1.5 bg-[#131b2e] hover:bg-[#1e2a47] text-white text-xs font-bold uppercase tracking-wider px-3.5 py-2 rounded-xl shadow-xs transition-all"
+                className="flex items-center gap-1.5 bg-primary hover:bg-primary/90 text-white text-xs font-bold uppercase tracking-wider px-3.5 py-2 rounded-xl shadow-xs transition-all"
               >
                 <PlusCircle size={14} />
                 <span>Register Quota</span>
@@ -1249,15 +1249,15 @@ export const WastewaterReusePage: React.FC = () => {
 
             {/* Farmer Bookings Queue */}
             <div className="space-y-3">
-              <h4 className="text-xs font-bold uppercase tracking-wider text-[#76777d]">
+              <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
                 Farmer Quota Requests ({farmerBookings.length})
               </h4>
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                 {farmerBookings.map((bk) => (
-                  <div key={bk.id} className="p-3.5 bg-[#fcf8fa] rounded-xl border border-[#76777d]/15 space-y-2 text-xs">
+                  <div key={bk.id} className="p-3.5 bg-muted/30 dark:bg-slate-900/60 rounded-xl border border-border space-y-2 text-xs">
                     <div className="flex items-center justify-between">
-                      <span className="font-bold text-[#1b1b1d]">{bk.farmerName}</span>
+                      <span className="font-bold text-foreground">{bk.farmerName}</span>
                       <span
                         className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded ${
                           bk.status === 'fulfilled'
@@ -1271,10 +1271,10 @@ export const WastewaterReusePage: React.FC = () => {
                       </span>
                     </div>
 
-                    <div className="space-y-1 text-[11px] text-[#57657b]">
+                    <div className="space-y-1 text-[11px] text-muted-foreground">
                       <div className="flex justify-between">
                         <span>Crop:</span>
-                        <strong className="capitalize text-[#1b1b1d]">
+                        <strong className="capitalize text-foreground">
                           {bk.cropType} ({bk.farmAcreage} Ac)
                         </strong>
                       </div>
@@ -1284,13 +1284,13 @@ export const WastewaterReusePage: React.FC = () => {
                       </div>
                       <div className="flex justify-between">
                         <span>Channel:</span>
-                        <strong className="capitalize text-[#1b1b1d]">
+                        <strong className="capitalize text-foreground">
                           {bk.preferredDistribution.replace('_', ' ')}
                         </strong>
                       </div>
                       <div className="flex justify-between">
                         <span>Village:</span>
-                        <span className="text-[#76777d] truncate max-w-[140px]">{bk.wardOrVillage}</span>
+                        <span className="text-muted-foreground truncate max-w-[140px]">{bk.wardOrVillage}</span>
                       </div>
                     </div>
                   </div>
@@ -1323,3 +1323,6 @@ export const WastewaterReusePage: React.FC = () => {
     </div>
   );
 };
+
+export default WastewaterReusePage;
+

@@ -14,8 +14,10 @@ import {
   Languages,
   Database,
   ChevronDown,
+  Zap,
 } from 'lucide-react';
 import { useCivic } from '../../context/CivicContext';
+import { useResilience } from '../../context/ResilienceContext';
 import { OperationalStatusModal } from '../modals/OperationalStatusModal';
 
 interface HeaderProps {
@@ -35,6 +37,8 @@ export const Header: React.FC<HeaderProps> = ({ sidebarOpen, setSidebarOpen }) =
     isSupabaseLive,
     logout,
   } = useCivic();
+
+  const { isBlackout, setModalOpen } = useResilience();
 
   const navigate = useNavigate();
 
@@ -114,6 +118,22 @@ export const Header: React.FC<HeaderProps> = ({ sidebarOpen, setSidebarOpen }) =
               </button>
             )}
           </form>
+
+          {/* The Blackout Hackathon Challenge Simulator Button */}
+          <button
+            type="button"
+            onClick={() => setModalOpen(true)}
+            title="Open The Blackout Disaster Recovery & Resilience Sentry"
+            className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-black transition-all border shadow-2xs cursor-pointer ${
+              isBlackout
+                ? 'bg-red-500/20 text-red-700 border-red-500/50 animate-pulse'
+                : 'bg-gradient-to-r from-amber-500/15 to-red-500/15 text-amber-900 border-amber-500/40 hover:bg-amber-500/25'
+            }`}
+          >
+            <Zap className="h-3.5 w-3.5 text-amber-600 fill-amber-600" />
+            <span className="hidden sm:inline">Blackout Challenge</span>
+            <span className="sm:hidden">Blackout</span>
+          </button>
 
           {/* Language Switcher */}
           <button

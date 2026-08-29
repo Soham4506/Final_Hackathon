@@ -1,4 +1,4 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
 import { useCivic } from '../../context/CivicContext';
 import { AlertTriangle, FileText, CheckCircle2, ShieldAlert } from 'lucide-react';
 import { RecoveryReportModal } from './RecoveryReportModal';

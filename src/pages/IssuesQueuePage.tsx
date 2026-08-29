@@ -93,35 +93,35 @@ export const IssuesQueuePage: React.FC = () => {
   return (
     <div className="space-y-5">
       {/* Top Header */}
-      <div className="bg-white border border-[#76777d]/20 rounded-2xl p-5 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="bg-card border border-border rounded-2xl p-5 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2 mb-1">
             <span className="bg-slate-100 text-[#131b2e] border border-slate-300 text-[10px] font-mono uppercase font-bold px-2 py-0.5 rounded">
               Triage & Dispatch Stream
             </span>
-            <span className="text-xs text-[#76777d]">Showing {filteredIssues.length} of {issues.length} tickets</span>
+            <span className="text-xs text-muted-foreground">Showing {filteredIssues.length} of {issues.length} tickets</span>
           </div>
-          <h1 className="text-xl sm:text-2xl font-bold text-[#1b1b1d] tracking-tight">
+          <h1 className="text-xl sm:text-2xl font-bold text-foreground tracking-tight">
             Civic Grievance Triage Queue
           </h1>
-          <p className="text-xs sm:text-sm text-[#57657b] mt-1">
+          <p className="text-xs sm:text-sm text-muted-foreground mt-1">
             Inspect incoming complaints, audit mathematical scoring drivers, and trigger shift dispatches.
           </p>
         </div>
       </div>
 
       {/* Filter Control Bar */}
-      <div className="bg-white border border-[#76777d]/20 rounded-2xl p-4 shadow-xs space-y-3">
+      <div className="bg-card border border-border rounded-2xl p-4 shadow-xs space-y-3">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 text-xs">
           {/* Search */}
           <div className="relative lg:col-span-2">
-            <Search size={15} className="absolute left-3 top-2.5 text-[#76777d]" />
+            <Search size={15} className="absolute left-3 top-2.5 text-muted-foreground" />
             <input
               type="text"
               placeholder="Search Ticket, Title, Address, Resident..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-[#f6f3f5] border border-[#76777d]/20 rounded-xl pl-9 pr-3 py-2 text-xs text-[#1b1b1d] placeholder:text-[#76777d]/70 focus:outline-none focus:border-[#131b2e] font-medium"
+              className="w-full bg-muted/60 dark:bg-slate-900 border border-border rounded-xl pl-9 pr-3 py-2 text-xs text-foreground placeholder:text-muted-foreground/70 focus:outline-none focus:border-primary font-medium"
             />
           </div>
 
@@ -130,7 +130,7 @@ export const IssuesQueuePage: React.FC = () => {
             <select
               value={selectedDept}
               onChange={(e) => setSelectedDept(e.target.value)}
-              className="w-full bg-[#f6f3f5] border border-[#76777d]/20 rounded-xl px-3 py-2 text-[#1b1b1d] focus:outline-none focus:border-[#131b2e] text-xs font-semibold"
+              className="w-full bg-muted/60 dark:bg-slate-900 border border-border rounded-xl px-3 py-2 text-foreground focus:outline-none focus:border-primary text-xs font-semibold"
             >
               <option value="all">All Departments</option>
               {departments.map((d) => (
@@ -146,7 +146,7 @@ export const IssuesQueuePage: React.FC = () => {
             <select
               value={selectedZone}
               onChange={(e) => setSelectedZone(e.target.value)}
-              className="w-full bg-[#f6f3f5] border border-[#76777d]/20 rounded-xl px-3 py-2 text-[#1b1b1d] focus:outline-none focus:border-[#131b2e] text-xs font-semibold"
+              className="w-full bg-muted/60 dark:bg-slate-900 border border-border rounded-xl px-3 py-2 text-foreground focus:outline-none focus:border-primary text-xs font-semibold"
             >
               <option value="all">All Wards</option>
               {zones.map((z) => (
@@ -162,7 +162,7 @@ export const IssuesQueuePage: React.FC = () => {
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value as any)}
-              className="w-full bg-[#f6f3f5] border border-[#76777d]/20 rounded-xl px-3 py-2 text-[#1b1b1d] focus:outline-none focus:border-[#131b2e] text-xs font-semibold"
+              className="w-full bg-muted/60 dark:bg-slate-900 border border-border rounded-xl px-3 py-2 text-foreground focus:outline-none focus:border-primary text-xs font-semibold"
             >
               <option value="priority">Rank: Priority Score</option>
               <option value="date">Rank: Most Recent</option>
@@ -177,7 +177,7 @@ export const IssuesQueuePage: React.FC = () => {
         {/* Left 2 Cols: Issue List */}
         <div className="lg:col-span-2 space-y-3">
           {filteredIssues.length === 0 ? (
-            <div className="bg-white border border-[#76777d]/20 rounded-2xl p-12 text-center text-[#76777d] text-xs space-y-1">
+            <div className="bg-card border border-border rounded-2xl p-12 text-center text-muted-foreground text-xs space-y-1">
               <p>No civic issues match the selected criteria.</p>
               <p className="text-[11px] opacity-75">Try clearing your filters or search query.</p>
             </div>
@@ -189,10 +189,10 @@ export const IssuesQueuePage: React.FC = () => {
                 <div
                   key={issue.id}
                   onClick={() => setActiveIssueId(issue.id)}
-                  className={`bg-white border rounded-2xl p-4 cursor-pointer transition-all shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4 ${
+                  className={`bg-card border rounded-2xl p-4 cursor-pointer transition-all shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4 ${
                     isSelected
                       ? 'border-[#131b2e] ring-2 ring-[#131b2e]/10'
-                      : 'border-[#76777d]/20 hover:border-slate-400'
+                      : 'border-border hover:border-slate-400'
                   }`}
                 >
                   <div className="space-y-1.5 min-w-0">
@@ -200,21 +200,21 @@ export const IssuesQueuePage: React.FC = () => {
                       <span className="font-mono font-bold text-[#131b2e]">
                         #{idx + 1} • {issue.ticketNumber}
                       </span>
-                      <span className="text-[#76777d]">•</span>
-                      <span className="text-[11px] text-[#76777d] truncate">
+                      <span className="text-muted-foreground">•</span>
+                      <span className="text-[11px] text-muted-foreground truncate">
                         {issue.locationAddress}
                       </span>
                     </div>
 
-                    <h3 className="font-bold text-sm text-[#1b1b1d] truncate">
+                    <h3 className="font-bold text-sm text-foreground truncate">
                       {issue.title}
                     </h3>
 
-                    <p className="text-xs text-[#57657b] line-clamp-1">
+                    <p className="text-xs text-muted-foreground line-clamp-1">
                       {issue.rawDescription}
                     </p>
 
-                    <div className="flex flex-wrap items-center gap-2 text-[11px] text-[#76777d] font-mono pt-1">
+                    <div className="flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground font-mono pt-1">
                       <span>Reported: {new Date(issue.reportedAt).toLocaleDateString()}</span>
                       <span>•</span>
                       <span>SLA: {new Date(issue.slaDueAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
@@ -246,15 +246,15 @@ export const IssuesQueuePage: React.FC = () => {
         </div>
 
         {/* Right 1 Col: Selected Issue Telemetry & Action Drawer */}
-        <div className="bg-white border border-[#76777d]/20 rounded-2xl p-5 shadow-xs space-y-4 lg:sticky lg:top-24 self-start">
+        <div className="bg-card border border-border rounded-2xl p-5 shadow-xs space-y-4 lg:sticky lg:top-24 self-start">
           {activeIssue ? (
             <div className="space-y-4 text-xs">
-              <div className="border-b border-[#76777d]/15 pb-3 flex justify-between items-start">
+              <div className="border-b border-border pb-3 flex justify-between items-start">
                 <div>
                   <span className="font-mono font-bold text-xs text-[#131b2e]">
                     {activeIssue.ticketNumber}
                   </span>
-                  <h3 className="font-bold text-sm text-[#1b1b1d] mt-0.5">
+                  <h3 className="font-bold text-sm text-foreground mt-0.5">
                     {activeIssue.title}
                   </h3>
                 </div>
@@ -264,7 +264,7 @@ export const IssuesQueuePage: React.FC = () => {
               {/* Photo if present */}
               {activeIssue.photoUrls && activeIssue.photoUrls.length > 0 && (
                 <div>
-                  <span className="text-[10px] font-bold text-[#76777d] uppercase tracking-wider block mb-1">
+                  <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block mb-1">
                     Photo Evidence
                   </span>
                   <img
@@ -276,24 +276,24 @@ export const IssuesQueuePage: React.FC = () => {
               )}
 
               {/* Priority Score Breakdown Card */}
-              <div className="p-3 bg-[#fcf8fa] border border-[#76777d]/15 rounded-xl space-y-2">
+              <div className="p-3 bg-muted/30 dark:bg-slate-900/60 border border-border rounded-xl space-y-2">
                 <div className="flex justify-between items-center">
-                  <span className="font-bold text-[#1b1b1d]">Deterministic Score:</span>
+                  <span className="font-bold text-foreground">Deterministic Score:</span>
                   <PriorityBadge score={activeIssue.priorityScore?.finalScore} size="sm" />
                 </div>
-                <p className="text-[11px] text-[#57657b] leading-relaxed">
+                <p className="text-[11px] text-muted-foreground leading-relaxed">
                   {activeIssue.priorityScore?.explanationSummary || 'Mathematical multi-factor ranking evaluated.'}
                 </p>
                 <div className="flex gap-2 pt-1">
                   <button
                     onClick={() => setExplainIssue(activeIssue)}
-                    className="flex-1 py-1.5 bg-[#131b2e] hover:bg-[#1e2a47] text-white font-bold rounded-lg text-[10px] uppercase tracking-wider transition-colors"
+                    className="flex-1 py-1.5 bg-primary hover:bg-primary/90 text-white font-bold rounded-lg text-[10px] uppercase tracking-wider transition-colors"
                   >
                     Audit Formula
                   </button>
                   <button
                     onClick={() => setOverrideIssue(activeIssue)}
-                    className="flex-1 py-1.5 bg-white border border-[#76777d]/30 hover:bg-slate-50 text-[#131b2e] font-bold rounded-lg text-[10px] uppercase tracking-wider transition-colors"
+                    className="flex-1 py-1.5 bg-card border border-border hover:bg-slate-50 text-[#131b2e] font-bold rounded-lg text-[10px] uppercase tracking-wider transition-colors"
                   >
                     Override
                   </button>
@@ -303,7 +303,7 @@ export const IssuesQueuePage: React.FC = () => {
               {/* Field Verification Loop Card (Compensating action for non-smartphone/missing evidence) */}
               <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
                 <div className="flex justify-between items-center text-xs">
-                  <span className="font-bold text-[#1b1b1d]">Field Verification:</span>
+                  <span className="font-bold text-foreground">Field Verification:</span>
                   {activeIssue.fieldVerificationStatus === 'verified' ? (
                     <span className="text-[10px] bg-emerald-100 text-emerald-800 border border-emerald-300 font-bold px-2 py-0.5 rounded">
                       ✓ Confirmed On-Site
@@ -325,7 +325,7 @@ export const IssuesQueuePage: React.FC = () => {
                   </p>
                 ) : (
                   <div className="space-y-1.5">
-                    <p className="text-[11px] text-[#57657b] leading-tight">
+                    <p className="text-[11px] text-muted-foreground leading-tight">
                       {activeIssue.verificationMethod === 'field_verification_requested'
                         ? 'Citizen reported without smartphone photos and requested physical verification.'
                         : 'Missing photo/GPS evidence. Confirming on-site restores full confidence score.'}
@@ -342,8 +342,8 @@ export const IssuesQueuePage: React.FC = () => {
               </div>
 
               {/* Status Update Quick Buttons */}
-              <div className="space-y-1.5 pt-2 border-t border-[#76777d]/15">
-                <span className="text-[10px] font-bold text-[#76777d] uppercase tracking-wider block">
+              <div className="space-y-1.5 pt-2 border-t border-border">
+                <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block">
                   Update Municipal Status
                 </span>
                 <div className="grid grid-cols-2 gap-1.5">
@@ -369,7 +369,7 @@ export const IssuesQueuePage: React.FC = () => {
               </div>
             </div>
           ) : (
-            <div className="p-8 text-center text-[#76777d] text-xs">
+            <div className="p-8 text-center text-muted-foreground text-xs">
               Select a ticket from the queue to inspect details.
             </div>
           )}
@@ -393,3 +393,6 @@ export const IssuesQueuePage: React.FC = () => {
     </div>
   );
 };
+
+export default IssuesQueuePage;
+

@@ -366,30 +366,30 @@ export const CitizenPortalPage: React.FC = () => {
   return (
     <div className="space-y-5">
       {/* Header Banner */}
-      <div className="bg-white border border-[#76777d]/20 rounded-2xl p-5 sm:p-6 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="bg-card border border-border rounded-2xl p-5 sm:p-6 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2 mb-1">
             <span className="bg-emerald-50 text-emerald-800 border border-emerald-200 text-[10px] font-mono uppercase font-bold px-2 py-0.5 rounded flex items-center gap-1">
               <Phone size={12} /> Real-Time Cellular SMS Alerts & AI Vision
             </span>
-            <span className="text-xs text-[#76777d]">KoparNiti • Kopargaon Citizen Service Portal (कोपरनीती)</span>
+            <span className="text-xs text-muted-foreground">KoparNiti • Kopargaon Citizen Service Portal (कोपरनीती)</span>
           </div>
-          <h1 className="text-xl sm:text-2xl font-bold text-[#1b1b1d] tracking-tight">
+          <h1 className="text-xl sm:text-2xl font-bold text-foreground tracking-tight">
             Citizen Grievance & Tracking Portal
           </h1>
-          <p className="text-xs sm:text-sm text-[#57657b] mt-1">
+          <p className="text-xs sm:text-sm text-muted-foreground mt-1">
             Capture live photos or upload incident evidence with automatic GPS geotagging, SDDS parameter review, and instant real-time SMS alerts dispatched directly to your mobile phone.
           </p>
         </div>
 
         {/* Tab Switcher */}
-        <div className="bg-[#f0edef] p-1 rounded-xl border border-[#76777d]/15 flex items-center text-xs shrink-0">
+        <div className="bg-[#f0edef] p-1 rounded-xl border border-border flex items-center text-xs shrink-0">
           <button
             onClick={() => setSearchParams({ tab: 'submit' })}
             className={`px-4 py-2 rounded-lg font-bold uppercase text-[11px] tracking-wider transition-all flex items-center gap-1.5 ${
               activeTab === 'submit'
-                ? 'bg-[#131b2e] text-white shadow-xs'
-                : 'text-[#57657b] hover:text-[#1b1b1d]'
+                ? 'bg-primary text-white shadow-xs'
+                : 'text-muted-foreground hover:text-foreground'
             }`}
           >
             <PlusCircle size={14} />
@@ -399,8 +399,8 @@ export const CitizenPortalPage: React.FC = () => {
             onClick={() => setSearchParams({ tab: 'track' })}
             className={`px-4 py-2 rounded-lg font-bold uppercase text-[11px] tracking-wider transition-all flex items-center gap-1.5 ${
               activeTab === 'track'
-                ? 'bg-[#131b2e] text-white shadow-xs'
-                : 'text-[#57657b] hover:text-[#1b1b1d]'
+                ? 'bg-primary text-white shadow-xs'
+                : 'text-muted-foreground hover:text-foreground'
             }`}
           >
             <Search size={14} />
@@ -413,9 +413,9 @@ export const CitizenPortalPage: React.FC = () => {
       {activeTab === 'submit' && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
           {/* Main Form (2 Cols) */}
-          <div className="lg:col-span-2 bg-white border border-[#76777d]/20 rounded-2xl p-5 sm:p-6 shadow-xs space-y-4">
-            <div className="flex items-center justify-between border-b border-[#76777d]/15 pb-3">
-              <h2 className="font-bold text-[#1b1b1d] text-sm uppercase tracking-wider flex items-center gap-2">
+          <div className="lg:col-span-2 bg-card border border-border rounded-2xl p-5 sm:p-6 shadow-xs space-y-4">
+            <div className="flex items-center justify-between border-b border-border pb-3">
+              <h2 className="font-bold text-foreground text-sm uppercase tracking-wider flex items-center gap-2">
                 <PlusCircle size={16} className="text-[#131b2e]" />
                 <span>{t.reportIssue}</span>
               </h2>
@@ -427,7 +427,7 @@ export const CitizenPortalPage: React.FC = () => {
                 className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 border transition-all ${
                   isRecording
                     ? 'bg-red-100 text-red-800 border-red-300 animate-pulse'
-                    : 'bg-[#f6f3f5] hover:bg-slate-100 text-[#131b2e] border-[#76777d]/20'
+                    : 'bg-muted/60 dark:bg-slate-900 hover:bg-slate-100 text-[#131b2e] border-border'
                 }`}
               >
                 {isRecording ? <MicOff size={14} className="text-red-600" /> : <Mic size={14} className="text-[#131b2e]" />}
@@ -462,19 +462,19 @@ export const CitizenPortalPage: React.FC = () => {
 
             <form onSubmit={handleSubmit} className="space-y-4 text-xs">
               {/* Authenticated Citizen Account Badge (Directly Uses Logged-In User Details) */}
-              <div className="bg-[#fcf8fa] p-3.5 rounded-2xl border border-[#76777d]/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+              <div className="bg-muted/30 dark:bg-slate-900/60 p-3.5 rounded-2xl border border-border flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-[#131b2e] text-white flex items-center justify-center font-bold text-sm shrink-0 shadow-xs">
+                  <div className="w-10 h-10 rounded-xl bg-primary text-white flex items-center justify-center font-bold text-sm shrink-0 shadow-xs">
                     {currentUser.fullName ? currentUser.fullName.charAt(0).toUpperCase() : 'U'}
                   </div>
                   <div>
-                    <div className="font-bold text-[#1b1b1d] flex items-center gap-2">
+                    <div className="font-bold text-foreground flex items-center gap-2">
                       <span>{currentUser.fullName || 'Citizen User'}</span>
                       <span className="text-[10px] bg-emerald-100 text-emerald-800 font-mono font-bold px-1.5 py-0.5 rounded flex items-center gap-1">
                         <CheckCircle2 size={11} /> Verified Citizen Account
                       </span>
                     </div>
-                    <div className="text-[11px] text-[#57657b] flex items-center gap-1 mt-0.5 font-mono">
+                    <div className="text-[11px] text-muted-foreground flex items-center gap-1 mt-0.5 font-mono">
                       <Phone size={12} className="text-blue-700" />
                       <span>Real-time SMS Alerts to: <strong>{currentUser.phone ? currentUser.phone : '(No Phone Number in Profile)'}</strong></span>
                     </div>
@@ -488,7 +488,7 @@ export const CitizenPortalPage: React.FC = () => {
               {/* Photo Upload & Geotag Area */}
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <label className="text-[#1b1b1d] font-bold flex items-center gap-1.5">
+                  <label className="text-foreground font-bold flex items-center gap-1.5">
                     <Camera size={14} className="text-[#131b2e]" />
                     <span>Attach Site Photo (Live Camera or Gallery)</span>
                   </label>
@@ -527,16 +527,16 @@ export const CitizenPortalPage: React.FC = () => {
                     {/* OPTION 1: CAPTURE PHOTO NOW (CAMERA) */}
                     <div
                       onClick={() => setIsCameraModalOpen(true)}
-                      className="border-2 border-dashed border-[#131b2e]/30 hover:border-[#131b2e] bg-[#fcf8fa] hover:bg-blue-50/50 p-5 rounded-2xl text-center cursor-pointer transition-all flex flex-col items-center justify-center space-y-2 group shadow-xs"
+                      className="border-2 border-dashed border-[#131b2e]/30 hover:border-[#131b2e] bg-muted/30 dark:bg-slate-900/60 hover:bg-blue-50/50 p-5 rounded-2xl text-center cursor-pointer transition-all flex flex-col items-center justify-center space-y-2 group shadow-xs"
                     >
-                      <div className="w-11 h-11 rounded-2xl bg-[#131b2e] text-white flex items-center justify-center group-hover:scale-105 transition-transform shadow-xs">
+                      <div className="w-11 h-11 rounded-2xl bg-primary text-white flex items-center justify-center group-hover:scale-105 transition-transform shadow-xs">
                         <Camera size={22} />
                       </div>
                       <div>
-                        <div className="text-xs font-bold text-[#1b1b1d]">
+                        <div className="text-xs font-bold text-foreground">
                           Capture Photo Now (Live Camera)
                         </div>
-                        <p className="text-[10px] text-[#76777d] mt-0.5">
+                        <p className="text-[10px] text-muted-foreground mt-0.5">
                           Opens live viewfinder with instant GPS geotagging & vision scan.
                         </p>
                       </div>
@@ -548,26 +548,26 @@ export const CitizenPortalPage: React.FC = () => {
                     {/* OPTION 2: CHOOSE FROM GALLERY / FILES */}
                     <div
                       onClick={() => fileInputRef.current?.click()}
-                      className="border-2 border-dashed border-[#76777d]/30 hover:border-[#131b2e] bg-[#fcf8fa] hover:bg-slate-50 p-5 rounded-2xl text-center cursor-pointer transition-all flex flex-col items-center justify-center space-y-2 group"
+                      className="border-2 border-dashed border-border hover:border-[#131b2e] bg-muted/30 dark:bg-slate-900/60 hover:bg-slate-50 p-5 rounded-2xl text-center cursor-pointer transition-all flex flex-col items-center justify-center space-y-2 group"
                     >
                       <div className="w-11 h-11 rounded-2xl bg-slate-100 border border-slate-200 text-[#131b2e] flex items-center justify-center group-hover:scale-105 transition-transform">
                         <ImageIcon size={22} />
                       </div>
                       <div>
-                        <div className="text-xs font-bold text-[#1b1b1d]">
+                        <div className="text-xs font-bold text-foreground">
                           Choose from Gallery / Files
                         </div>
-                        <p className="text-[10px] text-[#76777d] mt-0.5">
+                        <p className="text-[10px] text-muted-foreground mt-0.5">
                           Auto-extracts photo metadata location or uses your upload place.
                         </p>
                       </div>
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-[#57657b] bg-slate-100 border border-slate-200 px-2.5 py-1 rounded-lg">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground bg-slate-100 border border-slate-200 px-2.5 py-1 rounded-lg">
                         🖼️ Browse Files
                       </span>
                     </div>
                   </div>
                 ) : (
-                  <div className="bg-[#fcf8fa] border border-[#76777d]/20 rounded-2xl p-3.5 space-y-3">
+                  <div className="bg-muted/30 dark:bg-slate-900/60 border border-border rounded-2xl p-3.5 space-y-3">
                     <div className="flex items-center justify-between gap-4">
                       <div className="flex items-center gap-3">
                         <img
@@ -576,7 +576,7 @@ export const CitizenPortalPage: React.FC = () => {
                           className="w-16 h-16 object-cover rounded-xl border border-slate-300 shadow-xs"
                         />
                         <div>
-                          <div className="font-bold text-[#1b1b1d] truncate max-w-[220px] text-xs">
+                          <div className="font-bold text-foreground truncate max-w-[220px] text-xs">
                             {photoFileName || 'Attached Site Photo'}
                           </div>
                           <div className="text-[10px] text-emerald-700 flex items-center gap-1 mt-0.5 font-bold">
@@ -588,7 +588,7 @@ export const CitizenPortalPage: React.FC = () => {
                         <button
                           type="button"
                           onClick={() => setIsCameraModalOpen(true)}
-                          className="px-3 py-1.5 rounded-lg bg-white hover:bg-slate-100 text-[#131b2e] font-bold text-[11px] border border-slate-200 flex items-center gap-1 transition-colors"
+                          className="px-3 py-1.5 rounded-lg bg-card hover:bg-slate-100 text-[#131b2e] font-bold text-[11px] border border-slate-200 flex items-center gap-1 transition-colors"
                         >
                           <Camera size={13} />
                           <span>Retake</span>
@@ -596,7 +596,7 @@ export const CitizenPortalPage: React.FC = () => {
                         <button
                           type="button"
                           onClick={removePhoto}
-                          className="p-1.5 rounded-lg bg-white hover:bg-red-50 text-slate-500 hover:text-red-700 border border-slate-200 transition-colors"
+                          className="p-1.5 rounded-lg bg-card hover:bg-red-50 text-slate-500 hover:text-red-700 border border-slate-200 transition-colors"
                           title="Remove Photo"
                         >
                           <X size={16} />
@@ -644,9 +644,9 @@ export const CitizenPortalPage: React.FC = () => {
                         </div>
 
                         {/* Coordinates & Accuracy */}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-[#1b1b1d]">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-foreground">
                           <div className="flex items-center gap-1">
-                            <Globe size={12} className="text-[#57657b]" />
+                            <Globe size={12} className="text-muted-foreground" />
                             <span>
                               Coordinates:{' '}
                               <strong className="font-mono">
@@ -657,7 +657,7 @@ export const CitizenPortalPage: React.FC = () => {
 
                           {geoCoordinates.closestWardName && (
                             <div className="flex items-center gap-1">
-                              <Compass size={12} className="text-[#57657b]" />
+                              <Compass size={12} className="text-muted-foreground" />
                               <span>
                                 Matched Ward: <strong>{geoCoordinates.closestWardName}</strong>
                               </span>
@@ -674,7 +674,7 @@ export const CitizenPortalPage: React.FC = () => {
                         )}
 
                         {geoCoordinates.isFallbackUploadLocation && (
-                          <div className="text-[11px] text-blue-900 flex items-start gap-1.5 bg-white/70 p-2 rounded-lg border border-blue-200/60 leading-relaxed">
+                          <div className="text-[11px] text-blue-900 flex items-start gap-1.5 bg-card/70 p-2 rounded-lg border border-blue-200/60 leading-relaxed">
                             <Info size={13} className="text-blue-700 shrink-0 mt-0.5" />
                             <span>
                               <strong>Upload Location Fallback:</strong> This image had no embedded GPS metadata (e.g. from messaging apps or screenshots). The system has automatically geotagged it to the exact place from where you are uploading right now.
@@ -683,7 +683,7 @@ export const CitizenPortalPage: React.FC = () => {
                         )}
 
                         {/* Interactive Mini-Map Preview Pin */}
-                        <div className="h-28 w-full rounded-xl overflow-hidden border border-[#76777d]/20 relative z-0 shadow-xs">
+                        <div className="h-28 w-full rounded-xl overflow-hidden border border-border relative z-0 shadow-xs">
                           <MapContainer
                             center={[geoCoordinates.latitude, geoCoordinates.longitude]}
                             zoom={15}
@@ -728,7 +728,7 @@ export const CitizenPortalPage: React.FC = () => {
 
               {/* Title */}
               <div>
-                <label className="block text-[#1b1b1d] font-bold mb-1">
+                <label className="block text-foreground font-bold mb-1">
                   Issue Summary / Title <span className="text-red-600">*</span>
                 </label>
                 <input
@@ -737,13 +737,13 @@ export const CitizenPortalPage: React.FC = () => {
                   placeholder="e.g. Deep pothole cave-in near Civil Hospital on Station Road"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  className="w-full bg-[#f6f3f5] border border-[#76777d]/20 rounded-xl px-3 py-2 text-[#1b1b1d] placeholder:text-[#76777d]/70 focus:outline-none focus:border-[#131b2e] font-medium"
+                  className="w-full bg-muted/60 dark:bg-slate-900 border border-border rounded-xl px-3 py-2 text-foreground placeholder:text-muted-foreground/70 focus:outline-none focus:border-primary font-medium"
                 />
               </div>
 
               {/* Description */}
               <div>
-                <label className="block text-[#1b1b1d] font-bold mb-1">
+                <label className="block text-foreground font-bold mb-1">
                   Detailed Description <span className="text-red-600">*</span>
                 </label>
                 <textarea
@@ -752,20 +752,20 @@ export const CitizenPortalPage: React.FC = () => {
                   placeholder="Describe the problem, nearby landmarks (school, hospital), and risk to residents..."
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  className="w-full bg-[#f6f3f5] border border-[#76777d]/20 rounded-xl p-3 text-[#1b1b1d] placeholder:text-[#76777d]/70 focus:outline-none focus:border-[#131b2e] font-medium leading-relaxed"
+                  className="w-full bg-muted/60 dark:bg-slate-900 border border-border rounded-xl p-3 text-foreground placeholder:text-muted-foreground/70 focus:outline-none focus:border-primary font-medium leading-relaxed"
                 />
               </div>
 
               {/* Ward & Address Grid */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-[#1b1b1d] font-bold mb-1">
+                  <label className="block text-foreground font-bold mb-1">
                     Kopargaon Ward / Zone <span className="text-red-600">*</span>
                   </label>
                   <select
                     value={selectedZoneId}
                     onChange={(e) => setSelectedZoneId(e.target.value)}
-                    className="w-full bg-[#f6f3f5] border border-[#76777d]/20 rounded-xl px-3 py-2 text-[#1b1b1d] focus:outline-none focus:border-[#131b2e] font-semibold"
+                    className="w-full bg-muted/60 dark:bg-slate-900 border border-border rounded-xl px-3 py-2 text-foreground focus:outline-none focus:border-primary font-semibold"
                   >
                     {zones.map((z) => (
                       <option key={z.id} value={z.id}>
@@ -776,7 +776,7 @@ export const CitizenPortalPage: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="block text-[#1b1b1d] font-bold mb-1">
+                  <label className="block text-foreground font-bold mb-1">
                     Street / Landmark Address <span className="text-red-600">*</span>
                   </label>
                   <input
@@ -785,17 +785,17 @@ export const CitizenPortalPage: React.FC = () => {
                     placeholder="e.g. Lane 3, Behind Kopargaon Civil Hospital"
                     value={address}
                     onChange={(e) => setAddress(e.target.value)}
-                    className="w-full bg-[#f6f3f5] border border-[#76777d]/20 rounded-xl px-3 py-2 text-[#1b1b1d] placeholder:text-[#76777d]/70 focus:outline-none focus:border-[#131b2e] font-medium"
+                    className="w-full bg-muted/60 dark:bg-slate-900 border border-border rounded-xl px-3 py-2 text-foreground placeholder:text-muted-foreground/70 focus:outline-none focus:border-primary font-medium"
                   />
                 </div>
               </div>
 
               {/* SDDS Interactive Review & Correction Card */}
-              <div className="bg-[#fcf8fa] border border-blue-200 rounded-2xl p-5 space-y-4">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[#76777d]/15 pb-3">
+              <div className="bg-muted/30 dark:bg-slate-900/60 border border-blue-200 rounded-2xl p-5 space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-border pb-3">
                   <div className="flex items-center gap-2">
                     <Sliders size={16} className="text-[#131b2e]" />
-                    <span className="font-bold text-[#1b1b1d] text-xs uppercase tracking-wider">
+                    <span className="font-bold text-foreground text-xs uppercase tracking-wider">
                       Municipal Parameter Review & Manual Correction (SDDS)
                     </span>
                   </div>
@@ -807,7 +807,7 @@ export const CitizenPortalPage: React.FC = () => {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {/* Department */}
                   <div>
-                    <label className="block text-[#1b1b1d] font-bold mb-1 flex items-center justify-between">
+                    <label className="block text-foreground font-bold mb-1 flex items-center justify-between">
                       <span>Target Department</span>
                       {isDeptOverridden ? (
                         <span className="text-[10px] text-amber-700 font-mono font-bold">(User Adjusted)</span>
@@ -823,7 +823,7 @@ export const CitizenPortalPage: React.FC = () => {
                         const firstCat = categories.find((c) => c.departmentId === e.target.value);
                         if (firstCat) setSelectedCategoryId(firstCat.id);
                       }}
-                      className="w-full bg-white border border-[#76777d]/20 rounded-xl px-3 py-2 text-[#1b1b1d] font-bold text-xs focus:outline-none focus:border-[#131b2e]"
+                      className="w-full bg-card border border-border rounded-xl px-3 py-2 text-foreground font-bold text-xs focus:outline-none focus:border-primary"
                     >
                       {departments.map((d) => (
                         <option key={d.id} value={d.id}>
@@ -835,7 +835,7 @@ export const CitizenPortalPage: React.FC = () => {
 
                   {/* Category */}
                   <div>
-                    <label className="block text-[#1b1b1d] font-bold mb-1 flex items-center justify-between">
+                    <label className="block text-foreground font-bold mb-1 flex items-center justify-between">
                       <span>Hazard Category</span>
                       {isCategoryOverridden ? (
                         <span className="text-[10px] text-amber-700 font-mono font-bold">(User Adjusted)</span>
@@ -849,7 +849,7 @@ export const CitizenPortalPage: React.FC = () => {
                         setSelectedCategoryId(e.target.value);
                         setIsCategoryOverridden(true);
                       }}
-                      className="w-full bg-white border border-[#76777d]/20 rounded-xl px-3 py-2 text-[#1b1b1d] font-bold text-xs focus:outline-none focus:border-[#131b2e]"
+                      className="w-full bg-card border border-border rounded-xl px-3 py-2 text-foreground font-bold text-xs focus:outline-none focus:border-primary"
                     >
                       {filteredCategories.map((c) => (
                         <option key={c.id} value={c.id}>
@@ -861,7 +861,7 @@ export const CitizenPortalPage: React.FC = () => {
 
                   {/* Severity */}
                   <div>
-                    <label className="block text-[#1b1b1d] font-bold mb-1.5 flex items-center justify-between">
+                    <label className="block text-foreground font-bold mb-1.5 flex items-center justify-between">
                       <span>Severity / Urgency Level</span>
                       {isUrgencyOverridden ? (
                         <span className="text-[10px] text-amber-700 font-mono font-bold">(User Adjusted)</span>
@@ -887,7 +887,7 @@ export const CitizenPortalPage: React.FC = () => {
                                 : lvl === 'medium'
                                 ? 'bg-blue-700 text-white shadow-xs'
                                 : 'bg-slate-700 text-white shadow-xs'
-                              : 'bg-white text-[#57657b] border border-[#76777d]/20 hover:border-[#131b2e]'
+                              : 'bg-card text-muted-foreground border border-border hover:border-[#131b2e]'
                           }`}
                         >
                           {lvl}
@@ -898,7 +898,7 @@ export const CitizenPortalPage: React.FC = () => {
 
                   {/* Machinery */}
                   <div>
-                    <label className="block text-[#1b1b1d] font-bold mb-1 flex items-center justify-between">
+                    <label className="block text-foreground font-bold mb-1 flex items-center justify-between">
                       <span>Required Fleet Machinery</span>
                       {isEquipmentOverridden ? (
                         <span className="text-[10px] text-amber-700 font-mono font-bold">(User Adjusted)</span>
@@ -912,7 +912,7 @@ export const CitizenPortalPage: React.FC = () => {
                         setRequiredEquipment(e.target.value as ResourceType);
                         setIsEquipmentOverridden(true);
                       }}
-                      className="w-full bg-white border border-[#76777d]/20 rounded-xl px-3 py-2 text-[#1b1b1d] font-bold text-xs focus:outline-none focus:border-[#131b2e] capitalize"
+                      className="w-full bg-card border border-border rounded-xl px-3 py-2 text-foreground font-bold text-xs focus:outline-none focus:border-primary capitalize"
                     >
                       <option value="jetting_machine">Jetting Machine (Suction Vacuum)</option>
                       <option value="road_roller">Road Roller (Asphalt Compactor)</option>
@@ -925,7 +925,7 @@ export const CitizenPortalPage: React.FC = () => {
 
                   {/* Crew Needed */}
                   <div>
-                    <label className="block text-[#1b1b1d] font-bold mb-1 flex items-center justify-between">
+                    <label className="block text-foreground font-bold mb-1 flex items-center justify-between">
                       <span>Crew Size (Technicians)</span>
                       {isStaffOverridden ? (
                         <span className="text-[10px] text-amber-700 font-mono font-bold">(User Adjusted)</span>
@@ -943,15 +943,15 @@ export const CitizenPortalPage: React.FC = () => {
                           setRequiredStaffCount(Number(e.target.value));
                           setIsStaffOverridden(true);
                         }}
-                        className="w-full bg-white border border-[#76777d]/20 rounded-xl px-3 py-2 text-[#1b1b1d] font-mono text-xs focus:outline-none focus:border-[#131b2e] font-bold"
+                        className="w-full bg-card border border-border rounded-xl px-3 py-2 text-foreground font-mono text-xs focus:outline-none focus:border-primary font-bold"
                       />
-                      <span className="text-[#76777d] text-xs shrink-0">Staff</span>
+                      <span className="text-muted-foreground text-xs shrink-0">Staff</span>
                     </div>
                   </div>
 
                   {/* Affected Population */}
                   <div>
-                    <label className="block text-[#1b1b1d] font-bold mb-1">
+                    <label className="block text-foreground font-bold mb-1">
                       Estimated Affected Residents
                     </label>
                     <input
@@ -960,7 +960,7 @@ export const CitizenPortalPage: React.FC = () => {
                       max={20000}
                       value={affectedPop}
                       onChange={(e) => setAffectedPop(Number(e.target.value))}
-                      className="w-full bg-white border border-[#76777d]/20 rounded-xl px-3 py-2 text-[#1b1b1d] font-mono text-xs focus:outline-none focus:border-[#131b2e] font-bold"
+                      className="w-full bg-card border border-border rounded-xl px-3 py-2 text-foreground font-mono text-xs focus:outline-none focus:border-primary font-bold"
                     />
                   </div>
                 </div>
@@ -971,7 +971,7 @@ export const CitizenPortalPage: React.FC = () => {
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="px-6 py-3 bg-[#131b2e] hover:bg-[#1e2a47] text-white rounded-xl font-bold text-xs shadow-md flex items-center gap-2 transition-all uppercase tracking-wider"
+                  className="px-6 py-3 bg-primary hover:bg-primary/90 text-white rounded-xl font-bold text-xs shadow-md flex items-center gap-2 transition-all uppercase tracking-wider"
                 >
                   <Send size={15} />
                   <span>{isSubmitting ? 'Submitting...' : 'Submit to Municipal Decision Engine'}</span>
@@ -981,9 +981,9 @@ export const CitizenPortalPage: React.FC = () => {
           </div>
 
           {/* AI Multimodal Vision Analysis Output (1 Col) */}
-          <div className="bg-white border border-[#76777d]/20 rounded-2xl p-5 shadow-xs space-y-4">
-            <div className="flex items-center justify-between border-b border-[#76777d]/15 pb-3">
-              <h3 className="font-bold text-[#1b1b1d] text-xs uppercase tracking-wider flex items-center gap-1.5">
+          <div className="bg-card border border-border rounded-2xl p-5 shadow-xs space-y-4">
+            <div className="flex items-center justify-between border-b border-border pb-3">
+              <h3 className="font-bold text-foreground text-xs uppercase tracking-wider flex items-center gap-1.5">
                 <Sparkles size={14} className="text-[#131b2e]" />
                 <span>AI Vision & Defect Recognition</span>
               </h3>
@@ -1001,9 +1001,9 @@ export const CitizenPortalPage: React.FC = () => {
             {aiResult ? (
               <div className="space-y-3 text-xs">
                 {/* Confidence Bar */}
-                <div className="bg-[#fcf8fa] p-3 rounded-xl border border-[#76777d]/15 space-y-1.5">
+                <div className="bg-muted/30 dark:bg-slate-900/60 p-3 rounded-xl border border-border space-y-1.5">
                   <div className="flex justify-between items-center">
-                    <span className="text-[#57657b]">Vision Verification Confidence:</span>
+                    <span className="text-muted-foreground">Vision Verification Confidence:</span>
                     <span className="font-mono text-emerald-700 font-bold">
                       {(aiResult.confidenceScore * 100).toFixed(0)}%
                     </span>
@@ -1018,39 +1018,39 @@ export const CitizenPortalPage: React.FC = () => {
 
                 {/* Visual Findings Rationale */}
                 {aiResult.visualFindings && (
-                  <div className="bg-[#fcf8fa] p-3 rounded-xl border border-[#76777d]/15 space-y-1">
-                    <span className="text-[10px] font-bold text-[#76777d] uppercase tracking-wider block">
+                  <div className="bg-muted/30 dark:bg-slate-900/60 p-3 rounded-xl border border-border space-y-1">
+                    <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block">
                       Visual Findings
                     </span>
-                    <p className="text-[#1b1b1d] text-xs leading-relaxed">
+                    <p className="text-foreground text-xs leading-relaxed">
                       {aiResult.visualFindings}
                     </p>
                   </div>
                 )}
 
                 {/* Auto-detected Breakdown Cards */}
-                <div className="bg-[#fcf8fa] p-3 rounded-xl border border-[#76777d]/15 space-y-2">
+                <div className="bg-muted/30 dark:bg-slate-900/60 p-3 rounded-xl border border-border space-y-2">
                   <div className="flex justify-between">
-                    <span className="text-[#57657b]">Auto Department:</span>
-                    <span className="font-mono font-bold text-[#1b1b1d]">
+                    <span className="text-muted-foreground">Auto Department:</span>
+                    <span className="font-mono font-bold text-foreground">
                       {aiResult.departmentCodeSuggested}
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-[#57657b]">Assessed Urgency:</span>
+                    <span className="text-muted-foreground">Assessed Urgency:</span>
                     <span className="font-mono text-amber-700 font-bold uppercase">
                       {aiResult.suggestedUrgency}
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-[#57657b]">Fleet Machinery:</span>
-                    <span className="font-mono text-[#1b1b1d] capitalize">
+                    <span className="text-muted-foreground">Fleet Machinery:</span>
+                    <span className="font-mono text-foreground capitalize">
                       {aiResult.requiredEquipment?.replace('_', ' ') || 'Standard Toolset'}
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-[#57657b]">Crew Deployment:</span>
-                    <span className="font-mono text-[#1b1b1d]">{aiResult.requiredStaffCount} staff</span>
+                    <span className="text-muted-foreground">Crew Deployment:</span>
+                    <span className="font-mono text-foreground">{aiResult.requiredStaffCount} staff</span>
                   </div>
                 </div>
 
@@ -1059,7 +1059,7 @@ export const CitizenPortalPage: React.FC = () => {
                 </div>
               </div>
             ) : (
-              <div className="p-8 text-center text-[#76777d] text-xs leading-relaxed">
+              <div className="p-8 text-center text-muted-foreground text-xs leading-relaxed">
                 Capture a live photo or upload an image. Gemini Vision will analyze physical damage and auto-fill Department, Category, Severity, Machinery, and Crew requirements.
               </div>
             )}
@@ -1070,29 +1070,29 @@ export const CitizenPortalPage: React.FC = () => {
       {/* TAB 2: CITIZEN TICKET TRACKING & REAL-TIME SMS ALERTS */}
       {activeTab === 'track' && (
         <div className="space-y-5">
-          <div className="bg-white border border-[#76777d]/20 rounded-2xl p-5 shadow-xs">
+          <div className="bg-card border border-border rounded-2xl p-5 shadow-xs">
             <form onSubmit={handleTrackSearch} className="relative">
-              <Search size={16} className="absolute left-3.5 top-3 text-[#76777d]" />
+              <Search size={16} className="absolute left-3.5 top-3 text-muted-foreground" />
               <input
                 type="text"
                 placeholder="Enter Municipal Ticket Number (e.g. KMC-2026-00101)..."
                 value={trackQuery}
                 onChange={(e) => setTrackQuery(e.target.value)}
-                className="w-full bg-[#f6f3f5] border border-[#76777d]/20 rounded-xl pl-10 pr-3 py-2.5 text-xs text-[#1b1b1d] placeholder:text-[#76777d]/70 focus:outline-none focus:border-[#131b2e] font-mono font-medium"
+                className="w-full bg-muted/60 dark:bg-slate-900 border border-border rounded-xl pl-10 pr-3 py-2.5 text-xs text-foreground placeholder:text-muted-foreground/70 focus:outline-none focus:border-primary font-mono font-medium"
               />
             </form>
           </div>
 
           {trackedIssue ? (
-            <div className="bg-white border border-[#76777d]/20 rounded-2xl p-6 shadow-xs space-y-6">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#76777d]/15 pb-5">
+            <div className="bg-card border border-border rounded-2xl p-6 shadow-xs space-y-6">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border pb-5">
                 <div>
                   <div className="flex items-center gap-2 mb-1">
                     <span className="font-mono text-[#131b2e] font-bold text-sm">
                       {trackedIssue.ticketNumber}
                     </span>
-                    <span className="text-[#76777d]">•</span>
-                    <span className="text-xs text-[#76777d]">
+                    <span className="text-muted-foreground">•</span>
+                    <span className="text-xs text-muted-foreground">
                       Reported on {new Date(trackedIssue.reportedAt).toLocaleString()}
                     </span>
                     {trackedIssue.citizenPhone && (
@@ -1101,8 +1101,8 @@ export const CitizenPortalPage: React.FC = () => {
                       </span>
                     )}
                   </div>
-                  <h2 className="text-lg font-bold text-[#1b1b1d]">{trackedIssue.title}</h2>
-                  <div className="text-xs text-[#57657b] mt-1 flex items-center gap-1">
+                  <h2 className="text-lg font-bold text-foreground">{trackedIssue.title}</h2>
+                  <div className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
                     <MapPin size={13} className="text-[#131b2e]" />
                     <span>{trackedIssue.locationAddress}</span>
                   </div>
@@ -1134,7 +1134,7 @@ export const CitizenPortalPage: React.FC = () => {
               {/* Photo Evidence */}
               {trackedIssue.photoUrls && trackedIssue.photoUrls.length > 0 && (
                 <div className="space-y-1.5">
-                  <span className="text-[11px] font-bold text-[#76777d] uppercase tracking-wider block">
+                  <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider block">
                     Citizen Photo Evidence
                   </span>
                   <div className="flex gap-2">
@@ -1152,7 +1152,7 @@ export const CitizenPortalPage: React.FC = () => {
 
               {/* Progress Stage Timeline */}
               <div className="space-y-3">
-                <h3 className="text-xs font-bold uppercase text-[#76777d] tracking-wider">
+                <h3 className="text-xs font-bold uppercase text-muted-foreground tracking-wider">
                   Municipal Action Timeline
                 </h3>
 
@@ -1175,10 +1175,10 @@ export const CitizenPortalPage: React.FC = () => {
                         className={`p-3.5 rounded-xl border text-xs transition-all ${
                           isDone
                             ? 'bg-emerald-50 border-emerald-300 text-emerald-900 shadow-xs'
-                            : 'bg-[#fcf8fa] border-[#76777d]/15 text-[#76777d]'
+                            : 'bg-muted/30 dark:bg-slate-900/60 border-border text-muted-foreground'
                         }`}
                       >
-                        <div className="font-bold flex items-center gap-1.5 mb-1 text-[#1b1b1d]">
+                        <div className="font-bold flex items-center gap-1.5 mb-1 text-foreground">
                           <CheckCircle2
                             size={14}
                             className={isDone ? 'text-emerald-700' : 'text-slate-400'}
@@ -1193,9 +1193,9 @@ export const CitizenPortalPage: React.FC = () => {
               </div>
 
               {/* Interactive Status Progression (Sends Real SMS to physical mobile) */}
-              <div className="p-4 bg-[#fcf8fa] border border-blue-200/80 rounded-2xl space-y-2.5">
+              <div className="p-4 bg-muted/30 dark:bg-slate-900/60 border border-blue-200/80 rounded-2xl space-y-2.5">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 text-xs">
-                  <span className="font-bold text-[#1b1b1d] flex items-center gap-1.5">
+                  <span className="font-bold text-foreground flex items-center gap-1.5">
                     <Sparkles size={14} className="text-blue-700" />
                     <span>Advance Ticket Milestone & Send Real SMS to Phone:</span>
                   </span>
@@ -1207,7 +1207,7 @@ export const CitizenPortalPage: React.FC = () => {
                 <div className="flex flex-wrap gap-2 text-xs">
                   <button
                     onClick={() => handleSimulateStatus('scheduled')}
-                    className="px-3 py-1.5 bg-white hover:bg-slate-100 text-[#131b2e] border border-slate-300 font-bold rounded-lg transition-all flex items-center gap-1 shadow-xs"
+                    className="px-3 py-1.5 bg-card hover:bg-slate-100 text-[#131b2e] border border-slate-300 font-bold rounded-lg transition-all flex items-center gap-1 shadow-xs"
                   >
                     <Truck size={13} className="text-blue-700" />
                     <span>Dispatch Crew (SMS to Phone)</span>
@@ -1215,7 +1215,7 @@ export const CitizenPortalPage: React.FC = () => {
 
                   <button
                     onClick={() => handleSimulateStatus('in_progress')}
-                    className="px-3 py-1.5 bg-white hover:bg-slate-100 text-[#131b2e] border border-slate-300 font-bold rounded-lg transition-all flex items-center gap-1 shadow-xs"
+                    className="px-3 py-1.5 bg-card hover:bg-slate-100 text-[#131b2e] border border-slate-300 font-bold rounded-lg transition-all flex items-center gap-1 shadow-xs"
                   >
                     <Wrench size={13} className="text-amber-700" />
                     <span>Crew Arrived (SMS to Phone)</span>
@@ -1235,12 +1235,12 @@ export const CitizenPortalPage: React.FC = () => {
               {(() => {
                 const expl = ExplainabilityService.generateCitizenExplanation(trackedIssue);
                 return (
-                  <div className="bg-[#fcf8fa] border border-[#76777d]/20 rounded-xl p-4 text-xs space-y-2">
+                  <div className="bg-muted/30 dark:bg-slate-900/60 border border-border rounded-xl p-4 text-xs space-y-2">
                     <div className="font-bold text-emerald-800 text-sm flex items-center gap-2">
                       <ShieldCheck size={16} />
                       <span>{expl.statusHeadline}</span>
                     </div>
-                    <p className="text-[#1b1b1d] leading-relaxed">{expl.detail}</p>
+                    <p className="text-foreground leading-relaxed">{expl.detail}</p>
                     <div className="text-[11px] text-amber-800 font-bold">
                       Next Step: {expl.expectedAction}
                     </div>
@@ -1294,10 +1294,10 @@ export const CitizenPortalPage: React.FC = () => {
                           <Phone size={15} />
                         </div>
                         <div>
-                          <div className="font-bold text-[#1b1b1d] text-xs">
+                          <div className="font-bold text-foreground text-xs">
                             Phone-First / Non-Smartphone Telephony Script (IVR Stub)
                           </div>
-                          <span className="text-[10px] text-[#76777d]">
+                          <span className="text-[10px] text-muted-foreground">
                             IVR script (not yet connected to a live telephony provider) • Plain text for 1800 Call-Center Agent
                           </span>
                         </div>
@@ -1307,14 +1307,14 @@ export const CitizenPortalPage: React.FC = () => {
                         <button
                           type="button"
                           onClick={() => handlePlayIvr(ivrScriptMr, 'mr')}
-                          className="px-2.5 py-1 bg-white hover:bg-slate-100 text-blue-900 border border-slate-300 font-bold rounded-lg text-[11px] transition-colors flex items-center gap-1 shadow-2xs"
+                          className="px-2.5 py-1 bg-card hover:bg-slate-100 text-blue-900 border border-slate-300 font-bold rounded-lg text-[11px] transition-colors flex items-center gap-1 shadow-2xs"
                         >
                           <span>🔊 Read Aloud (मराठी)</span>
                         </button>
                         <button
                           type="button"
                           onClick={() => handlePlayIvr(ivrScriptEn, 'en')}
-                          className="px-2.5 py-1 bg-white hover:bg-slate-100 text-[#131b2e] border border-slate-300 font-bold rounded-lg text-[11px] transition-colors flex items-center gap-1 shadow-2xs"
+                          className="px-2.5 py-1 bg-card hover:bg-slate-100 text-[#131b2e] border border-slate-300 font-bold rounded-lg text-[11px] transition-colors flex items-center gap-1 shadow-2xs"
                         >
                           <span>🔊 Read Aloud (English)</span>
                         </button>
@@ -1322,7 +1322,7 @@ export const CitizenPortalPage: React.FC = () => {
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                      <div className="p-3 bg-white border border-slate-200 rounded-xl space-y-1">
+                      <div className="p-3 bg-card border border-slate-200 rounded-xl space-y-1">
                         <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
                           Marathi Spoken IVR Script (मराठी कॉल संवाद)
                         </span>
@@ -1330,7 +1330,7 @@ export const CitizenPortalPage: React.FC = () => {
                           "{ivrScriptMr}"
                         </p>
                       </div>
-                      <div className="p-3 bg-white border border-slate-200 rounded-xl space-y-1">
+                      <div className="p-3 bg-card border border-slate-200 rounded-xl space-y-1">
                         <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
                           English Spoken IVR Script
                         </span>
@@ -1344,7 +1344,7 @@ export const CitizenPortalPage: React.FC = () => {
               })()}
             </div>
           ) : (
-            <div className="p-12 text-center text-[#76777d] text-xs bg-white border border-[#76777d]/20 rounded-2xl">
+            <div className="p-12 text-center text-muted-foreground text-xs bg-card border border-border rounded-2xl">
               No tickets found. Submit an issue to view real-time stage progression.
             </div>
           )}
@@ -1360,3 +1360,6 @@ export const CitizenPortalPage: React.FC = () => {
     </div>
   );
 };
+
+export default CitizenPortalPage;
+

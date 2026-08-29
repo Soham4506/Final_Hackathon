@@ -307,11 +307,11 @@ export const LoginPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#131b2e] flex flex-col justify-between text-slate-100 font-sans p-4 sm:p-6 lg:p-8 relative overflow-hidden">
+    <div className="min-h-screen bg-primary flex flex-col justify-between text-slate-100 font-sans p-4 sm:p-6 lg:p-8 relative overflow-hidden">
       {/* Top Municipal Crest */}
       <div className="max-w-5xl w-full mx-auto flex items-center justify-between z-10">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg bg-white flex items-center justify-center border border-white/20 shadow-md shrink-0 p-1">
+          <div className="w-10 h-10 rounded-lg bg-card flex items-center justify-center border border-white/20 shadow-md shrink-0 p-1">
             <Building2 className="w-6 h-6 text-[#131b2e]" />
           </div>
           <div>
@@ -335,17 +335,17 @@ export const LoginPage: React.FC = () => {
       </div>
 
       {/* Main Login Card with KMC Clean White Aesthetic */}
-      <div className="max-w-md w-full mx-auto my-8 bg-white border border-[#76777d]/20 rounded-3xl p-6 sm:p-8 shadow-2xl z-10 space-y-5 text-[#1b1b1d]">
+      <div className="max-w-md w-full mx-auto my-8 bg-card border border-border rounded-3xl p-6 sm:p-8 shadow-2xl z-10 space-y-5 text-foreground">
         {/* Banner Title */}
         <div className="text-center space-y-1.5">
           <div className="inline-flex items-center gap-1.5 bg-slate-100 text-[#131b2e] border border-slate-300 text-[11px] font-mono font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider">
             <Activity size={12} className="text-emerald-600" />
             <span>कोपरगाव नगरपरिषद • KoparNiti</span>
           </div>
-          <h1 className="text-xl sm:text-2xl font-bold text-[#1b1b1d] tracking-tight">
+          <h1 className="text-xl sm:text-2xl font-bold text-foreground tracking-tight">
             {mode === 'signin' ? 'Sign In to Your Account' : 'Register New Account'}
           </h1>
-          <p className="text-xs text-[#57657b]">
+          <p className="text-xs text-muted-foreground">
             {mode === 'signin'
               ? 'Enter your municipal or citizen credentials to continue.'
               : 'Create an account to report civic issues and track municipal dispatches.'}
@@ -353,7 +353,7 @@ export const LoginPage: React.FC = () => {
         </div>
 
         {/* Mode Switcher Tabs */}
-        <div className="bg-[#f0edef] p-1 rounded-xl border border-[#76777d]/15 flex text-xs">
+        <div className="bg-muted/80 dark:bg-slate-900 p-1 rounded-xl border border-border flex text-xs">
           <button
             type="button"
             onClick={() => {
@@ -362,8 +362,8 @@ export const LoginPage: React.FC = () => {
             }}
             className={`flex-1 py-2 font-bold rounded-lg transition-all ${
               mode === 'signin'
-                ? 'bg-[#131b2e] text-white shadow-xs'
-                : 'text-[#57657b] hover:text-[#1b1b1d]'
+                ? 'bg-primary text-white shadow-xs'
+                : 'text-muted-foreground hover:text-foreground'
             }`}
           >
             Sign In
@@ -376,8 +376,8 @@ export const LoginPage: React.FC = () => {
             }}
             className={`flex-1 py-2 font-bold rounded-lg transition-all ${
               mode === 'signup'
-                ? 'bg-[#131b2e] text-white shadow-xs'
-                : 'text-[#57657b] hover:text-[#1b1b1d]'
+                ? 'bg-primary text-white shadow-xs'
+                : 'text-muted-foreground hover:text-foreground'
             }`}
           >
             Register
@@ -386,7 +386,7 @@ export const LoginPage: React.FC = () => {
 
         {/* Role Selector Pill (Citizen & Officer only - Admin registration removed) */}
         <div className="space-y-1.5">
-          <label className="block text-[11px] font-bold text-[#76777d] uppercase tracking-wider">
+          <label className="block text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
             {mode === 'signup' ? 'Account Type' : 'Select Portal'}
           </label>
           <div className="grid grid-cols-2 gap-2 text-xs">
@@ -395,8 +395,8 @@ export const LoginPage: React.FC = () => {
               onClick={() => setSelectedRole('citizen')}
               className={`py-2 px-2 rounded-xl font-bold border transition-all text-center ${
                 selectedRole === 'citizen'
-                  ? 'bg-[#131b2e] text-white border-[#131b2e] shadow-xs'
-                  : 'bg-[#f6f3f5] text-[#57657b] border-[#76777d]/20 hover:border-[#131b2e]'
+                  ? 'bg-primary text-white border-primary shadow-xs'
+                  : 'bg-muted/60 dark:bg-slate-900 text-muted-foreground border-border hover:border-primary'
               }`}
             >
               Citizen (नागरिक)
@@ -406,8 +406,8 @@ export const LoginPage: React.FC = () => {
               onClick={() => setSelectedRole('officer')}
               className={`py-2 px-2 rounded-xl font-bold border transition-all text-center ${
                 selectedRole === 'officer'
-                  ? 'bg-[#131b2e] text-white border-[#131b2e] shadow-xs'
-                  : 'bg-[#f6f3f5] text-[#57657b] border-[#76777d]/20 hover:border-[#131b2e]'
+                  ? 'bg-primary text-white border-primary shadow-xs'
+                  : 'bg-muted/60 dark:bg-slate-900 text-muted-foreground border-border hover:border-primary'
               }`}
             >
               Municipal Officer (अधिकारी)
@@ -419,31 +419,31 @@ export const LoginPage: React.FC = () => {
         {mode === 'signin' && (
           <form onSubmit={handleSignIn} className="space-y-4 text-xs">
             <div>
-              <label className="block text-[#1b1b1d] font-semibold mb-1">Email Address</label>
+              <label className="block text-foreground font-semibold mb-1">Email Address</label>
               <div className="relative">
-                <Mail size={15} className="absolute left-3.5 top-3 text-[#76777d]" />
+                <Mail size={15} className="absolute left-3.5 top-3 text-muted-foreground" />
                 <input
                   type="email"
                   required
                   placeholder="name@kopargaon.gov.in"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full bg-[#f6f3f5] border border-[#76777d]/20 rounded-xl pl-10 pr-3 py-2.5 text-[#1b1b1d] placeholder:text-[#76777d]/70 focus:outline-none focus:border-[#131b2e] focus:ring-1 focus:ring-[#131b2e] font-medium"
+                  className="w-full bg-muted/60 dark:bg-slate-900 border border-border rounded-xl pl-10 pr-3 py-2.5 text-foreground placeholder:text-muted-foreground/70 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary font-medium"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-[#1b1b1d] font-semibold mb-1">Password</label>
+              <label className="block text-foreground font-semibold mb-1">Password</label>
               <div className="relative">
-                <Lock size={15} className="absolute left-3.5 top-3 text-[#76777d]" />
+                <Lock size={15} className="absolute left-3.5 top-3 text-muted-foreground" />
                 <input
                   type="password"
                   required
                   placeholder="••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full bg-[#f6f3f5] border border-[#76777d]/20 rounded-xl pl-10 pr-3 py-2.5 text-[#1b1b1d] placeholder:text-[#76777d]/70 focus:outline-none focus:border-[#131b2e] focus:ring-1 focus:ring-[#131b2e] font-medium"
+                  className="w-full bg-muted/60 dark:bg-slate-900 border border-border rounded-xl pl-10 pr-3 py-2.5 text-foreground placeholder:text-muted-foreground/70 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary font-medium"
                 />
               </div>
             </div>
@@ -458,7 +458,7 @@ export const LoginPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => proceedWithLocalAuth(selectedRole)}
-                  className="mt-1 px-3 py-1.5 bg-[#131b2e] hover:bg-[#1e2a47] text-white rounded-lg font-bold text-[11px] flex items-center gap-1.5 transition-colors"
+                  className="mt-1 px-3 py-1.5 bg-primary hover:bg-primary/90 text-white rounded-lg font-bold text-[11px] flex items-center gap-1.5 transition-colors"
                 >
                   <KeyRound size={13} className="text-emerald-400" />
                   <span>Continue in Local Session Mode →</span>
@@ -469,7 +469,7 @@ export const LoginPage: React.FC = () => {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full py-3 bg-[#131b2e] hover:bg-[#1e2a47] text-white rounded-xl font-bold text-xs shadow-md flex items-center justify-center gap-2 transition-all"
+              className="w-full py-3 bg-primary hover:bg-primary/90 text-white rounded-xl font-bold text-xs shadow-md flex items-center justify-center gap-2 transition-all"
             >
               <Lock size={14} />
               <span>{isLoading ? 'Authenticating...' : 'Sign In to Command'}</span>
@@ -481,43 +481,43 @@ export const LoginPage: React.FC = () => {
         {mode === 'signup' && (
           <form onSubmit={handleSignUp} className="space-y-3.5 text-xs">
             <div>
-              <label className="block text-[#1b1b1d] font-semibold mb-1">Full Name</label>
+              <label className="block text-foreground font-semibold mb-1">Full Name</label>
               <div className="relative">
-                <User size={15} className="absolute left-3.5 top-3 text-[#76777d]" />
+                <User size={15} className="absolute left-3.5 top-3 text-muted-foreground" />
                 <input
                   type="text"
                   required
                   placeholder="Your Full Name"
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
-                  className="w-full bg-[#f6f3f5] border border-[#76777d]/20 rounded-xl pl-10 pr-3 py-2.5 text-[#1b1b1d] placeholder:text-[#76777d]/70 focus:outline-none focus:border-[#131b2e] focus:ring-1 focus:ring-[#131b2e] font-medium"
+                  className="w-full bg-muted/60 dark:bg-slate-900 border border-border rounded-xl pl-10 pr-3 py-2.5 text-foreground placeholder:text-muted-foreground/70 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary font-medium"
                 />
               </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="block text-[#1b1b1d] font-semibold mb-1">Mobile Phone</label>
+                <label className="block text-foreground font-semibold mb-1">Mobile Phone</label>
                 <div className="relative">
-                  <Phone size={15} className="absolute left-3 top-3 text-[#76777d]" />
+                  <Phone size={15} className="absolute left-3 top-3 text-muted-foreground" />
                   <input
                     type="tel"
                     required
                     placeholder="9822000000"
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
-                    className="w-full bg-[#f6f3f5] border border-[#76777d]/20 rounded-xl pl-9 pr-3 py-2.5 text-[#1b1b1d] placeholder:text-[#76777d]/70 focus:outline-none focus:border-[#131b2e] focus:ring-1 focus:ring-[#131b2e] font-medium"
+                    className="w-full bg-muted/60 dark:bg-slate-900 border border-border rounded-xl pl-9 pr-3 py-2.5 text-foreground placeholder:text-muted-foreground/70 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary font-medium"
                   />
                 </div>
               </div>
 
               {selectedRole === 'citizen' ? (
                 <div>
-                  <label className="block text-[#1b1b1d] font-semibold mb-1">Ward / Zone</label>
+                  <label className="block text-foreground font-semibold mb-1">Ward / Zone</label>
                   <select
                     value={wardId}
                     onChange={(e) => setWardId(e.target.value)}
-                    className="w-full bg-[#f6f3f5] border border-[#76777d]/20 rounded-xl px-3 py-2.5 text-[#1b1b1d] focus:outline-none focus:border-[#131b2e] focus:ring-1 focus:ring-[#131b2e] font-medium"
+                    className="w-full bg-muted/60 dark:bg-slate-900 border border-border rounded-xl px-3 py-2.5 text-foreground focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary font-medium"
                   >
                     {zones.map((z) => (
                       <option key={z.id} value={z.id}>
@@ -528,11 +528,11 @@ export const LoginPage: React.FC = () => {
                 </div>
               ) : (
                 <div>
-                  <label className="block text-[#1b1b1d] font-semibold mb-1">Department</label>
+                  <label className="block text-foreground font-semibold mb-1">Department</label>
                   <select
                     value={departmentId}
                     onChange={(e) => setDepartmentId(e.target.value)}
-                    className="w-full bg-[#f6f3f5] border border-[#76777d]/20 rounded-xl px-3 py-2.5 text-[#1b1b1d] focus:outline-none focus:border-[#131b2e] focus:ring-1 focus:ring-[#131b2e] font-medium"
+                    className="w-full bg-muted/60 dark:bg-slate-900 border border-border rounded-xl px-3 py-2.5 text-foreground focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary font-medium"
                   >
                     {departments.map((d) => (
                       <option key={d.id} value={d.id}>
@@ -545,31 +545,31 @@ export const LoginPage: React.FC = () => {
             </div>
 
             <div>
-              <label className="block text-[#1b1b1d] font-semibold mb-1">Email Address</label>
+              <label className="block text-foreground font-semibold mb-1">Email Address</label>
               <div className="relative">
-                <Mail size={15} className="absolute left-3.5 top-3 text-[#76777d]" />
+                <Mail size={15} className="absolute left-3.5 top-3 text-muted-foreground" />
                 <input
                   type="email"
                   required
                   placeholder="name@example.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full bg-[#f6f3f5] border border-[#76777d]/20 rounded-xl pl-10 pr-3 py-2.5 text-[#1b1b1d] placeholder:text-[#76777d]/70 focus:outline-none focus:border-[#131b2e] focus:ring-1 focus:ring-[#131b2e] font-medium"
+                  className="w-full bg-muted/60 dark:bg-slate-900 border border-border rounded-xl pl-10 pr-3 py-2.5 text-foreground placeholder:text-muted-foreground/70 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary font-medium"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-[#1b1b1d] font-semibold mb-1">Password</label>
+              <label className="block text-foreground font-semibold mb-1">Password</label>
               <div className="relative">
-                <Lock size={15} className="absolute left-3.5 top-3 text-[#76777d]" />
+                <Lock size={15} className="absolute left-3.5 top-3 text-muted-foreground" />
                 <input
                   type="password"
                   required
                   placeholder="••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full bg-[#f6f3f5] border border-[#76777d]/20 rounded-xl pl-10 pr-3 py-2.5 text-[#1b1b1d] placeholder:text-[#76777d]/70 focus:outline-none focus:border-[#131b2e] focus:ring-1 focus:ring-[#131b2e] font-medium"
+                  className="w-full bg-muted/60 dark:bg-slate-900 border border-border rounded-xl pl-10 pr-3 py-2.5 text-foreground placeholder:text-muted-foreground/70 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary font-medium"
                 />
               </div>
             </div>
@@ -584,7 +584,7 @@ export const LoginPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => proceedWithLocalAuth(selectedRole, fullName.trim())}
-                  className="mt-1 px-3 py-1.5 bg-[#131b2e] hover:bg-[#1e2a47] text-white rounded-lg font-bold text-[11px] flex items-center gap-1.5 transition-colors"
+                  className="mt-1 px-3 py-1.5 bg-primary hover:bg-primary/90 text-white rounded-lg font-bold text-[11px] flex items-center gap-1.5 transition-colors"
                 >
                   <KeyRound size={13} className="text-emerald-400" />
                   <span>Continue with Local Account →</span>
@@ -595,7 +595,7 @@ export const LoginPage: React.FC = () => {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full py-3 bg-[#131b2e] hover:bg-[#1e2a47] text-white rounded-xl font-bold text-xs shadow-md flex items-center justify-center gap-2 transition-all"
+              className="w-full py-3 bg-primary hover:bg-primary/90 text-white rounded-xl font-bold text-xs shadow-md flex items-center justify-center gap-2 transition-all"
             >
               <ShieldCheck size={14} />
               <span>{isLoading ? 'Creating Account...' : 'Register & Enter Command'}</span>
@@ -605,11 +605,11 @@ export const LoginPage: React.FC = () => {
 
         {/* Divider */}
         <div className="relative flex py-1 items-center">
-          <div className="flex-grow border-t border-[#76777d]/20"></div>
-          <span className="flex-shrink mx-3 text-[10px] uppercase font-bold text-[#76777d] tracking-wider">
+          <div className="flex-grow border-t border-border"></div>
+          <span className="flex-shrink mx-3 text-[10px] uppercase font-bold text-muted-foreground tracking-wider">
             Or continue with
           </span>
-          <div className="flex-grow border-t border-[#76777d]/20"></div>
+          <div className="flex-grow border-t border-border"></div>
         </div>
 
         {/* Google OAuth Button */}
@@ -617,7 +617,7 @@ export const LoginPage: React.FC = () => {
           type="button"
           onClick={handleGoogleSignIn}
           disabled={isLoading}
-          className="w-full py-2.5 bg-white hover:bg-slate-50 text-[#1b1b1d] border border-slate-300 rounded-xl font-bold text-xs shadow-2xs flex items-center justify-center gap-2.5 transition-all hover:border-slate-400"
+          className="w-full py-2.5 bg-card hover:bg-slate-50 text-foreground border border-slate-300 rounded-xl font-bold text-xs shadow-2xs flex items-center justify-center gap-2.5 transition-all hover:border-slate-400"
         >
           <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
             <path
@@ -641,7 +641,7 @@ export const LoginPage: React.FC = () => {
         </button>
 
         {/* Footer Status */}
-        <div className="pt-3 border-t border-[#76777d]/15 flex items-center justify-between text-[11px] text-[#76777d]">
+        <div className="pt-3 border-t border-border flex items-center justify-between text-[11px] text-muted-foreground">
           <div className="flex items-center gap-1.5">
             <span
               className={`w-2 h-2 rounded-full ${
@@ -661,3 +661,4 @@ export const LoginPage: React.FC = () => {
     </div>
   );
 };
+

@@ -1,4 +1,4 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
 import { RecoveryReport, CivicIssue } from '../../types';
 import { useCivic } from '../../context/CivicContext';
 import {

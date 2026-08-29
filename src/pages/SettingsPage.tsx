@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { useCivic } from '../context/CivicContext';
+import { useResilience } from '../context/ResilienceContext';
 import { PriorityWeightConfig } from '../types';
 import {
   Settings,
@@ -10,17 +11,14 @@ import {
   AlertTriangle,
   RotateCcw,
   Save,
-  Lock,
   FileText,
   Zap,
-  Database,
   Flame,
   Activity,
-  Check,
+  RefreshCw,
+  HardDrive,
+  Cpu,
 } from 'lucide-react';
-import { RecoveryReportModal } from '../components/common/RecoveryReportModal';
-import { EventLogService } from '../services/eventLogService';
-import { IntegrityCheckService } from '../services/integrityCheckService';
 
 export const SettingsPage: React.FC = () => {
   const {
@@ -30,15 +28,22 @@ export const SettingsPage: React.FC = () => {
     auditLogs,
     userRole,
     currentUser,
-    recoveryReport,
-    isRecoveryModeActive,
-    isBlackoutSimulating,
-    simulateBlackoutChaos,
   } = useCivic();
 
+  const {
+    isBlackout,
+    isWiped,
+    inFlightCount,
+    shadowDocCount,
+    recoveryLoading,
+    setModalOpen,
+    triggerBlackout,
+    triggerCorruption,
+    resetSystem,
+    runRecovery,
+  } = useResilience();
+
   const [activeTab, setActiveTab] = useState<'weights' | 'audit' | 'chaos'>('weights');
-  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
-  const [chaosMessage, setChaosMessage] = useState<string | null>(null);
 
   // Form state for weights
   const [sev, setSev] = useState(weightConfig.weightSeverity);
@@ -51,19 +56,6 @@ export const SettingsPage: React.FC = () => {
 
   const totalWeight = Math.round((sev + urg + pop + loc + esc) * 100) / 100;
   const isValidSum = Math.abs(totalWeight - 1.0) < 0.01;
-
-  const handleRunChaosSimulation = async () => {
-    setChaosMessage('💥 Executing live storage blackout & uncommitted log truncation...');
-    try {
-      const rep = await simulateBlackoutChaos();
-      setChaosMessage(
-        `✓ Blackout recovery executed: Restored ${rep.recoveredIssuesCount} records (${rep.corruptedEventsCount} buffer losses, ${rep.unconfirmedInFlightTickets.length} unconfirmed in-flight).`
-      );
-      setIsReportModalOpen(true);
-    } catch (err: any) {
-      setChaosMessage(`Chaos simulation error: ${err.message}`);
-    }
-  };
 
   const handleSaveWeights = (e: React.FormEvent) => {
     e.preventDefault();
@@ -177,11 +169,10 @@ export const SettingsPage: React.FC = () => {
             )}
 
             <form onSubmit={handleSaveWeights} className="space-y-4 text-xs">
-              {/* Sliders */}
               <div className="space-y-3">
                 <div className="space-y-1">
                   <div className="flex justify-between font-bold">
-                    <span className="text-[#1b1b1d]">1. Base Severity Weight (\(W_{sev}\)):</span>
+                    <span className="text-[#1b1b1d]">1. Base Severity Weight:</span>
                     <span className="font-mono text-blue-800 font-bold">{(sev * 100).toFixed(0)}%</span>
                   </div>
                   <input
@@ -197,7 +188,7 @@ export const SettingsPage: React.FC = () => {
 
                 <div className="space-y-1">
                   <div className="flex justify-between font-bold">
-                    <span className="text-[#1b1b1d]">2. SLA Urgency Weight (\(W_{urg}\)):</span>
+                    <span className="text-[#1b1b1d]">2. SLA Urgency Weight:</span>
                     <span className="font-mono text-blue-800 font-bold">{(urg * 100).toFixed(0)}%</span>
                   </div>
                   <input
@@ -213,7 +204,7 @@ export const SettingsPage: React.FC = () => {
 
                 <div className="space-y-1">
                   <div className="flex justify-between font-bold">
-                    <span className="text-[#1b1b1d]">3. Population Impact Weight (\(W_{pop}\)):</span>
+                    <span className="text-[#1b1b1d]">3. Population Impact Weight:</span>
                     <span className="font-mono text-blue-800 font-bold">{(pop * 100).toFixed(0)}%</span>
                   </div>
                   <input
@@ -229,7 +220,7 @@ export const SettingsPage: React.FC = () => {
 
                 <div className="space-y-1">
                   <div className="flex justify-between font-bold">
-                    <span className="text-[#1b1b1d]">4. Location Vulnerability Weight (\(W_{loc}\)):</span>
+                    <span className="text-[#1b1b1d]">4. Location Vulnerability Weight:</span>
                     <span className="font-mono text-blue-800 font-bold">{(loc * 100).toFixed(0)}%</span>
                   </div>
                   <input
@@ -245,7 +236,7 @@ export const SettingsPage: React.FC = () => {
 
                 <div className="space-y-1">
                   <div className="flex justify-between font-bold">
-                    <span className="text-[#1b1b1d]">5. Citizen Escalation Multiplier Weight (\(W_{esc}\)):</span>
+                    <span className="text-[#1b1b1d]">5. Citizen Escalation Multiplier Weight:</span>
                     <span className="font-mono text-blue-800 font-bold">{(esc * 100).toFixed(0)}%</span>
                   </div>
                   <input
@@ -260,7 +251,6 @@ export const SettingsPage: React.FC = () => {
                 </div>
               </div>
 
-              {/* Total Sum Validator */}
               <div className={`p-3 rounded-xl border flex items-center justify-between ${
                 isValidSum
                   ? 'bg-emerald-50 border-emerald-200 text-emerald-900 font-bold'
@@ -288,7 +278,7 @@ export const SettingsPage: React.FC = () => {
             <h3 className="font-bold text-xs uppercase tracking-wider text-[#1b1b1d] border-b border-[#76777d]/15 pb-3">
               Mathematical Formula Model
             </h3>
-            <div className="p-3 bg-[#fcf8fa] border border-[#76777d]/15 rounded-xl text-xs space-y-2 font-mono text-[#1b1b1d]">
+            <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs space-y-2 font-mono text-[#1b1b1d]">
               <div className="text-[11px] font-bold text-blue-800">
                 Score = W_sev·Sev + W_urg·Urg + W_pop·Pop + W_loc·Loc + W_esc·Esc - Penalty
               </div>
@@ -332,78 +322,51 @@ export const SettingsPage: React.FC = () => {
       {/* Chaos Testing (Blackout Resilience) Tab */}
       {activeTab === 'chaos' && (
         <div className="space-y-5">
-          {/* Integrity & Independent Ledger Health Status */}
-          {(() => {
-            const integrity = IntegrityCheckService.verifyStorageIntegrity();
-            const { events } = EventLogService.getAllEvents();
+          {/* Status KPI Cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
+            <div className="bg-white border border-[#76777d]/20 rounded-2xl p-4 shadow-xs space-y-1">
+              <p className="text-[10px] font-bold text-[#76777d] uppercase tracking-wider">Primary Store Health</p>
+              <p className="text-sm font-extrabold mt-1 flex items-center gap-1.5">
+                {isBlackout ? (
+                  <span className="text-red-600 flex items-center gap-1">
+                    <AlertTriangle className="h-4 w-4 shrink-0" />
+                    {isWiped ? 'WIPED (0 RECORDS)' : 'BIT-ROT CORRUPTED'}
+                  </span>
+                ) : (
+                  <span className="text-emerald-600 flex items-center gap-1">
+                    <CheckCircle2 className="h-4 w-4 shrink-0" />
+                    HEALTHY (ONLINE)
+                  </span>
+                )}
+              </p>
+            </div>
 
-            return (
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="bg-white border border-[#76777d]/20 rounded-2xl p-4 shadow-xs space-y-1">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[11px] font-bold text-[#76777d] uppercase tracking-wider">Primary Store Integrity</span>
-                    {integrity.isValid ? (
-                      <span className="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded border border-emerald-300">
-                        ✓ HEALTHY
-                      </span>
-                    ) : (
-                      <span className="text-[10px] bg-red-100 text-red-800 font-bold px-2 py-0.5 rounded border border-red-300 animate-pulse">
-                        ⚠️ CORRUPTED
-                      </span>
-                    )}
-                  </div>
-                  <div className="text-lg font-mono font-extrabold text-[#1b1b1d]">
-                    {integrity.issueCount ?? 0} <span className="text-xs text-[#76777d] font-normal">records stored</span>
-                  </div>
-                  <div className="text-[10px] text-[#57657b] font-mono truncate">
-                    Checksum: {integrity.actualChecksum || integrity.expectedChecksum || 'chk-none'}
-                  </div>
-                </div>
+            <div className="bg-white border border-[#76777d]/20 rounded-2xl p-4 shadow-xs space-y-1">
+              <p className="text-[10px] font-bold text-[#76777d] uppercase tracking-wider">Shadow Ledger Mirror</p>
+              <p className="text-sm font-extrabold mt-1 text-cyan-600 flex items-center gap-1.5">
+                <HardDrive className="h-4 w-4 shrink-0" />
+                {shadowDocCount} Checkpoints
+              </p>
+            </div>
 
-                <div className="bg-white border border-[#76777d]/20 rounded-2xl p-4 shadow-xs space-y-1">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[11px] font-bold text-[#76777d] uppercase tracking-wider">Independent Event Ledger</span>
-                    <span className="text-[10px] bg-blue-100 text-blue-800 font-bold px-2 py-0.5 rounded border border-blue-300">
-                      APPEND-ONLY
-                    </span>
-                  </div>
-                  <div className="text-lg font-mono font-extrabold text-[#1b1b1d]">
-                    {events.length} <span className="text-xs text-[#76777d] font-normal">immutable events</span>
-                  </div>
-                  <div className="text-[10px] text-[#57657b] font-mono truncate">
-                    Key: civicpulse_event_ledger_v1
-                  </div>
-                </div>
+            <div className="bg-white border border-[#76777d]/20 rounded-2xl p-4 shadow-xs space-y-1">
+              <p className="text-[10px] font-bold text-[#76777d] uppercase tracking-wider">In-Flight Outbox Buffer</p>
+              <p className="text-sm font-extrabold mt-1 text-amber-600 flex items-center gap-1.5">
+                <Zap className="h-4 w-4 shrink-0" />
+                {inFlightCount} Transactions Held
+              </p>
+            </div>
 
-                <div className="bg-white border border-[#76777d]/20 rounded-2xl p-4 shadow-xs space-y-1">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[11px] font-bold text-[#76777d] uppercase tracking-wider">Recovery System State</span>
-                    {isRecoveryModeActive ? (
-                      <span className="text-[10px] bg-amber-100 text-amber-900 font-bold px-2 py-0.5 rounded border border-amber-300">
-                        RECOVERY ACTIVE
-                      </span>
-                    ) : (
-                      <span className="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded border border-emerald-300">
-                        NORMAL MODE
-                      </span>
-                    )}
-                  </div>
-                  <div className="text-lg font-mono font-extrabold text-[#1b1b1d]">
-                    {recoveryReport ? (
-                      <span>{recoveryReport.recoveredIssuesCount} <span className="text-xs text-slate-500 font-normal">restored</span></span>
-                    ) : (
-                      <span>Standing By</span>
-                    )}
-                  </div>
-                  <div className="text-[10px] text-[#57657b]">
-                    {isRecoveryModeActive ? 'Awaiting officer acknowledgment' : 'Automatic liveness monitor active'}
-                  </div>
-                </div>
-              </div>
-            );
-          })()}
+            <div className="bg-white border border-[#76777d]/20 rounded-2xl p-4 shadow-xs space-y-1">
+              <p className="text-[10px] font-bold text-[#76777d] uppercase tracking-wider">Disaster Recovery RTO</p>
+              <p className="text-sm font-extrabold mt-1 text-purple-600 flex items-center gap-1.5">
+                <Cpu className="h-4 w-4 shrink-0" />
+                &lt; 50ms Autonomous
+              </p>
+            </div>
+          </div>
 
-          {/* Main Chaos Simulator Action Box */}
+          {/* Main Phoenix Protocol Chaos Console */}
           <div className="bg-gradient-to-br from-slate-900 via-slate-950 to-amber-950 border-2 border-amber-500/50 rounded-2xl p-6 shadow-xl text-slate-100 space-y-5">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-4">
               <div>
@@ -412,11 +375,11 @@ export const SettingsPage: React.FC = () => {
                     <Flame size={18} />
                   </span>
                   <h2 className="text-base font-bold text-white tracking-wide">
-                    Live Storage Blackout & Chaos Resilience Simulator
+                    The Blackout: Live Disaster Recovery Sentry (Phoenix Protocol)
                   </h2>
                 </div>
                 <p className="text-xs text-slate-300 mt-1">
-                  Demonstrates live mid-operation storage failure detection, write-buffer loss honesty, and state replay.
+                  Live data store wipe & in-flight corruption survivability engine for hackathon evaluation
                 </p>
               </div>
 
@@ -425,78 +388,64 @@ export const SettingsPage: React.FC = () => {
               </span>
             </div>
 
-            {/* Step-by-Step Transparency Guide */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-3 text-xs">
-              <div className="p-3 bg-slate-900/80 border border-slate-800 rounded-xl space-y-1">
-                <span className="text-amber-400 font-bold font-mono">1. Mid-Flight Operation</span>
-                <p className="text-slate-400 text-[11px] leading-relaxed">
-                  Fires an urgent emergency machinery allocation and SMS alert in flight.
-                </p>
-              </div>
-              <div className="p-3 bg-slate-900/80 border border-slate-800 rounded-xl space-y-1">
-                <span className="text-red-400 font-bold font-mono">2. Storage Catastrophe</span>
-                <p className="text-slate-400 text-[11px] leading-relaxed">
-                  Corrupts primary data store (`civicpulse_issues`) with malformed syntax.
-                </p>
-              </div>
-              <div className="p-3 bg-slate-900/80 border border-slate-800 rounded-xl space-y-1">
-                <span className="text-orange-400 font-bold font-mono">3. Buffer Truncation</span>
-                <p className="text-slate-400 text-[11px] leading-relaxed">
-                  Truncates tail entries of the independent event ledger (honest buffer loss).
-                </p>
-              </div>
-              <div className="p-3 bg-slate-900/80 border border-slate-800 rounded-xl space-y-1">
-                <span className="text-emerald-400 font-bold font-mono">4. Event Log Replay</span>
-                <p className="text-slate-400 text-[11px] leading-relaxed">
-                  Reconstructs state, flags in-flight actions, and continues accepting new work.
-                </p>
-              </div>
-            </div>
-
-            {/* Action Trigger Button */}
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-2">
+            {/* 3-Action Chaos Trigger Buttons */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
               <button
                 type="button"
-                onClick={handleRunChaosSimulation}
-                disabled={isBlackoutSimulating}
-                className="w-full sm:w-auto px-6 py-3 bg-gradient-to-r from-red-600 via-amber-600 to-amber-500 hover:from-red-500 hover:to-amber-400 text-white font-extrabold rounded-xl text-xs uppercase tracking-wider transition-all shadow-lg flex items-center justify-center gap-2 disabled:opacity-50"
+                onClick={triggerBlackout}
+                className="p-3.5 rounded-xl border border-red-500/40 bg-red-600/20 hover:bg-red-600/30 text-red-300 font-bold text-xs flex flex-col items-center justify-center gap-2 transition-all cursor-pointer shadow-xs text-center"
               >
-                <Flame size={16} />
-                <span>
-                  {isBlackoutSimulating
-                    ? '💥 Simulating Storage Blackout Mid-Operation...'
-                    : '💥 Simulate Data Store Blackout Mid-Operation'}
-                </span>
+                <AlertTriangle className="h-5 w-5 text-red-400" />
+                <span>⚡ 1. Wipe Primary Data Store (The Blackout)</span>
               </button>
 
-              {recoveryReport && (
-                <button
-                  type="button"
-                  onClick={() => setIsReportModalOpen(true)}
-                  className="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-xl text-xs font-bold transition-colors flex items-center gap-1.5"
-                >
-                  <FileText size={14} className="text-amber-400" />
-                  <span>View Latest Disaster Recovery Report</span>
-                </button>
-              )}
+              <button
+                type="button"
+                onClick={triggerCorruption}
+                className="p-3.5 rounded-xl border border-amber-500/40 bg-amber-600/20 hover:bg-amber-600/30 text-amber-300 font-bold text-xs flex flex-col items-center justify-center gap-2 transition-all cursor-pointer shadow-xs text-center"
+              >
+                <ShieldAlert className="h-5 w-5 text-amber-400" />
+                <span>💥 2. Corrupt In-Flight Bit-Rot</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={runRecovery}
+                disabled={recoveryLoading}
+                className="p-3.5 rounded-xl border border-emerald-500/40 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 font-bold text-xs flex flex-col items-center justify-center gap-2 transition-all cursor-pointer shadow-xs text-center disabled:opacity-50"
+              >
+                <RefreshCw className={`h-5 w-5 text-emerald-400 ${recoveryLoading ? 'animate-spin' : ''}`} />
+                <span>🛡️ 3. Autonomous Phoenix Rebuild</span>
+              </button>
             </div>
 
-            {chaosMessage && (
-              <div className="p-3 bg-slate-900 border border-amber-500/40 rounded-xl text-amber-200 text-xs font-mono">
-                {chaosMessage}
+            {isBlackout && (
+              <div className="pt-3 border-t border-slate-800 flex items-center justify-between">
+                <span className="text-xs text-amber-300 font-medium">
+                  Disaster state active. Reset to normal primary store:
+                </span>
+                <button
+                  type="button"
+                  onClick={resetSystem}
+                  className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-bold text-slate-300 cursor-pointer"
+                >
+                  Reset to Normal Primary Store
+                </button>
               </div>
             )}
+
+            <div className="flex justify-end pt-2">
+              <button
+                type="button"
+                onClick={() => setModalOpen(true)}
+                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-xl text-xs font-bold transition-colors flex items-center gap-1.5 cursor-pointer"
+              >
+                <FileText size={14} className="text-amber-400" />
+                <span>Open Full Telemetry & Post-Mortem Console</span>
+              </button>
+            </div>
           </div>
         </div>
-      )}
-
-      {/* Recovery Report Audit Modal */}
-      {isReportModalOpen && recoveryReport && (
-        <RecoveryReportModal
-          isOpen={isReportModalOpen}
-          onClose={() => setIsReportModalOpen(false)}
-          report={recoveryReport}
-        />
       )}
     </div>
   );

@@ -193,32 +193,32 @@ export const CivicMapPage: React.FC = () => {
   return (
     <div className="space-y-5">
       {/* Top Header */}
-      <div className="bg-white border border-[#76777d]/20 rounded-2xl p-5 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="bg-card border border-border rounded-2xl p-5 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2 mb-1">
             <span className="bg-emerald-50 text-emerald-800 border border-emerald-200 text-[10px] font-mono uppercase font-bold px-2 py-0.5 rounded flex items-center gap-1">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
               GIS Spatial Node #08
             </span>
-            <span className="text-xs text-[#76777d]">EPSG:4326 Sensor Infrastructure</span>
+            <span className="text-xs text-muted-foreground">EPSG:4326 Sensor Infrastructure</span>
           </div>
-          <h1 className="text-xl sm:text-2xl font-bold text-[#1b1b1d] tracking-tight">
+          <h1 className="text-xl sm:text-2xl font-bold text-foreground tracking-tight">
             GIS Command Map
           </h1>
-          <p className="text-xs sm:text-sm text-[#57657b] mt-1">
+          <p className="text-xs sm:text-sm text-muted-foreground mt-1">
             Spatial telemetry & municipal sensor infrastructure with live SCADA overlays and defect hot-spots.
           </p>
         </div>
 
         {/* Search Bar in Map Header */}
         <div className="relative w-full md:w-72">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[#76777d] w-4 h-4" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground w-4 h-4" />
           <input
             type="text"
             value={mapSearch}
             onChange={(e) => setMapSearch(e.target.value)}
             placeholder="Search Ward, Pipeline, Unit..."
-            className="w-full bg-[#f6f3f5] border border-[#76777d]/20 rounded-xl pl-9 pr-3 py-2 text-xs text-[#1b1b1d] placeholder:text-[#76777d]/70 focus:outline-none focus:border-[#131b2e] font-medium"
+            className="w-full bg-muted/60 dark:bg-slate-900 border border-border rounded-xl pl-9 pr-3 py-2 text-xs text-foreground placeholder:text-muted-foreground/70 focus:outline-none focus:border-primary font-medium"
           />
         </div>
       </div>
@@ -226,17 +226,17 @@ export const CivicMapPage: React.FC = () => {
       {/* Main Map Container & Overlay Controls */}
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-5">
         {/* Left Sidebar: Active Overlays & Sensors */}
-        <div className="bg-white border border-[#76777d]/20 rounded-2xl p-5 shadow-xs space-y-4">
-          <div className="border-b border-[#76777d]/15 pb-3">
-            <h3 className="font-bold text-xs uppercase tracking-wider text-[#1b1b1d] flex items-center gap-2">
+        <div className="bg-card border border-border rounded-2xl p-5 shadow-xs space-y-4">
+          <div className="border-b border-border pb-3">
+            <h3 className="font-bold text-xs uppercase tracking-wider text-foreground flex items-center gap-2">
               <Layers size={14} className="text-[#131b2e]" />
               <span>Active Overlays & Sensors</span>
             </h3>
           </div>
 
           <div className="space-y-3 text-xs">
-            <label className="flex items-center justify-between p-2 rounded-xl bg-[#fcf8fa] hover:bg-slate-100 cursor-pointer transition-colors border border-[#76777d]/10">
-              <span className="flex items-center gap-2 font-medium text-[#1b1b1d]">
+            <label className="flex items-center justify-between p-2 rounded-xl bg-muted/30 dark:bg-slate-900/60 hover:bg-slate-100 cursor-pointer transition-colors border border-[#76777d]/10">
+              <span className="flex items-center gap-2 font-medium text-foreground">
                 <span className="w-2.5 h-2.5 rounded-full bg-[#ba1a1a]"></span>
                 <span>Critical Incidents</span>
               </span>
@@ -261,8 +261,8 @@ export const CivicMapPage: React.FC = () => {
               />
             </label>
 
-            <label className="flex items-center justify-between p-2 rounded-xl bg-[#fcf8fa] hover:bg-slate-100 cursor-pointer transition-colors border border-[#76777d]/10">
-              <span className="flex items-center gap-2 font-medium text-[#1b1b1d]">
+            <label className="flex items-center justify-between p-2 rounded-xl bg-muted/30 dark:bg-slate-900/60 hover:bg-slate-100 cursor-pointer transition-colors border border-[#76777d]/10">
+              <span className="flex items-center gap-2 font-medium text-foreground">
                 <span className="w-2.5 h-2.5 rounded-full bg-blue-600"></span>
                 <span>Water Pipeline SCADA</span>
               </span>
@@ -274,8 +274,8 @@ export const CivicMapPage: React.FC = () => {
               />
             </label>
 
-            <label className="flex items-center justify-between p-2 rounded-xl bg-[#fcf8fa] hover:bg-slate-100 cursor-pointer transition-colors border border-[#76777d]/10">
-              <span className="flex items-center gap-2 font-medium text-[#1b1b1d]">
+            <label className="flex items-center justify-between p-2 rounded-xl bg-muted/30 dark:bg-slate-900/60 hover:bg-slate-100 cursor-pointer transition-colors border border-[#76777d]/10">
+              <span className="flex items-center gap-2 font-medium text-foreground">
                 <span className="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
                 <span>Waste Hotspots</span>
               </span>
@@ -287,8 +287,8 @@ export const CivicMapPage: React.FC = () => {
               />
             </label>
 
-            <label className="flex items-center justify-between p-2 rounded-xl bg-[#fcf8fa] hover:bg-slate-100 cursor-pointer transition-colors border border-[#76777d]/10">
-              <span className="flex items-center gap-2 font-medium text-[#1b1b1d]">
+            <label className="flex items-center justify-between p-2 rounded-xl bg-muted/30 dark:bg-slate-900/60 hover:bg-slate-100 cursor-pointer transition-colors border border-[#76777d]/10">
+              <span className="flex items-center gap-2 font-medium text-foreground">
                 <span className="w-2.5 h-2.5 rounded-full bg-emerald-600"></span>
                 <span>Live Fleet Units</span>
               </span>
@@ -300,8 +300,8 @@ export const CivicMapPage: React.FC = () => {
               />
             </label>
 
-            <label className="flex items-center justify-between p-2 rounded-xl bg-[#fcf8fa] hover:bg-slate-100 cursor-pointer transition-colors border border-[#76777d]/10">
-              <span className="flex items-center gap-2 font-medium text-[#1b1b1d]">
+            <label className="flex items-center justify-between p-2 rounded-xl bg-muted/30 dark:bg-slate-900/60 hover:bg-slate-100 cursor-pointer transition-colors border border-[#76777d]/10">
+              <span className="flex items-center gap-2 font-medium text-foreground">
                 <span className="w-2.5 h-2.5 rounded-full bg-purple-600"></span>
                 <span>Hospitals & Hubs</span>
               </span>
@@ -316,16 +316,16 @@ export const CivicMapPage: React.FC = () => {
 
           {/* Selected Incident Drawer on Left */}
           {selectedIssue && (
-            <div className="pt-3 border-t border-[#76777d]/15 space-y-2 text-xs">
-              <span className="font-bold text-[10px] uppercase text-[#76777d] tracking-wider block">
+            <div className="pt-3 border-t border-border space-y-2 text-xs">
+              <span className="font-bold text-[10px] uppercase text-muted-foreground tracking-wider block">
                 Selected Incident Telemetry
               </span>
               <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-1.5">
                 <span className="font-mono font-bold text-xs text-[#131b2e]">
                   {selectedIssue.ticketNumber}
                 </span>
-                <h4 className="font-bold text-xs text-[#1b1b1d]">{selectedIssue.title}</h4>
-                <p className="text-[11px] text-[#57657b]">{selectedIssue.locationAddress}</p>
+                <h4 className="font-bold text-xs text-foreground">{selectedIssue.title}</h4>
+                <p className="text-[11px] text-muted-foreground">{selectedIssue.locationAddress}</p>
                 <div className="pt-1 flex justify-between items-center">
                   <PriorityBadge score={selectedIssue.priorityScore?.finalScore} size="sm" />
                   <button
@@ -341,7 +341,7 @@ export const CivicMapPage: React.FC = () => {
         </div>
 
         {/* Right 3 Cols: Interactive GIS Map Canvas */}
-        <div className="lg:col-span-3 bg-white border border-[#76777d]/20 rounded-2xl overflow-hidden shadow-xs flex flex-col min-h-[550px]">
+        <div className="lg:col-span-3 bg-card border border-border rounded-2xl overflow-hidden shadow-xs flex flex-col min-h-[550px]">
           <div className="flex-1 relative z-0">
             <MapContainer
               center={kopargaonCenter}
@@ -444,7 +444,7 @@ export const CivicMapPage: React.FC = () => {
           </div>
 
           {/* Bottom Telemetry Status Bar */}
-          <div className="px-5 py-3 bg-[#fcf8fa] border-t border-[#76777d]/15 flex items-center justify-between text-[11px] text-[#76777d] font-mono">
+          <div className="px-5 py-3 bg-muted/30 dark:bg-slate-900/60 border-t border-border flex items-center justify-between text-[11px] text-muted-foreground font-mono">
             <span>Kopargaon GIS Node #08</span>
             <span>EPSG:4326 • SCADA Grid Active</span>
           </div>
@@ -461,3 +461,6 @@ export const CivicMapPage: React.FC = () => {
     </div>
   );
 };
+
+export default CivicMapPage;
+

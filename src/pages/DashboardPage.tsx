@@ -68,24 +68,22 @@ export const DashboardPage: React.FC = () => {
     .sort((a, b) => (b.priorityScore?.finalScore ?? 0) - (a.priorityScore?.finalScore ?? 0))
     .slice(0, 5);
 
-  const COLORS = ['#059669', '#3b82f6', '#f59e0b', '#8b5cf6', '#ef4444'];
-
   return (
     <div className="space-y-5">
       {/* Top Banner / Welcome */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white border border-[#76777d]/20 rounded-2xl p-5 sm:p-6 shadow-xs">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-card border border-border rounded-2xl p-5 sm:p-6 shadow-xs transition-colors">
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <span className="bg-slate-100 text-[#131b2e] border border-slate-300 text-[10px] font-mono uppercase font-bold px-2 py-0.5 rounded flex items-center gap-1">
-              <Activity size={12} className="text-emerald-600" />
+            <span className="bg-muted text-foreground border border-border text-[10px] font-mono uppercase font-bold px-2 py-0.5 rounded flex items-center gap-1">
+              <Activity size={12} className="text-emerald-500" />
               Shift 1 • Real-time Operations
             </span>
-            <span className="text-xs text-[#76777d]">Ahilyanagar District, Kopargaon</span>
+            <span className="text-xs text-muted-foreground">Ahilyanagar District, Kopargaon</span>
           </div>
-          <h1 className="text-xl sm:text-2xl font-bold text-[#1b1b1d] tracking-tight">
+          <h1 className="text-xl sm:text-2xl font-bold text-foreground tracking-tight">
             KoparNiti: Municipal Command & Operational Intelligence
           </h1>
-          <p className="text-xs sm:text-sm text-[#57657b] mt-1 max-w-2xl">
+          <p className="text-xs sm:text-sm text-muted-foreground mt-1 max-w-2xl">
             कोपरनीती — Deterministic prioritization and multi-strategy optimization for constrained municipal fleet, workforce, and departmental budgets.
           </p>
         </div>
@@ -93,21 +91,21 @@ export const DashboardPage: React.FC = () => {
         <div className="flex flex-wrap gap-2.5 shrink-0">
           <button
             onClick={() => navigate('/flood-priority')}
-            className="flex items-center gap-2 bg-gradient-to-r from-rose-700 to-red-700 hover:from-rose-600 hover:to-red-600 text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow-xs transition-all tracking-wider uppercase border border-rose-500/30"
+            className="flex items-center gap-2 bg-gradient-to-r from-rose-700 to-red-700 hover:from-rose-600 hover:to-red-600 text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow-xs transition-all tracking-wider uppercase border border-rose-500/30 cursor-pointer"
           >
             <Waves size={14} className="animate-pulse" />
             <span>Flood Alert Dispatch</span>
           </button>
           <button
             onClick={() => navigate('/priority-engine')}
-            className="flex items-center gap-2 bg-[#131b2e] hover:bg-[#1e2a47] text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow-xs transition-all tracking-wider uppercase"
+            className="flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-bold px-4 py-2.5 rounded-xl shadow-xs transition-all tracking-wider uppercase cursor-pointer"
           >
             <Gavel size={14} />
             <span>Decision Workbench</span>
           </button>
           <button
             onClick={() => navigate('/citizen-portal')}
-            className="flex items-center gap-1.5 bg-white hover:bg-slate-50 text-[#131b2e] border border-[#76777d]/30 text-xs font-bold px-3.5 py-2.5 rounded-xl shadow-xs transition-all uppercase tracking-wider"
+            className="flex items-center gap-1.5 bg-card hover:bg-muted text-foreground border border-border text-xs font-bold px-3.5 py-2.5 rounded-xl shadow-xs transition-all uppercase tracking-wider cursor-pointer"
           >
             <span>Citizen Portal</span>
           </button>
@@ -135,41 +133,41 @@ export const DashboardPage: React.FC = () => {
 
         <button
           onClick={() => navigate('/flood-priority')}
-          className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs transition-all shrink-0 shadow-sm"
+          className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs transition-all shrink-0 shadow-sm cursor-pointer"
         >
           <span>Resource Sequence →</span>
         </button>
       </div>
 
-      {/* Top KPI Strip (6 Cards in KMC Visual Style) */}
+      {/* Top KPI Strip (6 Cards in Modern Blackout / Light Theme Style) */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
         {/* KPI 1 */}
-        <div className="bg-white p-4 rounded-xl border border-[#76777d]/20 shadow-xs flex flex-col justify-between">
-          <span className="text-[11px] font-bold uppercase tracking-wider text-[#76777d] mb-2">
+        <div className="bg-card p-4 rounded-xl border border-border shadow-xs flex flex-col justify-between transition-colors">
+          <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground mb-2">
             Active Issues
           </span>
           <div className="flex items-end justify-between">
-            <span className="text-2xl sm:text-3xl font-bold text-[#1b1b1d] tracking-tight font-mono">
+            <span className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight font-mono">
               {activeIssues.length}
             </span>
-            <div className="p-1.5 rounded-lg bg-blue-50 text-blue-700">
+            <div className="p-1.5 rounded-lg bg-primary/10 text-primary">
               <TrendingUp className="w-4 h-4" />
             </div>
           </div>
         </div>
 
         {/* KPI 2 - Critical Priority */}
-        <div className="bg-white p-4 rounded-xl border border-[#ba1a1a]/30 shadow-xs flex flex-col justify-between relative overflow-hidden">
-          <div className="absolute inset-0 bg-[#ba1a1a]/5 border-l-4 border-[#ba1a1a]"></div>
+        <div className="bg-card p-4 rounded-xl border border-destructive/30 shadow-xs flex flex-col justify-between relative overflow-hidden transition-colors">
+          <div className="absolute inset-0 bg-destructive/5 border-l-4 border-destructive"></div>
           <div className="relative z-10 flex flex-col justify-between h-full">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-[#ba1a1a] mb-2">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-destructive mb-2">
               Critical Urgency
             </span>
             <div className="flex items-end justify-between">
-              <span className="text-2xl sm:text-3xl font-bold text-[#ba1a1a] tracking-tight font-mono">
+              <span className="text-2xl sm:text-3xl font-bold text-destructive tracking-tight font-mono">
                 {criticalIssues.length}
               </span>
-              <div className="p-1.5 rounded-lg bg-red-100 text-[#ba1a1a]">
+              <div className="p-1.5 rounded-lg bg-destructive/10 text-destructive">
                 <AlertTriangle className="w-4 h-4" />
               </div>
             </div>
@@ -177,17 +175,17 @@ export const DashboardPage: React.FC = () => {
         </div>
 
         {/* KPI 3 - Resources Deployed */}
-        <div className="bg-white p-4 rounded-xl border border-[#76777d]/20 shadow-xs flex flex-col justify-between">
-          <span className="text-[11px] font-bold uppercase tracking-wider text-[#76777d] mb-2">
+        <div className="bg-card p-4 rounded-xl border border-border shadow-xs flex flex-col justify-between transition-colors">
+          <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground mb-2">
             Fleet Deployed
           </span>
           <div className="flex items-end justify-between">
-            <span className="text-2xl sm:text-3xl font-bold text-[#1b1b1d] tracking-tight font-mono">
+            <span className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight font-mono">
               {resourceUtilizationRate}%
             </span>
-            <div className="w-12 h-2 bg-[#eae7e9] rounded-full overflow-hidden mb-2">
+            <div className="w-12 h-2 bg-muted rounded-full overflow-hidden mb-2">
               <div
-                className="h-full bg-[#131b2e] rounded-full transition-all"
+                className="h-full bg-primary rounded-full transition-all"
                 style={{ width: `${resourceUtilizationRate}%` }}
               ></div>
             </div>
@@ -195,45 +193,45 @@ export const DashboardPage: React.FC = () => {
         </div>
 
         {/* KPI 4 */}
-        <div className="bg-white p-4 rounded-xl border border-[#76777d]/20 shadow-xs flex flex-col justify-between">
-          <span className="text-[11px] font-bold uppercase tracking-wider text-[#76777d] mb-2">
+        <div className="bg-card p-4 rounded-xl border border-border shadow-xs flex flex-col justify-between transition-colors">
+          <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground mb-2">
             Workforce Units
           </span>
           <div className="flex items-end justify-between">
-            <span className="text-2xl sm:text-3xl font-bold text-[#1b1b1d] tracking-tight font-mono">
+            <span className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight font-mono">
               {operationalResources.length} / {resources.length}
             </span>
-            <div className="p-1.5 rounded-lg bg-emerald-50 text-emerald-700">
+            <div className="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
               <Truck className="w-4 h-4" />
             </div>
           </div>
         </div>
 
         {/* KPI 5 */}
-        <div className="bg-white p-4 rounded-xl border border-[#76777d]/20 shadow-xs flex flex-col justify-between">
-          <span className="text-[11px] font-bold uppercase tracking-wider text-[#76777d] mb-2">
+        <div className="bg-card p-4 rounded-xl border border-border shadow-xs flex flex-col justify-between transition-colors">
+          <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground mb-2">
             Resolved Today
           </span>
           <div className="flex items-end justify-between">
-            <span className="text-2xl sm:text-3xl font-bold text-[#1b1b1d] tracking-tight font-mono">
+            <span className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight font-mono">
               {resolvedIssues.length}
             </span>
-            <div className="p-1.5 rounded-lg bg-emerald-50 text-emerald-700">
+            <div className="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
               <CheckCircle2 className="w-4 h-4" />
             </div>
           </div>
         </div>
 
         {/* KPI 6 */}
-        <div className="bg-white p-4 rounded-xl border border-[#76777d]/20 shadow-xs flex flex-col justify-between">
-          <span className="text-[11px] font-bold uppercase tracking-wider text-[#76777d] mb-2">
+        <div className="bg-card p-4 rounded-xl border border-border shadow-xs flex flex-col justify-between transition-colors">
+          <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground mb-2">
             Shift Plans
           </span>
           <div className="flex items-end justify-between">
-            <span className="text-2xl sm:text-3xl font-bold text-[#1b1b1d] tracking-tight font-mono">
+            <span className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight font-mono">
               {activePlans.length > 0 ? activePlans.length : '1 Draft'}
             </span>
-            <div className="p-1.5 rounded-lg bg-purple-50 text-purple-700">
+            <div className="p-1.5 rounded-lg bg-purple-500/10 text-purple-600 dark:text-purple-400">
               <Layers className="w-4 h-4" />
             </div>
           </div>
@@ -243,24 +241,24 @@ export const DashboardPage: React.FC = () => {
       {/* Main Grid: Priority Ranked Competing Issues + Department Allocations */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
         {/* Left 2 Cols: High-Priority Competing Issues */}
-        <div className="lg:col-span-2 bg-white border border-[#76777d]/20 rounded-2xl p-5 shadow-xs space-y-4">
-          <div className="flex items-center justify-between border-b border-[#76777d]/15 pb-3">
+        <div className="lg:col-span-2 bg-card border border-border rounded-2xl p-5 shadow-xs space-y-4 transition-colors">
+          <div className="flex items-center justify-between border-b border-border pb-3">
             <div className="flex items-center gap-2">
-              <div className="p-1.5 rounded-lg bg-red-100 text-[#ba1a1a]">
+              <div className="p-1.5 rounded-lg bg-destructive/10 text-destructive">
                 <Flame size={16} />
               </div>
               <div>
-                <h2 className="font-bold text-sm text-[#1b1b1d] uppercase tracking-wider">
+                <h2 className="font-bold text-sm text-foreground uppercase tracking-wider">
                   Top Priority Ranked Competing Grievances
                 </h2>
-                <p className="text-[11px] text-[#76777d]">
+                <p className="text-[11px] text-muted-foreground">
                   Prioritized by deterministic multi-factor algorithm
                 </p>
               </div>
             </div>
             <button
               onClick={() => navigate('/issues')}
-              className="text-xs text-[#131b2e] font-bold hover:underline flex items-center gap-1"
+              className="text-xs text-primary font-bold hover:underline flex items-center gap-1 cursor-pointer"
             >
               <span>View All ({issues.length})</span>
               <ArrowUpRight size={13} />
@@ -268,11 +266,11 @@ export const DashboardPage: React.FC = () => {
           </div>
 
           {topCriticalQueue.length === 0 ? (
-            <div className="p-12 text-center text-[#76777d] text-xs space-y-2">
+            <div className="p-12 text-center text-muted-foreground text-xs space-y-2">
               <p>No civic issues currently queued in the system.</p>
               <button
                 onClick={() => navigate('/citizen-portal')}
-                className="text-[#131b2e] font-bold underline"
+                className="text-primary font-bold underline cursor-pointer"
               >
                 Submit a new grievance to initiate engine →
               </button>
@@ -283,19 +281,19 @@ export const DashboardPage: React.FC = () => {
                 <div
                   key={issue.id}
                   onClick={() => navigate('/issues')}
-                  className="p-3.5 bg-[#fcf8fa] hover:bg-slate-50 border border-[#76777d]/15 rounded-xl cursor-pointer transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3 group"
+                  className="p-3.5 bg-muted/40 hover:bg-muted border border-border rounded-xl cursor-pointer transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3 group"
                 >
                   <div className="space-y-1 min-w-0">
                     <div className="flex items-center gap-2">
-                      <span className="font-mono font-bold text-xs text-[#131b2e]">
+                      <span className="font-mono font-bold text-xs text-primary">
                         #{idx + 1} • {issue.ticketNumber}
                       </span>
-                      <span className="text-[#76777d]">•</span>
-                      <span className="text-[11px] text-[#76777d] truncate">
+                      <span className="text-muted-foreground">•</span>
+                      <span className="text-[11px] text-muted-foreground truncate">
                         {issue.locationAddress}
                       </span>
                     </div>
-                    <h3 className="font-bold text-xs text-[#1b1b1d] group-hover:text-blue-900 truncate">
+                    <h3 className="font-bold text-xs text-foreground group-hover:text-primary truncate">
                       {issue.title}
                     </h3>
                   </div>
@@ -315,12 +313,12 @@ export const DashboardPage: React.FC = () => {
         </div>
 
         {/* Right 1 Col: Department Daily Budgets & Readiness */}
-        <div className="bg-white border border-[#76777d]/20 rounded-2xl p-5 shadow-xs space-y-4">
-          <div className="border-b border-[#76777d]/15 pb-3">
-            <h2 className="font-bold text-sm text-[#1b1b1d] uppercase tracking-wider">
+        <div className="bg-card border border-border rounded-2xl p-5 shadow-xs space-y-4 transition-colors">
+          <div className="border-b border-border pb-3">
+            <h2 className="font-bold text-sm text-foreground uppercase tracking-wider">
               Department Daily Budgets
             </h2>
-            <p className="text-[11px] text-[#76777d]">Shift 1 Financial & Resource Limits</p>
+            <p className="text-[11px] text-muted-foreground">Shift 1 Financial & Resource Limits</p>
           </div>
 
           <div className="space-y-3 text-xs">
@@ -330,17 +328,17 @@ export const DashboardPage: React.FC = () => {
               const pct = Math.min(100, Math.round((estBudgetSpent / dept.dailyBudgetLimit) * 100));
 
               return (
-                <div key={dept.id} className="space-y-1 p-2.5 bg-[#fcf8fa] rounded-xl border border-[#76777d]/10">
+                <div key={dept.id} className="space-y-1 p-2.5 bg-muted/40 rounded-xl border border-border">
                   <div className="flex justify-between items-center">
-                    <span className="font-bold text-[#1b1b1d]">{dept.name}</span>
-                    <span className="font-mono text-[11px] text-[#76777d]">
+                    <span className="font-bold text-foreground">{dept.name}</span>
+                    <span className="font-mono text-[11px] text-muted-foreground">
                       ₹{estBudgetSpent.toLocaleString()} / ₹{dept.dailyBudgetLimit.toLocaleString()}
                     </span>
                   </div>
-                  <div className="w-full h-1.5 bg-[#eae7e9] rounded-full overflow-hidden">
+                  <div className="w-full h-1.5 bg-muted rounded-full overflow-hidden">
                     <div
                       className={`h-full rounded-full transition-all ${
-                        pct > 80 ? 'bg-[#ba1a1a]' : 'bg-[#131b2e]'
+                        pct > 80 ? 'bg-destructive' : 'bg-primary'
                       }`}
                       style={{ width: `${pct}%` }}
                     />
@@ -351,12 +349,12 @@ export const DashboardPage: React.FC = () => {
           </div>
 
           {/* Heavy Fleet Summary Card */}
-          <div className="pt-2 border-t border-[#76777d]/15">
+          <div className="pt-2 border-t border-border">
             <div className="flex justify-between items-center mb-2">
-              <span className="font-bold text-xs text-[#1b1b1d] uppercase tracking-wider">
+              <span className="font-bold text-xs text-foreground uppercase tracking-wider">
                 Heavy Fleet Readiness
               </span>
-              <span className="font-mono text-[11px] text-emerald-700 font-bold">
+              <span className="font-mono text-[11px] text-emerald-600 dark:text-emerald-400 font-bold">
                 {operationalResources.length} Units Available
               </span>
             </div>
@@ -364,14 +362,14 @@ export const DashboardPage: React.FC = () => {
               {resources.map((r) => (
                 <div
                   key={r.id}
-                  className="flex items-center justify-between p-2 bg-[#fcf8fa] rounded-lg border border-[#76777d]/10 text-[11px]"
+                  className="flex items-center justify-between p-2 bg-muted/40 rounded-lg border border-border text-[11px]"
                 >
-                  <span className="font-medium text-[#1b1b1d] truncate max-w-[180px]">{r.name}</span>
+                  <span className="font-medium text-foreground truncate max-w-[180px]">{r.name}</span>
                   <span
                     className={`px-2 py-0.5 rounded font-bold uppercase text-[9px] ${
                       r.isOperational
-                        ? 'bg-emerald-100 text-emerald-800'
-                        : 'bg-red-100 text-red-800'
+                        ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400'
+                        : 'bg-destructive/15 text-destructive'
                     }`}
                   >
                     {r.isOperational ? 'Ready' : 'Maintenance'}
