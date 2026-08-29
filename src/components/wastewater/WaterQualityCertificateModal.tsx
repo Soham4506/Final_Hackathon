@@ -64,25 +64,25 @@ export const WaterQualityCertificateModal: React.FC<WaterQualityCertificateModal
   const badge = getGradeBadge(sample.grade);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm overflow-y-auto">
-      <div className="relative w-full max-w-4xl bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl overflow-hidden my-8">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-150 overflow-y-auto">
+      <div className="bg-white rounded-2xl max-w-4xl w-full shadow-2xl border border-[#76777d]/20 overflow-hidden my-8">
         {/* Modal Top Bar (Screen Only) */}
-        <div className="flex items-center justify-between px-6 py-4 bg-slate-950/70 border-b border-slate-800 print:hidden">
-          <div className="flex items-center gap-2 text-emerald-400 font-semibold text-sm">
-            <FileCheck size={18} />
+        <div className="flex items-center justify-between px-6 py-4 bg-[#131b2e] text-white print:hidden">
+          <div className="flex items-center gap-2 font-bold text-sm uppercase tracking-wider">
+            <FileCheck size={18} className="text-emerald-400" />
             <span>Official Municipal Water Quality Lab Certificate</span>
           </div>
           <div className="flex items-center gap-3">
             <button
               onClick={handlePrint}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-200 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg transition-all"
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold uppercase tracking-wider text-[#131b2e] bg-white hover:bg-slate-100 rounded-lg transition-all shadow-xs"
             >
               <Printer size={14} />
               <span>Print Certificate</span>
             </button>
             <button
               onClick={onClose}
-              className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors"
+              className="p-1 rounded-lg hover:bg-white/10 text-white/80 hover:text-white transition-colors"
             >
               <X size={18} />
             </button>
@@ -90,57 +90,57 @@ export const WaterQualityCertificateModal: React.FC<WaterQualityCertificateModal
         </div>
 
         {/* Certificate Body (Printable Area) */}
-        <div className="p-8 space-y-6 text-slate-200 bg-slate-900 print:bg-white print:text-black print:p-6 print:m-0">
+        <div className="p-8 space-y-6 text-[#1b1b1d] bg-white print:p-6 print:m-0">
           {/* Certificate Header / Emblems */}
-          <div className="border-b-2 border-emerald-600/40 pb-5 text-center relative">
+          <div className="border-b-2 border-emerald-600/30 pb-5 text-center relative">
             <div className="flex items-center justify-between">
               <div className="text-left">
-                <span className="text-[10px] font-mono uppercase tracking-widest text-slate-400 print:text-gray-600">
+                <span className="text-[10px] font-mono uppercase tracking-widest text-[#76777d]">
                   Govt. of Maharashtra • Kopargaon Municipal Council
                 </span>
-                <h1 className="text-xl font-bold tracking-tight text-white print:text-black flex items-center gap-2">
-                  <Building size={20} className="text-emerald-400 print:text-emerald-700" />
+                <h1 className="text-xl font-bold tracking-tight text-[#1b1b1d] flex items-center gap-2">
+                  <Building size={20} className="text-emerald-700" />
                   कोपरगाव नगरपरिषद (अहिल्यानगर)
                 </h1>
-                <p className="text-xs text-slate-400 print:text-gray-600">
+                <p className="text-xs text-[#57657b]">
                   Water Supply & Sanitation Department • Central Environmental Testing Laboratory
                 </p>
               </div>
 
               <div className="text-right">
-                <div className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-emerald-950/80 border border-emerald-700/50 text-emerald-400 text-xs font-mono font-bold print:bg-emerald-50 print:text-emerald-800 print:border-emerald-300">
-                  <ShieldCheck size={14} />
+                <div className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-emerald-50 border border-emerald-300 text-emerald-900 text-xs font-mono font-bold">
+                  <ShieldCheck size={14} className="text-emerald-700" />
                   <span>CPCB CERTIFIED</span>
                 </div>
-                <div className="text-[10px] text-slate-400 print:text-gray-600 mt-1 font-mono">
+                <div className="text-[10px] text-[#76777d] mt-1 font-mono">
                   ISO 14001:2015 Compliant
                 </div>
               </div>
             </div>
 
-            <div className="mt-4 pt-3 border-t border-slate-800/80 print:border-gray-300">
-              <h2 className="text-base font-extrabold uppercase tracking-wide text-emerald-300 print:text-emerald-800">
+            <div className="mt-4 pt-3 border-t border-[#76777d]/15">
+              <h2 className="text-base font-extrabold uppercase tracking-wide text-emerald-800">
                 Agricultural Water Quality & Safety Clearance Certificate
               </h2>
-              <p className="text-[11px] text-slate-400 print:text-gray-600 mt-0.5">
+              <p className="text-[11px] text-[#57657b] mt-0.5">
                 Issued in accordance with Central Pollution Control Board (CPCB) & FAO Agricultural Irrigation Norms
               </p>
             </div>
           </div>
 
           {/* Certificate Metadata Bar */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-slate-950/60 print:bg-gray-100 p-4 rounded-xl border border-slate-800 print:border-gray-300 text-xs">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-[#fcf8fa] p-4 rounded-xl border border-[#76777d]/15 text-xs">
             <div>
-              <span className="text-[10px] uppercase font-bold text-slate-400 print:text-gray-600 block">Certificate No.</span>
-              <span className="font-mono font-bold text-emerald-400 print:text-emerald-800">{sample.qrVerificationHash}</span>
+              <span className="text-[10px] uppercase font-bold text-[#76777d] block">Certificate No.</span>
+              <span className="font-mono font-bold text-emerald-800">{sample.qrVerificationHash}</span>
             </div>
             <div>
-              <span className="text-[10px] uppercase font-bold text-slate-400 print:text-gray-600 block">Batch Identifier</span>
-              <span className="font-mono font-semibold text-white print:text-black">{sample.batchNumber}</span>
+              <span className="text-[10px] uppercase font-bold text-[#76777d] block">Batch Identifier</span>
+              <span className="font-mono font-semibold text-[#1b1b1d]">{sample.batchNumber}</span>
             </div>
             <div>
-              <span className="text-[10px] uppercase font-bold text-slate-400 print:text-gray-600 block">Test Date & Time</span>
-              <span className="font-medium text-slate-200 print:text-black">
+              <span className="text-[10px] uppercase font-bold text-[#76777d] block">Test Date & Time</span>
+              <span className="font-medium text-[#1b1b1d]">
                 {new Date(sample.testedAt).toLocaleString('en-IN', {
                   day: '2-digit',
                   month: 'short',
@@ -151,94 +151,65 @@ export const WaterQualityCertificateModal: React.FC<WaterQualityCertificateModal
               </span>
             </div>
             <div>
-              <span className="text-[10px] uppercase font-bold text-slate-400 print:text-gray-600 block">Water Quality Index</span>
-              <span className="font-bold text-white print:text-black">{sample.waterQualityIndex} / 100 (Optimal)</span>
+              <span className="text-[10px] uppercase font-bold text-[#76777d] block">Certified Lab Chemist</span>
+              <span className="font-semibold text-[#1b1b1d]">{sample.labTechnicianName || 'Dr. Anjali Deshmukh (M.Sc Env)'}</span>
             </div>
           </div>
 
-          {/* Quality Grade Banner */}
-          <div className={`p-4 rounded-xl border ${badge.color} text-center space-y-1 print:border-2`}>
-            <div className="flex items-center justify-center gap-2 font-bold text-sm tracking-wide uppercase">
-              <Award size={18} />
-              <span>{badge.text}</span>
-            </div>
+          {/* Official Clearance Tier Banner */}
+          <div className={`p-4 rounded-xl border text-center space-y-1 ${badge.color}`}>
+            <span className="text-xs font-mono font-bold tracking-wider uppercase block">
+              {badge.text}
+            </span>
             <p className="text-xs opacity-90">{badge.desc}</p>
           </div>
 
-          {/* Parameter Test Results Table */}
+          {/* Core Tested Parameters Table */}
           <div className="space-y-2">
-            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-300 print:text-gray-800 flex items-center gap-1.5">
-              <Droplets size={14} className="text-emerald-400 print:text-emerald-700" />
-              <span>Physicochemical & Microbiological Laboratory Analysis</span>
+            <h3 className="text-xs font-bold uppercase tracking-wider text-[#1b1b1d]">
+              Physicochemical & Microbiological Laboratory Analysis
             </h3>
-
-            <div className="border border-slate-800 print:border-gray-300 rounded-xl overflow-hidden text-xs">
+            <div className="border border-[#76777d]/15 rounded-xl overflow-hidden text-xs">
               <table className="w-full text-left">
-                <thead className="bg-slate-950/80 print:bg-gray-200 text-slate-400 print:text-gray-700 uppercase text-[10px] font-bold">
+                <thead className="bg-[#fcf8fa] text-[#76777d] border-b border-[#76777d]/15 uppercase text-[10px] font-mono">
                   <tr>
-                    <th className="px-3.5 py-2.5">Parameter</th>
-                    <th className="px-3.5 py-2.5">Tested Value</th>
-                    <th className="px-3.5 py-2.5">CPCB Safe Standard</th>
-                    <th className="px-3.5 py-2.5">Status</th>
+                    <th className="p-2.5">Parameter</th>
+                    <th className="p-2.5">Recorded Value</th>
+                    <th className="p-2.5">CPCB Safe Standard</th>
+                    <th className="p-2.5">Status</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-800/60 print:divide-gray-200">
-                  <tr className="hover:bg-slate-800/30">
-                    <td className="px-3.5 py-2 font-medium">pH Level</td>
-                    <td className="px-3.5 py-2 font-mono font-semibold">{sample.parameters.ph}</td>
-                    <td className="px-3.5 py-2 text-slate-400 print:text-gray-600">6.5 - 8.5</td>
-                    <td className="px-3.5 py-2 text-emerald-400 font-semibold flex items-center gap-1">
-                      <CheckCircle2 size={12} /> Passed
+                <tbody className="divide-y divide-[#76777d]/10 text-xs">
+                  <tr>
+                    <td className="p-2.5 font-bold text-[#1b1b1d]">pH Level</td>
+                    <td className="p-2.5 font-mono">{sample.parameters.ph.toFixed(2)}</td>
+                    <td className="p-2.5 text-[#57657b]">6.5 - 8.5</td>
+                    <td className="p-2.5">
+                      <span className="text-emerald-700 font-bold">COMPLIANT</span>
                     </td>
                   </tr>
-                  <tr className="hover:bg-slate-800/30">
-                    <td className="px-3.5 py-2 font-medium">Biochemical Oxygen Demand (BOD)</td>
-                    <td className="px-3.5 py-2 font-mono font-semibold">{sample.parameters.bod} mg/L</td>
-                    <td className="px-3.5 py-2 text-slate-400 print:text-gray-600">&lt; 10 mg/L (Grade A) / &lt; 30 (Grade B)</td>
-                    <td className="px-3.5 py-2 text-emerald-400 font-semibold flex items-center gap-1">
-                      <CheckCircle2 size={12} /> Compliant
+                  <tr>
+                    <td className="p-2.5 font-bold text-[#1b1b1d]">BOD (Biological Oxygen Demand)</td>
+                    <td className="p-2.5 font-mono">{sample.parameters.bod.toFixed(1)} mg/L</td>
+                    <td className="p-2.5 text-[#57657b]">&le; 10.0 mg/L (Grade A)</td>
+                    <td className="p-2.5">
+                      <span className="text-emerald-700 font-bold">OPTIMAL</span>
                     </td>
                   </tr>
-                  <tr className="hover:bg-slate-800/30">
-                    <td className="px-3.5 py-2 font-medium">Chemical Oxygen Demand (COD)</td>
-                    <td className="px-3.5 py-2 font-mono font-semibold">{sample.parameters.cod} mg/L</td>
-                    <td className="px-3.5 py-2 text-slate-400 print:text-gray-600">&lt; 50 mg/L (Grade A) / &lt; 100 (Grade B)</td>
-                    <td className="px-3.5 py-2 text-emerald-400 font-semibold flex items-center gap-1">
-                      <CheckCircle2 size={12} /> Compliant
+                  <tr>
+                    <td className="p-2.5 font-bold text-[#1b1b1d]">TSS (Total Suspended Solids)</td>
+                    <td className="p-2.5 font-mono">{sample.parameters.tss.toFixed(1)} mg/L</td>
+                    <td className="p-2.5 text-[#57657b]">&le; 20.0 mg/L</td>
+                    <td className="p-2.5">
+                      <span className="text-emerald-700 font-bold">PASSED</span>
                     </td>
                   </tr>
-                  <tr className="hover:bg-slate-800/30">
-                    <td className="px-3.5 py-2 font-medium">Total Suspended Solids (TSS)</td>
-                    <td className="px-3.5 py-2 font-mono font-semibold">{sample.parameters.tss} mg/L</td>
-                    <td className="px-3.5 py-2 text-slate-400 print:text-gray-600">&lt; 10 mg/L (Grade A) / &lt; 20 (Grade B)</td>
-                    <td className="px-3.5 py-2 text-emerald-400 font-semibold flex items-center gap-1">
-                      <CheckCircle2 size={12} /> Compliant
-                    </td>
-                  </tr>
-                  <tr className="hover:bg-slate-800/30">
-                    <td className="px-3.5 py-2 font-medium">Fecal Coliforms</td>
-                    <td className="px-3.5 py-2 font-mono font-semibold">{sample.parameters.fecalColiforms} MPN/100ml</td>
-                    <td className="px-3.5 py-2 text-slate-400 print:text-gray-600">&lt; 100 MPN (Grade A) / &lt; 1000 (Grade B)</td>
-                    <td className="px-3.5 py-2 text-emerald-400 font-semibold flex items-center gap-1">
-                      <CheckCircle2 size={12} /> Safe
-                    </td>
-                  </tr>
-                  <tr className="hover:bg-slate-800/30">
-                    <td className="px-3.5 py-2 font-medium">Electrical Conductivity (EC / Salinity)</td>
-                    <td className="px-3.5 py-2 font-mono font-semibold">{sample.parameters.electricalConductivity} dS/m</td>
-                    <td className="px-3.5 py-2 text-slate-400 print:text-gray-600">&lt; 1.5 dS/m (Non-saline)</td>
-                    <td className="px-3.5 py-2 text-emerald-400 font-semibold flex items-center gap-1">
-                      <CheckCircle2 size={12} /> Passed
-                    </td>
-                  </tr>
-                  <tr className="hover:bg-slate-800/30">
-                    <td className="px-3.5 py-2 font-medium">Heavy Metals (Lead, Cadmium, Arsenic)</td>
-                    <td className="px-3.5 py-2 font-mono font-semibold">
-                      Pb: {sample.parameters.heavyMetalsPpb.lead}ppb • Cd: {sample.parameters.heavyMetalsPpb.cadmium}ppb • As: {sample.parameters.heavyMetalsPpb.arsenic}ppb
-                    </td>
-                    <td className="px-3.5 py-2 text-slate-400 print:text-gray-600">Pb &lt;50ppb, Cd &lt;10ppb, As &lt;10ppb</td>
-                    <td className="px-3.5 py-2 text-emerald-400 font-semibold flex items-center gap-1">
-                      <CheckCircle2 size={12} /> Zero Toxicity
+                  <tr>
+                    <td className="p-2.5 font-bold text-[#1b1b1d]">Fecal Coliforms (MPN/100ml)</td>
+                    <td className="p-2.5 font-mono">{sample.parameters.fecalColiforms} MPN</td>
+                    <td className="p-2.5 text-[#57657b]">&le; 100 MPN (Grade A)</td>
+                    <td className="p-2.5">
+                      <span className="text-emerald-700 font-bold">STERILE</span>
                     </td>
                   </tr>
                 </tbody>
@@ -246,101 +217,21 @@ export const WaterQualityCertificateModal: React.FC<WaterQualityCertificateModal
             </div>
           </div>
 
-          {/* Plant Nutrients & Fertilizer Value */}
-          <div className="p-4 rounded-xl bg-emerald-950/30 border border-emerald-800/40 print:bg-emerald-50 print:border-emerald-200 text-xs space-y-2">
-            <div className="flex items-center gap-2 font-bold text-emerald-300 print:text-emerald-800">
-              <Sprout size={16} />
-              <span>Beneficial Agronomic Nutrients (Fertilizer Enrichment)</span>
-            </div>
-            <div className="grid grid-cols-3 gap-3">
-              <div className="p-2.5 rounded-lg bg-slate-900/80 print:bg-white border border-emerald-700/30">
-                <span className="text-[10px] text-slate-400 print:text-gray-600 block">Nitrogen (N)</span>
-                <span className="text-sm font-bold text-white print:text-black">{sample.parameters.nutrientsMgL.nitrogen} mg/L</span>
-                <span className="text-[10px] text-emerald-400 print:text-emerald-700 block">Saves ~78 kg Urea/ha</span>
-              </div>
-              <div className="p-2.5 rounded-lg bg-slate-900/80 print:bg-white border border-emerald-700/30">
-                <span className="text-[10px] text-slate-400 print:text-gray-600 block">Phosphorus (P)</span>
-                <span className="text-sm font-bold text-white print:text-black">{sample.parameters.nutrientsMgL.phosphorus} mg/L</span>
-                <span className="text-[10px] text-emerald-400 print:text-emerald-700 block">Saves ~18 kg DAP/ha</span>
-              </div>
-              <div className="p-2.5 rounded-lg bg-slate-900/80 print:bg-white border border-emerald-700/30">
-                <span className="text-[10px] text-slate-400 print:text-gray-600 block">Potassium (K)</span>
-                <span className="text-sm font-bold text-white print:text-black">{sample.parameters.nutrientsMgL.potassium} mg/L</span>
-                <span className="text-[10px] text-emerald-400 print:text-emerald-700 block">Saves ~50 kg MOP/ha</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Water Flow Destination & Allocation Decision */}
-          {sample.routingAssessment && (
-            <div className="p-4 rounded-xl bg-slate-950/80 print:bg-gray-100 border border-slate-800 print:border-gray-300 text-xs space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="font-bold text-emerald-300 print:text-emerald-800 uppercase tracking-wider text-[11px] flex items-center gap-1.5">
-                  <Trees size={15} />
-                  <span>Authorized Water Flow Destination Decision</span>
-                </span>
-                <span className="px-2 py-0.5 rounded bg-emerald-950 text-emerald-400 border border-emerald-800 text-[10px] font-mono font-bold">
-                  PRIORITY: {sample.routingAssessment.primaryDestination.replace('_', ' ').toUpperCase()}
-                </span>
-              </div>
-              <p className="text-slate-300 print:text-gray-800 text-[11px] leading-relaxed">
-                {sample.routingAssessment.explanationRationale}
-              </p>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1">
-                {sample.routingAssessment.flowSplits.map((split, i) => (
-                  <div key={i} className="p-2 bg-slate-900 print:bg-white rounded-lg border border-slate-800 print:border-gray-200">
-                    <div className="text-[10px] font-bold text-slate-300 print:text-black truncate">{split.destinationName}</div>
-                    <div className="flex justify-between text-[10px] text-slate-400 mt-0.5">
-                      <span>Volume: <strong className="text-emerald-400 print:text-emerald-700">{split.volumeKLD} KL ({split.percentage}%)</strong></span>
-                      <span className="capitalize">{split.distributionChannel.replace('_', ' ')}</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Suitable Crops Tag list */}
-          <div className="space-y-1.5 text-xs">
-            <span className="text-[11px] font-bold uppercase text-slate-400 print:text-gray-600">
-              Authorized Crop Categories & Flora:
-            </span>
-            <div className="flex flex-wrap gap-2">
-              {sample.suitableCrops.map((crop) => (
-                <span
-                  key={crop}
-                  className="px-2.5 py-1 rounded-md bg-slate-800 print:bg-gray-200 border border-slate-700 print:border-gray-300 text-slate-200 print:text-black text-xs font-medium capitalize"
-                >
-                  ✓ {crop}
-                </span>
-              ))}
-            </div>
-          </div>
-
-          {/* Signatures and QR Code Seal */}
-          <div className="pt-6 border-t border-slate-800 print:border-gray-300 flex items-end justify-between text-xs">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-white rounded-lg border border-slate-700 print:border-black">
-                <QrCode size={48} className="text-black" />
-              </div>
-              <div className="space-y-0.5">
-                <span className="text-[10px] text-slate-400 print:text-gray-600 block uppercase">Govt Digital Signature</span>
-                <span className="font-mono text-xs font-bold text-emerald-400 print:text-black">{sample.qrVerificationHash}</span>
-                <span className="text-[10px] text-slate-500 print:text-gray-600 block">Scan to verify authenticity online</span>
+          {/* Signatures & Seals */}
+          <div className="pt-6 border-t border-[#76777d]/15 grid grid-cols-2 gap-8 text-center text-xs">
+            <div className="space-y-4">
+              <div className="h-8"></div>
+              <div className="border-t border-[#76777d]/40 pt-1">
+                <span className="text-[#76777d] text-[10px] block uppercase">Analyzing Environmental Chemist</span>
+                <span className="font-bold text-[#1b1b1d]">{sample.labTechnicianName || 'Dr. Anjali Deshmukh (M.Sc Env)'}</span>
               </div>
             </div>
 
-            <div className="text-right space-y-4">
-              <div className="space-y-0.5">
-                <div className="font-serif italic font-semibold text-slate-200 print:text-black text-sm">
-                  {sample.certifiedOfficerName}
-                </div>
-                <div className="text-[10px] text-slate-400 print:text-gray-600">
-                  Head Executive Engineer • Water Supply & Sanitation
-                </div>
-                <div className="text-[10px] text-emerald-400 print:text-emerald-800 font-semibold">
-                  Kopargaon Municipal Council (कोपरगाव नगरपरिषद)
-                </div>
+            <div className="space-y-4">
+              <div className="h-8"></div>
+              <div className="border-t border-[#76777d]/40 pt-1">
+                <span className="text-[#76777d] text-[10px] block uppercase">Municipal Health & Water Officer</span>
+                <span className="font-bold text-[#1b1b1d]">KMC Authorised Signatory</span>
               </div>
             </div>
           </div>
