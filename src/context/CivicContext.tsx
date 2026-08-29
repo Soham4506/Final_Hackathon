@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
 import { 
   CivicIssue, 
   Zone, 
@@ -11,9 +11,7 @@ import {
   UserRole, 
   AuditLog, 
   NotificationItem,
-  PriorityDecision,
   IssueStatus,
-  ResourceType,
 } from '../types';
 import { 
   INITIAL_ZONES, 
@@ -29,8 +27,15 @@ import {
 import { PriorityEngine } from '../services/priorityEngine';
 import { AllocationEngine, ResourceDeficitReport } from '../services/allocationEngine';
 import { AIIntakeParser } from '../services/aiIntakeParser';
+import { MultiStrategyEngine, AllocationStrategy, StrategyComparisonMetric } from '../services/multiStrategyEngine';
+import { Language, DICTIONARY, Translations } from '../services/localizationService';
 
 interface CivicContextType {
+  // Localization & Language
+  language: Language;
+  setLanguage: (lang: Language) => void;
+  t: Translations;
+
   // Roles & Profiles
   userRole: UserRole;
   setUserRole: (role: UserRole) => void;
@@ -77,8 +82,15 @@ interface CivicContextType {
   generateAllocationPlan: (
     departmentId: string, 
     budgetCap?: number, 
-    availableStaff?: number
+    availableStaff?: number,
+    strategy?: AllocationStrategy
   ) => { plan: AllocationPlan; deficitReport: ResourceDeficitReport };
+
+  getStrategyComparisons: (
+    departmentId: string,
+    budgetCap: number,
+    availableStaff: number
+  ) => StrategyComparisonMetric[];
 
   approveAllocationPlan: (planId: string, officerNotes?: string) => void;
 
@@ -89,11 +101,26 @@ interface CivicContextType {
   markNotificationAsRead: (notificationId: string) => void;
 
   loadDemoScenario: (scenario: 'monsoon' | 'market_outage' | 'deficit_showcase') => void;
+
+  resetAllDataToDefaults: () => void;
 }
 
 const CivicContext = createContext<CivicContextType | undefined>(undefined);
 
+// Helper for local storage retrieval
+const getStored = <T,>(key: string, fallback: T): T => {
+  try {
+    const item = localStorage.getItem(`civicpulse_${key}`);
+    return item ? JSON.parse(item) : fallback;
+  } catch {
+    return fallback;
+  }
+};
+
 export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [language, setLanguage] = useState<Language>(() => getStored('lang', 'en'));
+  const t = DICTIONARY[language];
+
   const [userRole, setUserRole] = useState<UserRole>('officer');
   const [currentUser, setCurrentUser] = useState<UserProfile>(INITIAL_USERS[0]);
   const [users] = useState<UserProfile[]>(INITIAL_USERS);
@@ -101,25 +128,52 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [zones] = useState<Zone[]>(INITIAL_ZONES);
   const [departments] = useState<Department[]>(INITIAL_DEPARTMENTS);
   const [categories] = useState<IssueCategory[]>(INITIAL_CATEGORIES);
-  const [weightConfig, setWeightConfig] = useState<PriorityWeightConfig>(INITIAL_WEIGHT_CONFIG);
+  const [weightConfig, setWeightConfig] = useState<PriorityWeightConfig>(() =>
+    getStored('weight_config', INITIAL_WEIGHT_CONFIG)
+  );
 
-  const [resources, setResources] = useState<MunicipalResource[]>(INITIAL_RESOURCES);
-  const [auditLogs, setAuditLogs] = useState<AuditLog[]>(INITIAL_AUDIT_LOGS);
-  const [notifications, setNotifications] = useState<NotificationItem[]>(INITIAL_NOTIFICATIONS);
-  const [activePlans, setActivePlans] = useState<AllocationPlan[]>([]);
+  const [resources, setResources] = useState<MunicipalResource[]>(() =>
+    getStored('resources', INITIAL_RESOURCES)
+  );
+  const [auditLogs, setAuditLogs] = useState<AuditLog[]>(() =>
+    getStored('audit_logs', INITIAL_AUDIT_LOGS)
+  );
+  const [notifications, setNotifications] = useState<NotificationItem[]>(() =>
+    getStored('notifications', INITIAL_NOTIFICATIONS)
+  );
+  const [activePlans, setActivePlans] = useState<AllocationPlan[]>(() =>
+    getStored('active_plans', [])
+  );
 
-  // Initialize and calculate scores for initial issues
+  // Issues initial load with score calculation
   const [issues, setIssues] = useState<CivicIssue[]>(() => {
-    return INITIAL_ISSUES.map((issue) => {
+    const stored = getStored<CivicIssue[] | null>('issues', null);
+    const baseIssues = stored || INITIAL_ISSUES;
+    return baseIssues.map((issue) => {
       const cat = INITIAL_CATEGORIES.find((c) => c.id === issue.categoryId) || INITIAL_CATEGORIES[0];
       const zone = INITIAL_ZONES.find((z) => z.id === issue.zoneId) || INITIAL_ZONES[0];
       const score = PriorityEngine.calculateScore(issue, cat, zone, INITIAL_WEIGHT_CONFIG);
       return {
         ...issue,
-        priorityScore: score,
+        priorityScore: issue.priorityScore || score,
       };
     });
   });
+
+  // Sync state changes to localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem('civicpulse_lang', JSON.stringify(language));
+      localStorage.setItem('civicpulse_issues', JSON.stringify(issues));
+      localStorage.setItem('civicpulse_resources', JSON.stringify(resources));
+      localStorage.setItem('civicpulse_audit_logs', JSON.stringify(auditLogs));
+      localStorage.setItem('civicpulse_notifications', JSON.stringify(notifications));
+      localStorage.setItem('civicpulse_active_plans', JSON.stringify(activePlans));
+      localStorage.setItem('civicpulse_weight_config', JSON.stringify(weightConfig));
+    } catch {
+      // ignore
+    }
+  }, [language, issues, resources, auditLogs, notifications, activePlans, weightConfig]);
 
   // Sync currentUser with role changes
   useEffect(() => {
@@ -146,7 +200,6 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       })
     );
 
-    // Audit log
     const log: AuditLog = {
       id: `log-${Date.now()}`,
       actorName: currentUser.fullName,
@@ -159,7 +212,7 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setAuditLogs((prev) => [log, ...prev]);
   };
 
-  // Submit a new issue (Citizen or Field Staff)
+  // Submit a new issue
   const submitIssue = (data: {
     title: string;
     description: string;
@@ -174,7 +227,6 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     const hasPhotos = Boolean(data.photoUrls && data.photoUrls.length > 0);
     const hasPreciseLocation = Boolean(data.latitude && data.longitude);
 
-    // 1. AI Intake structured extraction
     const parsed = AIIntakeParser.parseComplaint(
       data.title,
       data.description,
@@ -221,13 +273,11 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       escalationCount: 1,
     };
 
-    // Calculate deterministic priority score
     const score = PriorityEngine.calculateScore(newIssue, cat, zone, weightConfig, now);
     newIssue.priorityScore = score;
 
     setIssues((prev) => [newIssue, ...prev]);
 
-    // Create Audit Log
     const log: AuditLog = {
       id: `log-${Date.now()}`,
       actorName: currentUser.fullName,
@@ -246,7 +296,6 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     };
     setAuditLogs((prev) => [log, ...prev]);
 
-    // Create Notification
     const notif: NotificationItem = {
       id: `notif-${Date.now()}`,
       recipientId: currentUser.id,
@@ -280,7 +329,6 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
     const targetIssue = issues.find((i) => i.id === issueId);
 
-    // Audit log
     const log: AuditLog = {
       id: `log-${Date.now()}`,
       actorName: currentUser.fullName,
@@ -298,7 +346,6 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     };
     setAuditLogs((prev) => [log, ...prev]);
 
-    // Notification for citizen
     if (targetIssue?.citizenId) {
       const notif: NotificationItem = {
         id: `notif-${Date.now()}`,
@@ -315,7 +362,7 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   };
 
-  // Officer Override with Mandatory Justification
+  // Officer Override
   const overridePriority = (
     issueId: string,
     overriddenScore: number,
@@ -341,7 +388,6 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
     const targetIssue = issues.find((i) => i.id === issueId);
 
-    // Immutable Audit Log
     const log: AuditLog = {
       id: `log-${Date.now()}`,
       actorName: currentUser.fullName,
@@ -361,11 +407,12 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setAuditLogs((prev) => [log, ...prev]);
   };
 
-  // Run Allocation Engine
+  // Run Allocation Engine with strategy support
   const generateAllocationPlan = (
     departmentId: string,
     budgetCap?: number,
-    availableStaff?: number
+    availableStaff?: number,
+    strategy: AllocationStrategy = 'max_risk'
   ) => {
     const dept = departments.find((d) => d.id === departmentId) || departments[0];
     const { plan, deficitReport } = AllocationEngine.generatePlan({
@@ -377,9 +424,21 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       generatedBy: currentUser.fullName,
     });
 
+    if (strategy !== 'max_risk') {
+      const specializedPlan = MultiStrategyEngine.optimizePlan(
+        dept,
+        issues,
+        resources,
+        strategy,
+        budgetCap || dept.dailyBudgetLimit,
+        availableStaff || 8
+      );
+      setActivePlans((prev) => [specializedPlan, ...prev.filter((p) => p.departmentId !== departmentId)]);
+      return { plan: specializedPlan, deficitReport };
+    }
+
     setActivePlans((prev) => [plan, ...prev.filter((p) => p.departmentId !== departmentId)]);
 
-    // Audit log
     const log: AuditLog = {
       id: `log-${Date.now()}`,
       actorName: currentUser.fullName,
@@ -390,6 +449,7 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       details: {
         planCode: plan.planCode,
         department: dept.code,
+        strategy,
         approvedIssues: plan.issuesApprovedCount,
         deferredIssues: plan.issuesDeferredCount,
         budgetUtilized: plan.budgetUtilized,
@@ -402,7 +462,22 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     return { plan, deficitReport };
   };
 
-  // Approve Allocation Plan (Officer Action)
+  const getStrategyComparisons = (
+    departmentId: string,
+    budgetCap: number,
+    availableStaff: number
+  ) => {
+    const dept = departments.find((d) => d.id === departmentId) || departments[0];
+    return MultiStrategyEngine.compareStrategies(
+      dept,
+      issues,
+      resources,
+      budgetCap,
+      availableStaff
+    );
+  };
+
+  // Approve Allocation Plan
   const approveAllocationPlan = (planId: string, officerNotes?: string) => {
     setActivePlans((prev) =>
       prev.map((plan) => {
@@ -422,7 +497,6 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     const targetPlan = activePlans.find((p) => p.id === planId);
     if (!targetPlan) return;
 
-    // Transition approved issues to 'scheduled' and update resource statuses
     const approvedIssueIds = targetPlan.items
       .filter((item) => item.itemStatus === 'approved')
       .map((item) => item.issueId);
@@ -449,7 +523,6 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       })
     );
 
-    // Audit Log
     const log: AuditLog = {
       id: `log-${Date.now()}`,
       actorName: currentUser.fullName,
@@ -467,7 +540,6 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     };
     setAuditLogs((prev) => [log, ...prev]);
 
-    // Send notifications to affected citizens
     targetPlan.items
       .filter((item) => item.itemStatus === 'approved')
       .forEach((item) => {
@@ -516,7 +588,6 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   // Load Hackathon Demo Presets
   const loadDemoScenario = (scenario: 'monsoon' | 'market_outage' | 'deficit_showcase') => {
     if (scenario === 'monsoon') {
-      // Elevate water contamination and drainage issues
       setIssues((prev) =>
         prev.map((iss) => {
           if (iss.categoryId === 'cat-water-contam' || iss.categoryId === 'cat-sewer-overflow') {
@@ -536,7 +607,6 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         })
       );
     } else if (scenario === 'deficit_showcase') {
-      // Simulate 1 jetting machine broken down in maintenance
       setResources((prev) =>
         prev.map((r) =>
           r.identifierCode === 'KMC-JET-02'
@@ -558,9 +628,30 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setAuditLogs((prev) => [log, ...prev]);
   };
 
+  // Reset all to clean defaults
+  const resetAllDataToDefaults = () => {
+    localStorage.clear();
+    setIssues(
+      INITIAL_ISSUES.map((issue) => {
+        const cat = INITIAL_CATEGORIES.find((c) => c.id === issue.categoryId) || INITIAL_CATEGORIES[0];
+        const zone = INITIAL_ZONES.find((z) => z.id === issue.zoneId) || INITIAL_ZONES[0];
+        const score = PriorityEngine.calculateScore(issue, cat, zone, INITIAL_WEIGHT_CONFIG);
+        return { ...issue, priorityScore: score };
+      })
+    );
+    setResources(INITIAL_RESOURCES);
+    setAuditLogs(INITIAL_AUDIT_LOGS);
+    setNotifications(INITIAL_NOTIFICATIONS);
+    setActivePlans([]);
+    setWeightConfig(INITIAL_WEIGHT_CONFIG);
+  };
+
   return (
     <CivicContext.Provider
       value={{
+        language,
+        setLanguage,
+        t,
         userRole,
         setUserRole,
         currentUser,
@@ -580,11 +671,13 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         updateIssueStatus,
         overridePriority,
         generateAllocationPlan,
+        getStrategyComparisons,
         approveAllocationPlan,
         updateResource,
         recalculateAllPriorities,
         markNotificationAsRead,
         loadDemoScenario,
+        resetAllDataToDefaults,
       }}
     >
       {children}

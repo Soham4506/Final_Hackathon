@@ -3,16 +3,17 @@ import { useCivic } from '../../context/CivicContext';
 import { 
   Building2, 
   Bell, 
-  UserCheck, 
   Sparkles, 
   ShieldAlert, 
   SlidersHorizontal,
-  CheckCircle2,
-  Clock,
+  Radio,
+  Languages,
   Menu,
-  X
+  X,
+  RotateCcw
 } from 'lucide-react';
 import { UserRole } from '../../types';
+import { EmergencyBroadcastModal } from '../common/EmergencyBroadcastModal';
 
 interface HeaderProps {
   sidebarOpen: boolean;
@@ -26,16 +27,25 @@ export const Header: React.FC<HeaderProps> = ({ sidebarOpen, setSidebarOpen }) =
     currentUser, 
     notifications, 
     markNotificationAsRead,
-    loadDemoScenario 
+    loadDemoScenario,
+    language,
+    setLanguage,
+    t,
+    resetAllDataToDefaults
   } = useCivic();
 
   const [showNotifs, setShowNotifs] = useState(false);
   const [showScenarioMenu, setShowScenarioMenu] = useState(false);
+  const [showBroadcastModal, setShowBroadcastModal] = useState(false);
 
   const unreadNotifs = notifications.filter((n) => !n.isRead);
 
   const handleRoleChange = (role: UserRole) => {
     setUserRole(role);
+  };
+
+  const toggleLanguage = () => {
+    setLanguage(language === 'en' ? 'mr' : 'en');
   };
 
   return (
@@ -45,15 +55,23 @@ export const Header: React.FC<HeaderProps> = ({ sidebarOpen, setSidebarOpen }) =
         <div className="flex items-center gap-3">
           <span className="inline-flex items-center gap-1.5 font-medium text-emerald-400">
             <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-            KOPARGAON MUNICIPAL COUNCIL (कोपरगाव नगरपरिषद)
+            {t.councilName} ({language === 'en' ? 'कोपरगाव नगरपरिषद' : 'Kopargaon Municipal Council'})
           </span>
           <span className="hidden sm:inline text-slate-600">|</span>
-          <span className="hidden sm:inline">District Ahilyanagar, Maharashtra • PIN 423601</span>
+          <span className="hidden sm:inline">{t.subTitle}</span>
         </div>
-        <div className="flex items-center gap-4 text-xs">
-          <span className="text-slate-400">Deterministic AI Decision Engine</span>
-          <span className="bg-emerald-950 text-emerald-300 border border-emerald-800 px-2 py-0.5 rounded text-[10px] font-mono font-semibold">
-            v1.0.0 ACTIVE
+        <div className="flex items-center gap-3 text-xs">
+          {/* Language Switcher */}
+          <button
+            onClick={toggleLanguage}
+            className="flex items-center gap-1 bg-slate-900 hover:bg-slate-800 text-emerald-300 border border-emerald-800/60 px-2 py-0.5 rounded text-[11px] font-semibold transition-colors"
+          >
+            <Languages size={12} />
+            <span>{language === 'en' ? 'मराठी' : 'English'}</span>
+          </button>
+
+          <span className="bg-emerald-950 text-emerald-300 border border-emerald-800 px-2 py-0.5 rounded text-[10px] font-mono font-semibold hidden md:inline">
+            v1.2 ACTIVE
           </span>
         </div>
       </div>
@@ -75,12 +93,12 @@ export const Header: React.FC<HeaderProps> = ({ sidebarOpen, setSidebarOpen }) =
             <div>
               <div className="flex items-center gap-2">
                 <span className="font-extrabold text-lg tracking-tight text-white">CivicPulse</span>
-                <span className="bg-amber-500/20 text-amber-300 border border-amber-500/30 text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded">
+                <span className="bg-amber-500/20 text-amber-300 border border-amber-500/30 text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded hidden sm:inline">
                   Municipal Decision System
                 </span>
               </div>
               <p className="text-xs text-slate-400 hidden sm:block">
-                Resource-Aware Prioritization & Allocation Platform
+                {t.tagline}
               </p>
             </div>
           </div>
@@ -88,6 +106,18 @@ export const Header: React.FC<HeaderProps> = ({ sidebarOpen, setSidebarOpen }) =
 
         {/* Right Action Bar */}
         <div className="flex items-center gap-3">
+          {/* Emergency Ward Broadcast Button for Officers */}
+          {(userRole === 'officer' || userRole === 'admin') && (
+            <button
+              onClick={() => setShowBroadcastModal(true)}
+              className="hidden sm:flex items-center gap-1.5 text-xs bg-amber-950/80 hover:bg-amber-900/90 text-amber-300 border border-amber-800 px-3 py-1.5 rounded-lg transition-colors font-medium"
+              title="Broadcast SMS / App alert to ward residents"
+            >
+              <Radio size={14} className="text-amber-400 animate-pulse" />
+              <span>{t.broadcastAlert}</span>
+            </button>
+          )}
+
           {/* Demo Scenario Presets Dropdown */}
           <div className="relative">
             <button
@@ -96,7 +126,7 @@ export const Header: React.FC<HeaderProps> = ({ sidebarOpen, setSidebarOpen }) =
               title="Test realistic municipal crisis trade-offs"
             >
               <Sparkles size={14} className="text-amber-400" />
-              <span className="hidden md:inline">Demo Scenarios</span>
+              <span className="hidden md:inline">Scenarios</span>
             </button>
 
             {showScenarioMenu && (
@@ -114,7 +144,7 @@ export const Header: React.FC<HeaderProps> = ({ sidebarOpen, setSidebarOpen }) =
                   <ShieldAlert size={16} className="text-red-400 shrink-0 mt-0.5" />
                   <div>
                     <div className="font-medium text-emerald-400">Monsoon Pipeline Flood</div>
-                    <div className="text-[11px] text-slate-400">Triggers sewage contamination vs road repair dilemma</div>
+                    <div className="text-[11px] text-slate-400">Sewage contamination vs road repair dilemma</div>
                   </div>
                 </button>
                 <button
@@ -127,8 +157,18 @@ export const Header: React.FC<HeaderProps> = ({ sidebarOpen, setSidebarOpen }) =
                   <SlidersHorizontal size={16} className="text-amber-400 shrink-0 mt-0.5" />
                   <div>
                     <div className="font-medium text-amber-300">Jetting Machine Deficit</div>
-                    <div className="text-[11px] text-slate-400">Simulates machinery breakdown & explainable deferral</div>
+                    <div className="text-[11px] text-slate-400">Machinery breakdown & explainable deferral</div>
                   </div>
+                </button>
+                <button
+                  onClick={() => {
+                    resetAllDataToDefaults();
+                    setShowScenarioMenu(false);
+                  }}
+                  className="w-full text-left px-3 py-2 hover:bg-slate-800 text-slate-400 hover:text-white flex items-center gap-2 border-t border-slate-800/60"
+                >
+                  <RotateCcw size={14} className="text-slate-400" />
+                  <span>Reset to Fresh Defaults</span>
                 </button>
               </div>
             )}
@@ -144,7 +184,7 @@ export const Header: React.FC<HeaderProps> = ({ sidebarOpen, setSidebarOpen }) =
                   : 'text-slate-400 hover:text-slate-200'
               }`}
             >
-              Citizen
+              {t.citizen}
             </button>
             <button
               onClick={() => handleRoleChange('officer')}
@@ -154,7 +194,7 @@ export const Header: React.FC<HeaderProps> = ({ sidebarOpen, setSidebarOpen }) =
                   : 'text-slate-400 hover:text-slate-200'
               }`}
             >
-              Officer
+              {t.officer}
             </button>
             <button
               onClick={() => handleRoleChange('admin')}
@@ -164,7 +204,7 @@ export const Header: React.FC<HeaderProps> = ({ sidebarOpen, setSidebarOpen }) =
                   : 'text-slate-400 hover:text-slate-200'
               }`}
             >
-              Admin
+              {t.admin}
             </button>
           </div>
 
@@ -185,7 +225,7 @@ export const Header: React.FC<HeaderProps> = ({ sidebarOpen, setSidebarOpen }) =
             {showNotifs && (
               <div className="absolute right-0 mt-2 w-80 sm:w-96 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl z-50 overflow-hidden text-xs">
                 <div className="px-4 py-3 bg-slate-950 border-b border-slate-800 flex justify-between items-center">
-                  <span className="font-semibold text-white">Civic Notifications</span>
+                  <span className="font-semibold text-white">{t.notifications}</span>
                   <span className="text-slate-400">{unreadNotifs.length} unread</span>
                 </div>
                 <div className="max-h-80 overflow-y-auto divide-y divide-slate-800">
@@ -220,19 +260,13 @@ export const Header: React.FC<HeaderProps> = ({ sidebarOpen, setSidebarOpen }) =
               </div>
             )}
           </div>
-
-          {/* User Profile Pill */}
-          <div className="hidden lg:flex items-center gap-2 pl-2 border-l border-slate-800 text-xs">
-            <div className="w-7 h-7 rounded-full bg-slate-700 flex items-center justify-center text-slate-200 font-bold">
-              {currentUser.fullName.charAt(0)}
-            </div>
-            <div className="leading-tight">
-              <div className="font-medium text-slate-200 truncate max-w-[130px]">{currentUser.fullName}</div>
-              <div className="text-[10px] text-slate-400 capitalize">{userRole}</div>
-            </div>
-          </div>
         </div>
       </div>
+
+      {/* Emergency Broadcast Modal */}
+      {showBroadcastModal && (
+        <EmergencyBroadcastModal onClose={() => setShowBroadcastModal(false)} />
+      )}
     </header>
   );
 };

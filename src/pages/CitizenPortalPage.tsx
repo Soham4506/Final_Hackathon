@@ -20,10 +20,33 @@ import {
   Send,
   ArrowRight,
   Info,
+  Mic,
+  MicOff,
+  Image,
+  Navigation,
 } from 'lucide-react';
 
+const PRESET_SAMPLE_PHOTOS = [
+  {
+    label: 'Contaminated Water Tap',
+    url: 'https://images.unsplash.com/photo-1541888946425-d0fbb18086f6?w=600&auto=format&fit=crop&q=60',
+  },
+  {
+    label: 'Road Cave-in / Crater',
+    url: 'https://images.unsplash.com/photo-1515162816999-a0c47dc192f7?w=600&auto=format&fit=crop&q=60',
+  },
+  {
+    label: 'Live Wire / Transformer',
+    url: 'https://images.unsplash.com/photo-1544724569-5f546fd6f2b5?w=600&auto=format&fit=crop&q=60',
+  },
+  {
+    label: 'Overflowing Sewer',
+    url: 'https://images.unsplash.com/photo-1517646287270-a5a9ca602e5c?w=600&auto=format&fit=crop&q=60',
+  },
+];
+
 export const CitizenPortalPage: React.FC = () => {
-  const { zones, categories, submitIssue, issues, currentUser } = useCivic();
+  const { zones, categories, submitIssue, issues, currentUser, t, language } = useCivic();
   const [searchParams, setSearchParams] = useSearchParams();
 
   const activeTab = searchParams.get('tab') || 'submit';
@@ -36,6 +59,9 @@ export const CitizenPortalPage: React.FC = () => {
   const [photoUrl, setPhotoUrl] = useState<string>('');
   const [affectedPop, setAffectedPop] = useState<number>(50);
   const [submittedTicket, setSubmittedTicket] = useState<string | null>(null);
+
+  // Voice Simulation State
+  const [isRecording, setIsRecording] = useState(false);
 
   // Tracking Search State
   const [trackQuery, setTrackQuery] = useState<string>('');
@@ -67,11 +93,35 @@ export const CitizenPortalPage: React.FC = () => {
 
     setSubmittedTicket(newIssue.ticketNumber);
     setTrackedIssue(newIssue);
-    // Reset form
     setTitle('');
     setDescription('');
     setAddress('');
     setPhotoUrl('');
+  };
+
+  const handleVoiceIntake = () => {
+    if (isRecording) {
+      setIsRecording(false);
+      return;
+    }
+
+    setIsRecording(true);
+    setTimeout(() => {
+      if (language === 'mr') {
+        setTitle('सिव्हिल हॉस्पिटलजवळ पिण्याच्या पाईपलाईनमध्ये सांडपाणी मिसळले आहे');
+        setDescription('मागील ८ तासांपासून कोपरगाव सिव्हिल हॉस्पिटल कॉलनीमध्ये नळाला घाण काळे पाणी येत असून दुर्गंधी पसरली आहे. अनेक रुग्ण व लहान मुलांच्या आरोग्यास धोका निर्माण झाला आहे.');
+        setAddress('गल्ली क्र. ३, सिव्हिल हॉस्पिटल मागे, प्रभाग ४, कोपरगाव');
+        setSelectedZoneId('z-04');
+        setPhotoUrl(PRESET_SAMPLE_PHOTOS[0].url);
+      } else {
+        setTitle('Drinking tap water smells of raw sewage near Civil Hospital');
+        setDescription('For the past 8 hours municipal tap water in Civil Hospital colony is muddy and smells strongly of sewage. Multiple patients and children are at risk.');
+        setAddress('Lane 3, Behind Kopargaon Civil Hospital, Ward 4');
+        setSelectedZoneId('z-04');
+        setPhotoUrl(PRESET_SAMPLE_PHOTOS[0].url);
+      }
+      setIsRecording(false);
+    }, 1800);
   };
 
   const handleTrackSearch = (e: React.FormEvent) => {
@@ -82,7 +132,6 @@ export const CitizenPortalPage: React.FC = () => {
     setTrackedIssue(found || null);
   };
 
-  // Pre-load recent issue if tracking
   useEffect(() => {
     if (activeTab === 'track' && !trackedIssue && issues.length > 0) {
       setTrackedIssue(issues[0]);
@@ -96,12 +145,12 @@ export const CitizenPortalPage: React.FC = () => {
         <div>
           <div className="flex items-center gap-2 mb-1">
             <span className="bg-blue-950 text-blue-300 border border-blue-800 text-[10px] font-mono uppercase font-bold px-2 py-0.5 rounded">
-              Kopargaon Citizen Gateway (नागरिक सेवा केंद्र)
+              {language === 'mr' ? 'कोपरगाव नागरिक सेवा केंद्र' : 'Kopargaon Citizen Gateway'}
             </span>
             <span className="text-xs text-slate-400">Direct Municipal Transparency</span>
           </div>
           <h1 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
-            Citizen Grievance Submission & Real-time Tracking
+            {t.citizens}
           </h1>
           <p className="text-xs sm:text-sm text-slate-400 mt-1">
             Submit civic emergencies with automated structured intake and track exact priority ranking and dispatch stages.
@@ -119,7 +168,7 @@ export const CitizenPortalPage: React.FC = () => {
             }`}
           >
             <PlusCircle size={15} />
-            <span>Report Issue</span>
+            <span>{t.reportIssue}</span>
           </button>
           <button
             onClick={() => setSearchParams({ tab: 'track' })}
@@ -130,7 +179,7 @@ export const CitizenPortalPage: React.FC = () => {
             }`}
           >
             <Search size={15} />
-            <span>Track Ticket</span>
+            <span>{t.trackTicket}</span>
           </button>
         </div>
       </div>
@@ -140,10 +189,26 @@ export const CitizenPortalPage: React.FC = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Main Form (2 Cols) */}
           <div className="lg:col-span-2 bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-sm space-y-5">
-            <h2 className="font-bold text-white text-base flex items-center gap-2">
-              <PlusCircle size={18} className="text-emerald-400" />
-              <span>Report a Civic Problem in Kopargaon</span>
-            </h2>
+            <div className="flex items-center justify-between">
+              <h2 className="font-bold text-white text-base flex items-center gap-2">
+                <PlusCircle size={18} className="text-emerald-400" />
+                <span>{t.reportIssue}</span>
+              </h2>
+
+              {/* Voice Complaint Intake Button */}
+              <button
+                type="button"
+                onClick={handleVoiceIntake}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 border transition-all ${
+                  isRecording
+                    ? 'bg-red-950 text-red-300 border-red-800 animate-pulse'
+                    : 'bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-700'
+                }`}
+              >
+                {isRecording ? <MicOff size={14} className="text-red-400" /> : <Mic size={14} className="text-emerald-400" />}
+                <span>{isRecording ? 'Listening (AI Audio)...' : 'Voice Complaint (AI)'}</span>
+              </button>
+            </div>
 
             {submittedTicket && (
               <div className="p-4 bg-emerald-950/60 border border-emerald-800 rounded-xl text-emerald-200 text-xs space-y-1">
@@ -228,37 +293,54 @@ export const CitizenPortalPage: React.FC = () => {
                 </div>
               </div>
 
-              {/* Photos & Population Estimate */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-slate-300 font-semibold mb-1 flex items-center gap-1">
-                    <Camera size={13} /> Photo Evidence URL (Optional)
-                  </label>
-                  <input
-                    type="url"
-                    placeholder="https://example.com/photo.jpg"
-                    value={photoUrl}
-                    onChange={(e) => setPhotoUrl(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2.5 text-white placeholder-slate-500 text-xs focus:ring-1 focus:ring-emerald-500"
-                  />
-                  <span className="text-[10px] text-slate-500 mt-1 block">
-                    Adding photo evidence ensures 100% confidence with zero penalty deduction.
+              {/* Sample Photo Preset Quick Selector */}
+              <div className="space-y-1.5">
+                <label className="block text-slate-300 font-semibold flex items-center justify-between">
+                  <span className="flex items-center gap-1">
+                    <Camera size={13} /> Attach Field Photo (Ensures 100% Confidence Rating)
                   </span>
+                  <span className="text-[10px] text-emerald-400">Quick Presets Available</span>
+                </label>
+
+                <div className="flex flex-wrap gap-2">
+                  {PRESET_SAMPLE_PHOTOS.map((ph, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => setPhotoUrl(ph.url)}
+                      className={`px-2.5 py-1 rounded-lg text-[11px] font-medium border transition-all ${
+                        photoUrl === ph.url
+                          ? 'bg-emerald-600 text-white border-emerald-500'
+                          : 'bg-slate-950 text-slate-400 border-slate-800 hover:border-slate-700'
+                      }`}
+                    >
+                      📷 {ph.label}
+                    </button>
+                  ))}
                 </div>
 
-                <div>
-                  <label className="block text-slate-300 font-semibold mb-1">
-                    Estimated Affected Residents
-                  </label>
-                  <input
-                    type="number"
-                    min={1}
-                    max={20000}
-                    value={affectedPop}
-                    onChange={(e) => setAffectedPop(Number(e.target.value))}
-                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2.5 text-white font-mono text-xs focus:ring-1 focus:ring-emerald-500"
-                  />
-                </div>
+                <input
+                  type="url"
+                  placeholder="Or enter custom photo URL (https://...)"
+                  value={photoUrl}
+                  onChange={(e) => setPhotoUrl(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white placeholder-slate-500 text-xs focus:ring-1 focus:ring-emerald-500 mt-2"
+                />
+              </div>
+
+              {/* Affected Residents */}
+              <div>
+                <label className="block text-slate-300 font-semibold mb-1">
+                  Estimated Affected Residents
+                </label>
+                <input
+                  type="number"
+                  min={1}
+                  max={20000}
+                  value={affectedPop}
+                  onChange={(e) => setAffectedPop(Number(e.target.value))}
+                  className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2.5 text-white font-mono text-xs focus:ring-1 focus:ring-emerald-500"
+                />
               </div>
 
               {/* Submit Button */}
@@ -304,7 +386,7 @@ export const CitizenPortalPage: React.FC = () => {
                   </div>
                   <p className="text-[10px] text-slate-500 leading-tight">
                     {aiPreview.missingAttributes.length === 0
-                      ? 'High confidence: complete location and details provided.'
+                      ? 'High confidence: complete photo evidence & location provided.'
                       : `Missing: ${aiPreview.missingAttributes.join(', ')} (applies small score penalty).`}
                   </p>
                 </div>
@@ -342,7 +424,7 @@ export const CitizenPortalPage: React.FC = () => {
               </div>
             ) : (
               <div className="p-8 text-center text-slate-500 text-xs leading-relaxed">
-                Type in your problem description to view real-time structured feature extraction and confidence assessment.
+                Type in your problem description or click "Voice Complaint" to view real-time structured feature extraction and confidence assessment.
               </div>
             )}
           </div>
@@ -352,7 +434,6 @@ export const CitizenPortalPage: React.FC = () => {
       {/* TAB 2: CITIZEN TICKET TRACKING */}
       {activeTab === 'track' && (
         <div className="space-y-6">
-          {/* Tracking Search Bar */}
           <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-sm">
             <form onSubmit={handleTrackSearch} className="flex flex-col sm:flex-row gap-3">
               <div className="relative flex-1">
@@ -374,10 +455,8 @@ export const CitizenPortalPage: React.FC = () => {
             </form>
           </div>
 
-          {/* Tracked Ticket Detail Card */}
           {trackedIssue ? (
             <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-sm space-y-6">
-              {/* Top Summary */}
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800 pb-5">
                 <div>
                   <div className="flex items-center gap-2 mb-1">
@@ -417,7 +496,7 @@ export const CitizenPortalPage: React.FC = () => {
                     { key: 'prioritized', label: '2. Scored & Queued', desc: 'Evaluated by priority engine' },
                     { key: 'scheduled', label: '3. Work Dispatched', desc: 'Crew & equipment assigned' },
                     { key: 'resolved', label: '4. Rectified', desc: 'Closed and inspected' },
-                  ].map((stage, i) => {
+                  ].map((stage) => {
                     const isDone =
                       (stage.key === 'submitted') ||
                       (stage.key === 'prioritized' && trackedIssue.status !== 'submitted') ||

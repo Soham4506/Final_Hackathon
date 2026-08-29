@@ -12,7 +12,6 @@ import {
   BarChart3,
   Settings,
   PlusCircle,
-  FileCheck2,
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -21,7 +20,7 @@ interface SidebarProps {
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({ sidebarOpen, setSidebarOpen }) => {
-  const { userRole, issues, notifications } = useCivic();
+  const { userRole, issues, notifications, t } = useCivic();
 
   const activeIssuesCount = issues.filter((i) => i.status !== 'resolved' && i.status !== 'rejected').length;
   const criticalCount = issues.filter((i) => i.urgency === 'critical' && i.status !== 'resolved').length;
@@ -30,13 +29,13 @@ export const Sidebar: React.FC<SidebarProps> = ({ sidebarOpen, setSidebarOpen })
   const navItems = [
     {
       to: '/',
-      label: 'Dashboard',
+      label: t.dashboard,
       icon: LayoutDashboard,
       roles: ['officer', 'admin'],
     },
     {
       to: '/issues',
-      label: 'Civic Issues',
+      label: t.civicIssues,
       icon: AlertTriangle,
       roles: ['officer', 'admin', 'citizen'],
       badge: activeIssuesCount > 0 ? activeIssuesCount : undefined,
@@ -44,32 +43,32 @@ export const Sidebar: React.FC<SidebarProps> = ({ sidebarOpen, setSidebarOpen })
     },
     {
       to: '/priority-engine',
-      label: 'Priority Engine & Plan',
+      label: t.priorityEngine,
       icon: Cpu,
       roles: ['officer', 'admin'],
       highlight: true,
     },
     {
       to: '/resources',
-      label: 'Resources & Fleet',
+      label: t.resources,
       icon: Truck,
       roles: ['officer', 'admin'],
     },
     {
       to: '/map',
-      label: 'Civic Map (GIS)',
+      label: t.civicMap,
       icon: MapPin,
       roles: ['officer', 'admin', 'citizen'],
     },
     {
       to: '/citizen-portal',
-      label: 'Citizen Portal',
+      label: t.citizens,
       icon: Users,
       roles: ['citizen', 'officer', 'admin'],
     },
     {
       to: '/notifications',
-      label: 'Notifications',
+      label: t.notifications,
       icon: Bell,
       roles: ['officer', 'admin', 'citizen'],
       badge: unreadNotifs > 0 ? unreadNotifs : undefined,
@@ -77,13 +76,13 @@ export const Sidebar: React.FC<SidebarProps> = ({ sidebarOpen, setSidebarOpen })
     },
     {
       to: '/analytics',
-      label: 'Analytics & SLA',
+      label: t.analytics,
       icon: BarChart3,
       roles: ['officer', 'admin'],
     },
     {
       to: '/settings',
-      label: 'Settings & Audit Logs',
+      label: t.settings,
       icon: Settings,
       roles: ['admin', 'officer'],
     },
@@ -114,7 +113,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ sidebarOpen, setSidebarOpen })
               className="w-full flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold py-2.5 px-3 rounded-lg shadow-md shadow-emerald-950/40 transition-all"
             >
               <PlusCircle size={16} />
-              <span>Report New Civic Issue</span>
+              <span>{t.reportIssue}</span>
             </NavLink>
           </div>
 
