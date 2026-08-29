@@ -35,6 +35,27 @@ export interface Translations {
   approvePlan: string;
   printWorkOrder: string;
   broadcastAlert: string;
+  wastewaterReuse: string;
+  municipalWaste: string;
+  wastewaterIntake: string;
+  treatmentPlant: string;
+  qualityCheck: string;
+  reusePlan: string;
+  agriculture: string;
+  gradeA: string;
+  gradeB: string;
+  gradeC: string;
+  failedRetreat: string;
+  bookWaterQuota: string;
+  printCertificate: string;
+  flowDestination: string;
+  edibleAgriDest: string;
+  commercialAgriDest: string;
+  bigTreesDest: string;
+  industrialDest: string;
+  rechargeDest: string;
+  retreatmentDest: string;
+  sluiceGateRouting: string;
 }
 
 export const DICTIONARY: Record<Language, Translations> = {
@@ -73,6 +94,27 @@ export const DICTIONARY: Record<Language, Translations> = {
     approvePlan: 'Approve & Commit Plan',
     printWorkOrder: 'Official Work Order',
     broadcastAlert: 'Ward Broadcast Alert',
+    wastewaterReuse: 'Circular Water & Agri Reuse',
+    municipalWaste: 'Municipal Waste Stream',
+    wastewaterIntake: 'Wastewater Intake & Monitoring',
+    treatmentPlant: 'STP Treatment Plant',
+    qualityCheck: 'Water Quality & CPCB Check',
+    reusePlan: 'Agricultural Reuse Plan',
+    agriculture: 'Agriculture & Farmer Delivery',
+    gradeA: 'Grade A (Unrestricted Edible Crops)',
+    gradeB: 'Grade B (Sugarcane & Commercial Crops)',
+    gradeC: 'Grade C (Agroforestry & Greenbelts)',
+    failedRetreat: 'Failed - Re-treatment Required',
+    bookWaterQuota: 'Book Farmer Water Quota',
+    printCertificate: 'Official Lab Quality Certificate',
+    flowDestination: 'Water Flow Destination Decision',
+    edibleAgriDest: 'High-Value Food & Edible Crops',
+    commercialAgriDest: 'Sugarcane & Commercial Cash Crops',
+    bigTreesDest: 'Big Trees & Municipal Agroforestry',
+    industrialDest: 'PWD Construction & Dust Control',
+    rechargeDest: 'Groundwater Aquifer Recharge',
+    retreatmentDest: 'Re-treatment & Polishing Loop',
+    sluiceGateRouting: 'Sluice Gate & Flow Allocation',
   },
   mr: {
     councilName: 'कोपरगाव नगरपरिषद',
@@ -109,5 +151,28 @@ export const DICTIONARY: Record<Language, Translations> = {
     approvePlan: 'कृती आराखडा मंजूर करा',
     printWorkOrder: 'अधिकृत कार्य आदेश',
     broadcastAlert: 'प्रभाग नागरिक सूचना',
+    wastewaterReuse: 'सांडपाणी ते कृषी पुनर्वापर',
+    municipalWaste: 'नगरपालिका सांडपाणी संकलन',
+    wastewaterIntake: 'सांडपाणी आवक व तपासणी',
+    treatmentPlant: 'मलनिःसारण प्रक्रिया केंद्र',
+    qualityCheck: 'जल गुणवत्ता व CPCB तपासणी',
+    reusePlan: 'कृषी जल पुनर्वापर आराखडा',
+    agriculture: 'शेतकरी वाटप व सिंचन वितरण',
+    gradeA: 'वर्ग अ (खाद्य पिके व भाजीपाला)',
+    gradeB: 'वर्ग ब (ऊस व व्यावसायिक पिके)',
+    gradeC: 'वर्ग क (वृक्षलागवड व जैवइंधन)',
+    failedRetreat: 'अपात्र - पुनर्प्रक्रिया आवश्यक',
+    bookWaterQuota: 'शेतकरी जल कोटा नोंदणी',
+    printCertificate: 'अधिकृत प्रयोगशाळा प्रमाणपत्र',
+    flowDestination: 'जल प्रवाह व वापर उद्दिष्ट निर्णय',
+    edibleAgriDest: 'भाजीपाला, कांदा व फळबागा',
+    commercialAgriDest: 'ऊस, कापूस व नगदी शेती',
+    bigTreesDest: 'मोठी झाडे, वनीकरण व हरित पट्टे',
+    industrialDest: 'बांधकाम व धूळ नियंत्रण',
+    rechargeDest: 'भूजल पुनर्भरण',
+    retreatmentDest: 'पुनर्प्रक्रिया व शुद्धीकरण लूप',
+    sluiceGateRouting: 'कालवा गेट व व्हॉल्व प्रवाह वाटप',
   },
 };
+
+

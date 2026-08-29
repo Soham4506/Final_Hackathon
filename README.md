@@ -93,7 +93,64 @@ Municipal officers can evaluate and compare 3 distinct allocation objectives:
 
 ---
 
-## 🚀 5. Local Setup Instructions
+## 🌾 5. Circular Wastewater-to-Agriculture Reuse Workflow
+
+CivicPulse introduces a closed-loop municipal circular water economy system:
+
+```
+┌────────────────────────────────────────────────────────────────────────┐
+│                        1. MUNICIPAL WASTE INTAKE                       │
+│   • Solid-liquid waste separation across Wards 1 to 8                  │
+│   • Real-time volume monitoring (MLD / KLD) & Coarse Grit Screening    │
+└───────────────────────────────────┬────────────────────────────────────┘
+                                    │
+                                    ▼
+┌────────────────────────────────────────────────────────────────────────┐
+│                    2. WASTEWATER INFLOW DIAGNOSTICS                    │
+│   • Raw sewage inflow profiling: Baseline BOD, COD, Turbidity, TSS     │
+│   • Automated routing to Central STP or Decentralized MBBR Reactors    │
+└───────────────────────────────────┬────────────────────────────────────┘
+                                    │
+                                    ▼
+┌────────────────────────────────────────────────────────────────────────┐
+│                      3. MULTI-STAGE STP TREATMENT                      │
+│   • Stage 1: Coarse & Fine Grit Screening                              │
+│   • Stage 2: Moving Bed Biofilm Reactor (MBBR) Biological Aeration     │
+│   • Stage 3: Dual Media Sand & Activated Carbon Filtration             │
+│   • Stage 4: UV Disinfection & Beneficial N-P-K Nutrient Retention    │
+└───────────────────────────────────┬────────────────────────────────────┘
+                                    │
+                                    ▼
+┌────────────────────────────────────────────────────────────────────────┐
+│               4. QUALITY CHECK & CPCB LAB CERTIFICATION                │
+│   • Central Pollution Control Board (CPCB) & FAO Agronomic Validation   │
+│   • Grade A: Unrestricted Edible Crops, Onions & Orchards (BOD < 10)   │
+│   • Grade B: Sugarcane, Cotton & Commercial Cash Crops (BOD < 30)      │
+│   • Grade C: Agroforestry & Municipal Greenbelts (BOD < 50)            │
+│   • Safety Trigger: Toxic metals/pH violations routed to Re-treatment  │
+│   • Official Printable Lab Certificate with QR Verification Hash       │
+└───────────────────────────────────┬────────────────────────────────────┘
+                                    │
+                                    ▼
+┌────────────────────────────────────────────────────────────────────────┐
+│                   5. AGRICULTURAL REUSE PLAN & DISPATCH                │
+│   • Matches daily treated batch capacity with registered farmer demand │
+│   • Multi-modal distribution: Gravity Canal, Underground Pipe, Tanker  │
+│   • Generates Official Municipal Dispatch Work Orders for Farmers      │
+└───────────────────────────────────┬────────────────────────────────────┘
+                                    │
+                                    ▼
+┌────────────────────────────────────────────────────────────────────────┐
+│                 6. AGRICULTURE & CIRCULAR ECONOMY IMPACT               │
+│   • Direct irrigation delivery to Sugarcane, Onion & Pomegranate farms │
+│   • Natural N-P-K fertilizer retention saving ~₹4.6 Lakhs in Urea/DAP  │
+│   • Conserves millions of liters of fresh groundwater & Godavari river │
+└────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 🚀 6. Local Setup Instructions
 
 ### Prerequisites
 - Node.js (v18+)
@@ -128,15 +185,15 @@ Open **`http://localhost:5173`** in your browser.
 
 ---
 
-## ⏱️ 6. Two-Minute Judge Demo Script
+## ⏱️ 7. Three-Minute Judge Demo Script
 
 | Step | Time | What to Click & Observe | Key Talking Point |
 | :---: | :---: | :--- | :--- |
-| **1** | `0:00 - 0:25` | **Dashboard**: Observe KPIs, Top Competing Issues queue, and department budget gauges. Click the `मराठी / English` toggle in header. | *"CivicPulse replaces FIFO complaint logs with deterministic decision support tailored for Kopargaon Municipal Council."* |
-| **2** | `0:25 - 0:50` | **Civic Issues Queue**: Click ticket `KMC-2026-00101` (*Water Contamination near Civil Hospital*). Click **"Score Breakdown"** and use the **Pairwise Comparison Tool** against `KMC-2026-00107` (*Streetlight Outage*). | *"The score is calculated deterministically with full mathematical explainability. The pairwise tool explains why water contamination ranks +47 points above streetlights."* |
-| **3** | `0:50 - 1:20` | **Priority Engine & Plan**: Select *Water Supply & Sanitation* department. Switch between **Strategy A (Max Risk)** and **Strategy B (Max Pop)** to view the Trade-Off Matrix. Click **Run Allocation Engine**. Observe **Approved Works** (with Jetting Truck assigned) and **Deferred Backlog** (with machine bottleneck diagnostics and capacity backfill). | *"Solves multi-constraint knapsack allocation under limited budgets, crew shifts, and machinery. Pass 2 backfills remaining slack with smaller works."* |
-| **4** | `1:20 - 1:40` | **Work Order & Override**: Click **"Official Work Order"** on the approved plan. Then test **Officer Override** on a ticket and show the timestamped event in **Settings → Audit Ledger**. | *"Officers can generate printable municipal work orders with QR codes. Any priority override is immutably logged for audit compliance."* |
-| **5** | `1:40 - 2:00` | **Citizen Portal**: Switch role to **Citizen**. Click **"Voice Complaint"** or type: *"Yellow muddy water smelling of sewage near Civil Hospital"*. Select a sample photo to watch the confidence meter hit 100%. Submit the complaint. | *"AI extracts structured features without hallucinating scores. 150m duplicate clustering merges repeat complaints to prevent redundant work orders."* |
+| **1** | `0:00 - 0:25` | **Dashboard**: Observe KPIs, Top Competing Issues queue, and Circular Agri Water counter. Click `मराठी / English` toggle in header. | *"CivicPulse replaces FIFO complaint logs with deterministic decision support and adds a circular water economy for Kopargaon."* |
+| **2** | `0:25 - 0:55` | **Civic Issues Queue**: Click ticket `KMC-2026-00101` (*Water Contamination near Civil Hospital*). Click **"Score Breakdown"** and use the **Pairwise Comparison Tool** against `KMC-2026-00107` (*Streetlight Outage*). | *"The score is calculated deterministically with full mathematical explainability. Explains why water contamination ranks +47 points above streetlights."* |
+| **3** | `0:55 - 1:25` | **Priority Engine & Plan**: Select *Water Supply & Sanitation* department. Switch between **Strategy A (Max Risk)** and **Strategy B (Max Pop)**. Click **Run Allocation Engine**. Observe **Approved Works** and **Deferred Backlog**. | *"Solves multi-constraint knapsack allocation under limited budgets, crew shifts, and machinery. Pass 2 backfills remaining slack with smaller works."* |
+| **4** | `1:25 - 2:15` | **Circular Water Hub (`/wastewater-reuse`)**: Step through the 6 stages: Municipal Waste ➔ Wastewater ➔ STP Treatment ➔ Quality Check ➔ Reuse Plan ➔ Agriculture. Test the **Quality Check Sandbox** (click *Grade A* or *Failure Trigger*), click **"Run Quality Check & Generate Certificate"** to view the printable certificate with QR code, then click **"Generate Reuse Plan"** and view the **Water Dispatch Order**. | *"Closed-loop circular economy: Municipal sewage is treated, certified against CPCB standards, and allocated to sugarcane and onion farmers, saving synthetic fertilizer and protecting the Godavari River."* |
+| **5** | `2:15 - 2:45` | **GIS Map & Citizen Portal**: Open **Civic GIS Map** to see STP plants and Agricultural Command Zones. Switch to **Citizen Portal** and test **"Book Farmer Water Quota"** or submit a voice complaint. | *"Holistic civic platform with GIS intelligence, farmer water quotas, and immutable audit logs."* |
 
 ---
 

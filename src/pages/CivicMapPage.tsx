@@ -139,10 +139,11 @@ const CRITICAL_POIS = [
 ];
 
 export const CivicMapPage: React.FC = () => {
-  const { issues, zones, departments, resources, t } = useCivic();
+  const { issues, zones, departments, resources, treatmentPlants, commandZones, t } = useCivic();
   const [selectedDeptFilter, setSelectedDeptFilter] = useState<string>('all');
   const [showBoundaries, setShowBoundaries] = useState<boolean>(true);
   const [showPOIs, setShowPOIs] = useState<boolean>(true);
+  const [showCircularWaterGIS, setShowCircularWaterGIS] = useState<boolean>(true);
   const [selectedIssue, setSelectedIssue] = useState<CivicIssue | null>(null);
   const [explainIssue, setExplainIssue] = useState<CivicIssue | null>(null);
 
@@ -167,7 +168,7 @@ export const CivicMapPage: React.FC = () => {
             {t.civicMap}
           </h1>
           <p className="text-xs sm:text-sm text-slate-400 mt-1">
-            Geo-spatial mapping of competing civic emergencies overlaid on hospital, school, and flood risk zones.
+            Geo-spatial mapping of competing civic emergencies overlaid on hospital, school, STP plants, and farming zones.
           </p>
         </div>
 
@@ -192,6 +193,16 @@ export const CivicMapPage: React.FC = () => {
             }`}
           >
             Landmarks & POIs
+          </button>
+          <button
+            onClick={() => setShowCircularWaterGIS(!showCircularWaterGIS)}
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all ${
+              showCircularWaterGIS
+                ? 'bg-emerald-950 text-emerald-300 border-emerald-800'
+                : 'bg-slate-950 text-slate-400 border-slate-800'
+            }`}
+          >
+            🌾 STPs & Agri Zones
           </button>
           <select
             value={selectedDeptFilter}
@@ -255,6 +266,46 @@ export const CivicMapPage: React.FC = () => {
                       <span className="block text-[10px] text-slate-500 font-normal">
                         Critical Municipal Landmark Anchor
                       </span>
+                    </div>
+                  </Popup>
+                </Marker>
+              ))}
+
+            {/* STP Treatment Plants GIS Markers */}
+            {showCircularWaterGIS &&
+              treatmentPlants.map((plant) => (
+                <Marker key={plant.id} position={plant.coordinates} icon={createPOIIcon('🏭')}>
+                  <Popup>
+                    <div className="p-1 text-slate-900 text-xs space-y-1">
+                      <div className="font-bold text-emerald-800 flex items-center gap-1">
+                        🏭 {plant.name}
+                      </div>
+                      <div className="text-[10px] text-slate-600">
+                        Capacity: <strong>{plant.capacityMLD} MLD</strong> • Tech: {plant.technology}
+                      </div>
+                      <div className="text-[10px] text-emerald-700 font-semibold">
+                        Daily Output: {plant.dailyTreatedKLD.toLocaleString()} KL/day (CPCB Certified)
+                      </div>
+                    </div>
+                  </Popup>
+                </Marker>
+              ))}
+
+            {/* Agricultural Command Zones GIS Markers */}
+            {showCircularWaterGIS &&
+              commandZones.map((zone) => (
+                <Marker key={zone.id} position={zone.coordinates} icon={createPOIIcon('🌾')}>
+                  <Popup>
+                    <div className="p-1 text-slate-900 text-xs space-y-1">
+                      <div className="font-bold text-emerald-800 flex items-center gap-1">
+                        🌾 {zone.name}
+                      </div>
+                      <div className="text-[10px] text-slate-600">
+                        Acreage: <strong>{zone.totalAcreageHectares} Ha</strong> • Crops: {zone.majorCrops.join(', ')}
+                      </div>
+                      <div className="text-[10px] text-blue-700 font-semibold">
+                        Water Demand: {zone.dailyWaterRequirementKLD.toLocaleString()} KL/day • Pipeline: {zone.pipelineConnected ? 'CONNECTED' : 'TANKER/CANAL'}
+                      </div>
                     </div>
                   </Popup>
                 </Marker>

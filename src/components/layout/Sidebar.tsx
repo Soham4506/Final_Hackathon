@@ -12,6 +12,7 @@ import {
   BarChart3,
   Settings,
   PlusCircle,
+  Sprout,
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -20,10 +21,11 @@ interface SidebarProps {
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({ sidebarOpen, setSidebarOpen }) => {
-  const { userRole, issues, notifications, t } = useCivic();
+  const { userRole, issues, notifications, wastewaterBatches, t } = useCivic();
 
   const activeIssuesCount = issues.filter((i) => i.status !== 'resolved' && i.status !== 'rejected').length;
   const criticalCount = issues.filter((i) => i.urgency === 'critical' && i.status !== 'resolved').length;
+  const activeBatchesCount = wastewaterBatches.filter((b) => b.status === 'active').length;
   const unreadNotifs = notifications.filter((n) => !n.isRead).length;
 
   const navItems = [
@@ -42,11 +44,20 @@ export const Sidebar: React.FC<SidebarProps> = ({ sidebarOpen, setSidebarOpen })
       badgeColor: criticalCount > 0 ? 'bg-red-500' : 'bg-slate-700',
     },
     {
+      to: '/wastewater-reuse',
+      label: t.wastewaterReuse || 'Circular Water & Agri Reuse',
+      icon: Sprout,
+      roles: ['officer', 'admin', 'citizen'],
+      highlight: true,
+      badge: activeBatchesCount > 0 ? activeBatchesCount : undefined,
+      badgeColor: 'bg-emerald-600',
+    },
+    {
       to: '/priority-engine',
       label: t.priorityEngine,
       icon: Cpu,
       roles: ['officer', 'admin'],
-      highlight: true,
+      highlight: false,
     },
     {
       to: '/resources',

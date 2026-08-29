@@ -18,6 +18,8 @@ import {
   Sparkles,
   ShieldCheck,
   Zap,
+  Sprout,
+  Droplets,
 } from 'lucide-react';
 import {
   ResponsiveContainer,
@@ -33,7 +35,7 @@ import {
 
 export const DashboardPage: React.FC = () => {
   const navigate = useNavigate();
-  const { issues, resources, departments, zones, activePlans } = useCivic();
+  const { issues, resources, departments, zones, activePlans, circularMetrics, wastewaterBatches } = useCivic();
 
   // Metrics computation from real context data
   const totalIssues = issues.length;
@@ -90,16 +92,23 @@ export const DashboardPage: React.FC = () => {
             Municipal Command & Decision Support Dashboard
           </h1>
           <p className="text-xs sm:text-sm text-slate-400 mt-1 max-w-2xl">
-            AI structured triage and deterministic prioritization for constrained municipal fleet, workforce, and departmental budgets.
+            AI structured triage, deterministic prioritization, and circular wastewater-to-agriculture reuse for Kopargaon Municipal Council.
           </p>
         </div>
 
         <div className="flex flex-wrap gap-2.5 shrink-0">
           <button
-            onClick={() => navigate('/priority-engine')}
+            onClick={() => navigate('/wastewater-reuse')}
             className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold px-4 py-2.5 rounded-lg shadow-md shadow-emerald-950/50 transition-all"
           >
-            <Cpu size={16} />
+            <Sprout size={16} />
+            <span>Circular Water Hub</span>
+          </button>
+          <button
+            onClick={() => navigate('/priority-engine')}
+            className="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold px-4 py-2.5 rounded-lg transition-all"
+          >
+            <Cpu size={16} className="text-amber-400" />
             <span>Launch Allocation Engine</span>
           </button>
           <button
@@ -113,7 +122,7 @@ export const DashboardPage: React.FC = () => {
       </div>
 
       {/* KPI Stats Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
         <StatCard
           title="Active Civic Queue"
           value={activeIssues.length}
@@ -141,11 +150,19 @@ export const DashboardPage: React.FC = () => {
           trend="Jetting, Rollers, Bucket"
         />
         <StatCard
-          title="Action Plans Generated"
+          title="Circular Agri Water"
+          value={`${(circularMetrics.totalGroundwaterSavedLiters / 1000000).toFixed(1)}M L`}
+          subtext={`${circularMetrics.totalAgriculturalReuseKLD.toLocaleString()} KL reused in farming`}
+          icon={Sprout}
+          variant="emerald"
+          trend="₹4.6L Fert. Saved"
+        />
+        <StatCard
+          title="Action Plans"
           value={activePlans.length || '1'}
           subtext="Resource-constrained work batches"
           icon={CheckCircle2}
-          variant="emerald"
+          variant="slate"
           trend="Shift 1 Active"
         />
       </div>
