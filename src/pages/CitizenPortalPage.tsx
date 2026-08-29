@@ -7,6 +7,7 @@ import { AIIntakeParser, AIIntakeResult } from '../services/aiIntakeParser';
 import { ExplainabilityService } from '../services/explainabilityService';
 import { PhotoGeoLocationService, GeolocationResult } from '../services/photoGeoLocation';
 import { LiveCameraModal } from '../components/common/CameraCaptureModal';
+import { SMSAlertService } from '../services/smsAlertService';
 import { UrgencyLevel, ResourceType, IssueStatus } from '../types';
 import {
   PlusCircle,
@@ -1229,6 +1230,101 @@ export const CitizenPortalPage: React.FC = () => {
                     <p className="text-[#1b1b1d] leading-relaxed">{expl.detail}</p>
                     <div className="text-[11px] text-amber-800 font-bold">
                       Next Step: {expl.expectedAction}
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {/* Phone-First / Non-Smartphone Telephony Script (IVR Stub) */}
+              {(() => {
+                const ivrScriptMr = SMSAlertService.formatIvrScript(
+                  trackedIssue.status,
+                  {
+                    ticketNumber: trackedIssue.ticketNumber,
+                    title: trackedIssue.title,
+                    locationAddress: trackedIssue.locationAddress,
+                    priorityScore: trackedIssue.priorityScore?.finalScore,
+                    requiredEquipment: trackedIssue.requiredEquipment,
+                    requiredStaffCount: trackedIssue.requiredStaffCount,
+                  },
+                  'mr'
+                );
+
+                const ivrScriptEn = SMSAlertService.formatIvrScript(
+                  trackedIssue.status,
+                  {
+                    ticketNumber: trackedIssue.ticketNumber,
+                    title: trackedIssue.title,
+                    locationAddress: trackedIssue.locationAddress,
+                    priorityScore: trackedIssue.priorityScore?.finalScore,
+                    requiredEquipment: trackedIssue.requiredEquipment,
+                    requiredStaffCount: trackedIssue.requiredStaffCount,
+                  },
+                  'en'
+                );
+
+                const handlePlayIvr = (text: string, lang: string) => {
+                  if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+                    window.speechSynthesis.cancel();
+                    const utterance = new SpeechSynthesisUtterance(text);
+                    utterance.lang = lang === 'mr' ? 'mr-IN' : 'en-IN';
+                    utterance.rate = 0.95;
+                    window.speechSynthesis.speak(utterance);
+                  }
+                };
+
+                return (
+                  <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 text-xs space-y-3">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-200/80 pb-3">
+                      <div className="flex items-center gap-2">
+                        <div className="p-1.5 rounded-lg bg-blue-100 text-blue-900">
+                          <Phone size={15} />
+                        </div>
+                        <div>
+                          <div className="font-bold text-[#1b1b1d] text-xs">
+                            Phone-First / Non-Smartphone Telephony Script (IVR Stub)
+                          </div>
+                          <span className="text-[10px] text-[#76777d]">
+                            IVR script (not yet connected to a live telephony provider) • Plain text for 1800 Call-Center Agent
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => handlePlayIvr(ivrScriptMr, 'mr')}
+                          className="px-2.5 py-1 bg-white hover:bg-slate-100 text-blue-900 border border-slate-300 font-bold rounded-lg text-[11px] transition-colors flex items-center gap-1 shadow-2xs"
+                        >
+                          <span>🔊 Read Aloud (मराठी)</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handlePlayIvr(ivrScriptEn, 'en')}
+                          className="px-2.5 py-1 bg-white hover:bg-slate-100 text-[#131b2e] border border-slate-300 font-bold rounded-lg text-[11px] transition-colors flex items-center gap-1 shadow-2xs"
+                        >
+                          <span>🔊 Read Aloud (English)</span>
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      <div className="p-3 bg-white border border-slate-200 rounded-xl space-y-1">
+                        <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
+                          Marathi Spoken IVR Script (मराठी कॉल संवाद)
+                        </span>
+                        <p className="text-[11px] text-slate-800 leading-relaxed font-sans">
+                          "{ivrScriptMr}"
+                        </p>
+                      </div>
+                      <div className="p-3 bg-white border border-slate-200 rounded-xl space-y-1">
+                        <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
+                          English Spoken IVR Script
+                        </span>
+                        <p className="text-[11px] text-slate-800 leading-relaxed font-sans">
+                          "{ivrScriptEn}"
+                        </p>
+                      </div>
                     </div>
                   </div>
                 );

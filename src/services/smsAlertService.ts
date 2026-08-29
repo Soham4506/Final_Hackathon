@@ -8,6 +8,7 @@ export interface SmsMessage {
   issueTitle: string;
   stage: IssueStatus;
   smsBody: string;
+  ivrScript?: string;
   senderId: string; // e.g. 'KMC-GOV'
   sentAt: string;
   deliveryStatus: 'delivered' | 'sent' | 'pending';
@@ -16,6 +17,66 @@ export interface SmsMessage {
 
 export class SMSAlertService {
   private static STORAGE_KEY = 'civicpulse_citizen_sms_inbox';
+
+  /**
+   * Generates phone-first plain-language spoken IVR script for call-center operators / automated telephony
+   * Designed specifically for semi-rural citizens who may not comfortably read SMS.
+   */
+  public static formatIvrScript(
+    stage: IssueStatus,
+    issue: {
+      ticketNumber: string;
+      title: string;
+      locationAddress: string;
+      priorityScore?: number;
+      requiredEquipment?: string;
+      requiredStaffCount?: number;
+    },
+    language: 'en' | 'mr' = 'mr'
+  ): string {
+    const ticket = issue.ticketNumber;
+    const loc = issue.locationAddress;
+    const score = issue.priorityScore ? Math.round(issue.priorityScore) : 75;
+    const eqName = issue.requiredEquipment?.replace('_', ' ') || 'यंत्रसामग्री';
+    const staff = issue.requiredStaffCount || 2;
+
+    if (language === 'mr') {
+      switch (stage) {
+        case 'submitted':
+          return `नमस्कार, कोपरगाव नगरपरिषद नागरिक संपर्क केंद्रातून बोलत आहोत. आपली तक्रार क्रमांक ${ticket} यशस्वीरित्या नोंदवली गेली आहे. प्रणालीनुसार प्राधान्य गुण १०० पैकी ${score} आले आहेत. संबंधित प्रभाग अभियंत्याकडे काम सोपवण्यात आले आहे.`;
+        case 'prioritized':
+          return `नमस्कार, कोपरगाव नगरपरिषद. आपली तक्रार क्रमांक ${ticket} प्राधान्य यादीत समाविष्ट झाली असून त्यानुसार आवश्यक साधनसामग्री वाटप निश्चित केले जात आहे.`;
+        case 'scheduled':
+          return `नमस्कार, कोपरगाव नगरपरिषद. आपली तक्रार क्रमांक ${ticket} चे काम आजच्या शिफ्टमध्ये मंजूर झाले आहे. ${staff} तंत्रज्ञांचे पथक आणि ${eqName} घटनास्थळासाठी नियोजित करण्यात आले आहे.`;
+        case 'in_progress':
+          return `नमस्कार, कोपरगाव नगरपरिषद. तक्रार क्रमांक ${ticket} साठी नगरपालिकेचे दुरुस्ती पथक ${loc} येथे पोहोचले असून प्रत्यक्ष दुरुस्ती काम चालू आहे.`;
+        case 'resolved':
+          return `नमस्कार, कोपरगाव नगरपरिषद. आपली तक्रार क्रमांक ${ticket} चे काम यशस्वीरित्या पूर्ण झाले असून कनिष्ठ अभियंत्यांनी प्रत्यक्ष तपासणी केली आहे. कोपरगाव नगरपरिषदेला सहकार्य केल्याबद्दल धन्यवाद.`;
+        case 'rejected':
+          return `नमस्कार, कोपरगाव नगरपरिषद. तक्रार क्रमांक ${ticket} बाबत पुनरावलोकन पूर्ण झाले आहे. अधिक माहितीसाठी नगरपरिषद कार्यालयाशी संपर्क साधावा.`;
+        default:
+          return `नमस्कार, कोपरगाव नगरपरिषद. तक्रार क्रमांक ${ticket} ची सद्यस्थिती अद्यतनित झाली आहे.`;
+      }
+    }
+
+    // English IVR Script
+    switch (stage) {
+      case 'submitted':
+        return `Hello, this is the Kopargaon Municipal Council Citizen Desk. Your grievance ticket number ${ticket} has been registered with priority score ${score} out of 100 and assigned to the Ward Engineer.`;
+      case 'prioritized':
+        return `Hello, Kopargaon Municipal Council update. Your grievance ticket ${ticket} has been evaluated by the Decision Engine with priority score ${score} out of 100.`;
+      case 'scheduled':
+        return `Hello, Kopargaon Municipal Council update. Work order for ticket ${ticket} has been scheduled. A crew of ${staff} technicians with ${issue.requiredEquipment?.replace('_', ' ') || 'equipment'} has been assigned.`;
+      case 'in_progress':
+        return `Hello, Kopargaon Municipal Council update. Municipal repair crew has arrived at ${loc} and work for ticket ${ticket} is actively in progress.`;
+      case 'resolved':
+        return `Hello, Kopargaon Municipal Council update. Your grievance ticket ${ticket} at ${loc} has been resolved and verified on-site by the engineer. Thank you.`;
+      case 'rejected':
+        return `Hello, Kopargaon Municipal Council update. Grievance ticket ${ticket} has been reviewed. Please contact the KMC ward desk for details.`;
+      default:
+        return `Hello, Kopargaon Municipal Council update. Status for ticket ${ticket} is updated to ${stage}.`;
+    }
+  }
 
   /**
    * Generates official bilingual SMS text tailored to each lifecycle milestone
@@ -141,6 +202,19 @@ export class SMSAlertService {
       }
     }
 
+    const ivrScript = this.formatIvrScript(
+      stage,
+      {
+        ticketNumber: issue.ticketNumber,
+        title: issue.title,
+        locationAddress: issue.locationAddress,
+        priorityScore: issue.priorityScore?.finalScore,
+        requiredEquipment: issue.requiredEquipment,
+        requiredStaffCount: issue.requiredStaffCount,
+      },
+      language
+    );
+
     const smsMessage: SmsMessage = {
       id: `sms-${Date.now()}-${Math.random().toString(36).substring(7)}`,
       recipientPhone: targetPhone,
@@ -148,6 +222,7 @@ export class SMSAlertService {
       issueTitle: issue.title,
       stage,
       smsBody,
+      ivrScript,
       senderId: 'KMC-GOV',
       sentAt: new Date().toISOString(),
       deliveryStatus: 'delivered',
