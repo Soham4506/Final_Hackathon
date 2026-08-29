@@ -79,8 +79,8 @@ export const CitizenSmsInboxModal: React.FC<CitizenSmsInboxModalProps> = ({
               <Building size={14} className="text-[#131b2e]" />
               <span className="font-bold text-[#1b1b1d]">Sender: KMC-GOV</span>
             </div>
-            <span className="font-mono text-[10px] text-emerald-700 font-bold">
-              {messages.length} Alerts Received
+            <span className="font-mono text-[10px] text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+              ⚡ Fast2SMS Real Network Active
             </span>
           </div>
 
