@@ -14,11 +14,9 @@ import {
   Languages,
   Database,
   ChevronDown,
-  Smartphone,
 } from 'lucide-react';
 import { useCivic } from '../../context/CivicContext';
 import { OperationalStatusModal } from '../modals/OperationalStatusModal';
-import { CitizenSmsInboxModal } from '../common/CitizenSmsInboxModal';
 
 interface HeaderProps {
   sidebarOpen: boolean;
@@ -42,7 +40,6 @@ export const Header: React.FC<HeaderProps> = ({ sidebarOpen, setSidebarOpen }) =
 
   const [searchQuery, setSearchQuery] = useState('');
   const [showStatusModal, setShowStatusModal] = useState(false);
-  const [showSmsModal, setShowSmsModal] = useState(false);
   const [showNotifs, setShowNotifs] = useState(false);
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
 
@@ -116,16 +113,6 @@ export const Header: React.FC<HeaderProps> = ({ sidebarOpen, setSidebarOpen }) =
               </button>
             )}
           </form>
-
-          {/* Citizen Mobile SMS Inbox Gateway Button */}
-          <button
-            onClick={() => setShowSmsModal(true)}
-            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-bold bg-blue-50 hover:bg-blue-100 text-blue-900 border border-blue-200 transition-colors shadow-xs"
-            title="Citizen Mobile SMS Alert Gateway"
-          >
-            <Smartphone size={14} className="text-blue-700" />
-            <span className="hidden sm:inline">Citizen SMS</span>
-          </button>
 
           {/* Language Switcher */}
           <button
@@ -206,12 +193,12 @@ export const Header: React.FC<HeaderProps> = ({ sidebarOpen, setSidebarOpen }) =
             <span className="sm:hidden">Status</span>
           </button>
 
-          {/* User Profile Avatar with RBAC Role Switcher Dropdown */}
+          {/* User Profile Avatar with Read-Only Security Details */}
           <div className="relative">
             <button
               onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
               className="flex items-center gap-1.5 p-1 rounded-full hover:ring-2 hover:ring-[#131b2e]/20 transition-all ml-1"
-              title="User Profile & RBAC Role"
+              title="User Profile"
             >
               <div className="w-8 h-8 rounded-full overflow-hidden border border-[#76777d]/30 bg-[#131b2e] flex items-center justify-center text-white font-bold text-xs">
                 {currentUser.fullName ? currentUser.fullName.charAt(0).toUpperCase() : 'U'}
@@ -223,7 +210,7 @@ export const Header: React.FC<HeaderProps> = ({ sidebarOpen, setSidebarOpen }) =
                 <div className="px-4 py-3 border-b border-slate-100">
                   <div className="flex items-center justify-between">
                     <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
-                      RBAC Security Profile
+                      Security Profile
                     </span>
                     <span className="px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 font-mono text-[10px] font-bold uppercase">
                       {userRole}
@@ -259,13 +246,6 @@ export const Header: React.FC<HeaderProps> = ({ sidebarOpen, setSidebarOpen }) =
       <OperationalStatusModal
         isOpen={showStatusModal}
         onClose={() => setShowStatusModal(false)}
-      />
-
-      {/* Citizen Mobile SMS Alert Inbox Simulator Modal */}
-      <CitizenSmsInboxModal
-        isOpen={showSmsModal}
-        onClose={() => setShowSmsModal(false)}
-        phoneFilter={currentUser.phone}
       />
     </>
   );

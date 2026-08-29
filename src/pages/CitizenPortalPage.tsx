@@ -7,7 +7,6 @@ import { AIIntakeParser, AIIntakeResult } from '../services/aiIntakeParser';
 import { ExplainabilityService } from '../services/explainabilityService';
 import { PhotoGeoLocationService, GeolocationResult } from '../services/photoGeoLocation';
 import { LiveCameraModal } from '../components/common/CameraCaptureModal';
-import { CitizenSmsInboxModal } from '../components/common/CitizenSmsInboxModal';
 import { UrgencyLevel, ResourceType, IssueStatus } from '../types';
 import {
   PlusCircle,
@@ -38,8 +37,6 @@ import {
   Info,
   Calendar,
   Phone,
-  Smartphone,
-  MessageSquare,
   Truck,
   CheckCheck,
 } from 'lucide-react';
@@ -85,7 +82,6 @@ export const CitizenPortalPage: React.FC = () => {
   const [isLocating, setIsLocating] = useState<boolean>(false);
   const [isAnalyzingImage, setIsAnalyzingImage] = useState<boolean>(false);
   const [isCameraModalOpen, setIsCameraModalOpen] = useState<boolean>(false);
-  const [isSmsInboxOpen, setIsSmsInboxOpen] = useState<boolean>(false);
 
   // AI-Detected & User-Editable Form Parameters (SDDS Style)
   const [selectedDeptId, setSelectedDeptId] = useState<string>(departments[0]?.id || 'b0000000-0000-0000-0000-000000000001');
@@ -367,7 +363,7 @@ export const CitizenPortalPage: React.FC = () => {
         <div>
           <div className="flex items-center gap-2 mb-1">
             <span className="bg-emerald-50 text-emerald-800 border border-emerald-200 text-[10px] font-mono uppercase font-bold px-2 py-0.5 rounded flex items-center gap-1">
-              <Smartphone size={12} /> SMS Lifecycle Alerts & AI Vision
+              <Phone size={12} /> Real-Time Cellular SMS Alerts & AI Vision
             </span>
             <span className="text-xs text-[#76777d]">Kopargaon Citizen Service Portal</span>
           </div>
@@ -375,45 +371,34 @@ export const CitizenPortalPage: React.FC = () => {
             Citizen Grievance & Tracking Portal
           </h1>
           <p className="text-xs sm:text-sm text-[#57657b] mt-1">
-            Capture live photos or upload incident evidence with automatic GPS geotagging, SDDS review, and automated SMS milestone alerts dispatched to your mobile handset.
+            Capture live photos or upload incident evidence with automatic GPS geotagging, SDDS parameter review, and instant real-time SMS alerts dispatched directly to your mobile phone.
           </p>
         </div>
 
-        {/* Tab Switcher & SMS Inbox Button */}
-        <div className="flex flex-wrap items-center gap-2">
+        {/* Tab Switcher */}
+        <div className="bg-[#f0edef] p-1 rounded-xl border border-[#76777d]/15 flex items-center text-xs shrink-0">
           <button
-            onClick={() => setIsSmsInboxOpen(true)}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold bg-blue-50 hover:bg-blue-100 text-blue-900 border border-blue-200 transition-colors shadow-xs"
-            title="Open Citizen Phone SMS Inbox"
+            onClick={() => setSearchParams({ tab: 'submit' })}
+            className={`px-4 py-2 rounded-lg font-bold uppercase text-[11px] tracking-wider transition-all flex items-center gap-1.5 ${
+              activeTab === 'submit'
+                ? 'bg-[#131b2e] text-white shadow-xs'
+                : 'text-[#57657b] hover:text-[#1b1b1d]'
+            }`}
           >
-            <Smartphone size={15} className="text-blue-700" />
-            <span>📱 Citizen SMS Inbox</span>
+            <PlusCircle size={14} />
+            <span>{t.reportIssue}</span>
           </button>
-
-          <div className="bg-[#f0edef] p-1 rounded-xl border border-[#76777d]/15 flex items-center text-xs shrink-0">
-            <button
-              onClick={() => setSearchParams({ tab: 'submit' })}
-              className={`px-4 py-2 rounded-lg font-bold uppercase text-[11px] tracking-wider transition-all flex items-center gap-1.5 ${
-                activeTab === 'submit'
-                  ? 'bg-[#131b2e] text-white shadow-xs'
-                  : 'text-[#57657b] hover:text-[#1b1b1d]'
-              }`}
-            >
-              <PlusCircle size={14} />
-              <span>{t.reportIssue}</span>
-            </button>
-            <button
-              onClick={() => setSearchParams({ tab: 'track' })}
-              className={`px-4 py-2 rounded-lg font-bold uppercase text-[11px] tracking-wider transition-all flex items-center gap-1.5 ${
-                activeTab === 'track'
-                  ? 'bg-[#131b2e] text-white shadow-xs'
-                  : 'text-[#57657b] hover:text-[#1b1b1d]'
-              }`}
-            >
-              <Search size={14} />
-              <span>{t.trackTicket}</span>
-            </button>
-          </div>
+          <button
+            onClick={() => setSearchParams({ tab: 'track' })}
+            className={`px-4 py-2 rounded-lg font-bold uppercase text-[11px] tracking-wider transition-all flex items-center gap-1.5 ${
+              activeTab === 'track'
+                ? 'bg-[#131b2e] text-white shadow-xs'
+                : 'text-[#57657b] hover:text-[#1b1b1d]'
+            }`}
+          >
+            <Search size={14} />
+            <span>{t.trackTicket}</span>
+          </button>
         </div>
       </div>
 
@@ -451,25 +436,18 @@ export const CitizenPortalPage: React.FC = () => {
                     <span>Issue Registered Successfully!</span>
                   </span>
                   <span className="text-[10px] font-mono bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded font-bold">
-                    SMS DISPATCHED ✉️
+                    SMS DISPATCHED TO PHONE 📱
                   </span>
                 </div>
                 <p>
-                  Your ticket number is <strong className="font-mono text-[#131b2e]">{submittedTicket}</strong>. An initial registration SMS has been dispatched to <strong>{citizenPhone}</strong> with priority rating.
+                  Your ticket number is <strong className="font-mono text-[#131b2e]">{submittedTicket}</strong>. An initial confirmation SMS has been dispatched directly to your mobile handset <strong>{citizenPhone}</strong> with priority score and SLA timing.
                 </p>
-                <div className="flex flex-wrap items-center gap-3 pt-1">
-                  <button
-                    onClick={() => setIsSmsInboxOpen(true)}
-                    className="px-3 py-1.5 rounded-lg bg-[#131b2e] text-white font-bold text-[11px] flex items-center gap-1.5 shadow-xs"
-                  >
-                    <Smartphone size={13} className="text-emerald-400" />
-                    <span>View SMS on Mobile Handset →</span>
-                  </button>
+                <div className="pt-1">
                   <button
                     onClick={() => setSearchParams({ tab: 'track' })}
                     className="text-emerald-800 font-bold underline text-[11px]"
                   >
-                    Track Progress Timeline →
+                    Track Live Progress Timeline →
                   </button>
                 </div>
               </div>
@@ -697,12 +675,12 @@ export const CitizenPortalPage: React.FC = () => {
                 )}
               </div>
 
-              {/* Citizen Contact Details (Phone & Name for SMS Alerts) */}
+              {/* Citizen Contact Details (Phone & Name for Real Cellular SMS Alerts) */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-blue-50/40 p-3.5 rounded-2xl border border-blue-100">
                 <div>
                   <label className="block text-[#1b1b1d] font-bold mb-1 flex items-center gap-1.5">
                     <Phone size={13} className="text-blue-700" />
-                    <span>Citizen Mobile Number (SMS Alerts) *</span>
+                    <span>Citizen Mobile Number (Real SMS Alerts) *</span>
                   </label>
                   <input
                     type="tel"
@@ -712,8 +690,8 @@ export const CitizenPortalPage: React.FC = () => {
                     onChange={(e) => setCitizenPhone(e.target.value)}
                     className="w-full bg-white border border-[#76777d]/20 rounded-xl px-3 py-2 text-[#1b1b1d] font-mono text-xs font-semibold focus:outline-none focus:border-[#131b2e]"
                   />
-                  <span className="text-[10px] text-[#57657b] block mt-0.5">
-                    Real-time SMS updates will be dispatched to this phone at each stage.
+                  <span className="text-[10px] text-emerald-800 font-medium block mt-0.5">
+                    ⚡ Real SMS messages will be sent directly to this mobile phone via Fast2SMS network.
                   </span>
                 </div>
 
@@ -1076,11 +1054,11 @@ export const CitizenPortalPage: React.FC = () => {
         </div>
       )}
 
-      {/* TAB 2: CITIZEN TICKET TRACKING & LIVE SMS TIMELINE */}
+      {/* TAB 2: CITIZEN TICKET TRACKING & REAL-TIME SMS ALERTS */}
       {activeTab === 'track' && (
         <div className="space-y-5">
-          <div className="bg-white border border-[#76777d]/20 rounded-2xl p-5 shadow-xs flex flex-col sm:flex-row gap-3 items-center justify-between">
-            <form onSubmit={handleTrackSearch} className="flex-1 w-full relative">
+          <div className="bg-white border border-[#76777d]/20 rounded-2xl p-5 shadow-xs">
+            <form onSubmit={handleTrackSearch} className="relative">
               <Search size={16} className="absolute left-3.5 top-3 text-[#76777d]" />
               <input
                 type="text"
@@ -1090,14 +1068,6 @@ export const CitizenPortalPage: React.FC = () => {
                 className="w-full bg-[#f6f3f5] border border-[#76777d]/20 rounded-xl pl-10 pr-3 py-2.5 text-xs text-[#1b1b1d] placeholder:text-[#76777d]/70 focus:outline-none focus:border-[#131b2e] font-mono font-medium"
               />
             </form>
-
-            <button
-              onClick={() => setIsSmsInboxOpen(true)}
-              className="px-4 py-2.5 bg-blue-50 hover:bg-blue-100 text-blue-900 border border-blue-200 font-bold rounded-xl text-xs flex items-center gap-1.5 transition-colors shrink-0"
-            >
-              <Smartphone size={15} className="text-blue-700" />
-              <span>Open SMS Inbox</span>
-            </button>
           </div>
 
           {trackedIssue ? (
@@ -1113,8 +1083,8 @@ export const CitizenPortalPage: React.FC = () => {
                       Reported on {new Date(trackedIssue.reportedAt).toLocaleString()}
                     </span>
                     {trackedIssue.citizenPhone && (
-                      <span className="text-[10px] bg-blue-50 text-blue-800 font-mono px-2 py-0.5 rounded font-bold border border-blue-200">
-                        📱 {trackedIssue.citizenPhone}
+                      <span className="text-[10px] bg-emerald-50 text-emerald-800 font-mono px-2 py-0.5 rounded font-bold border border-emerald-200">
+                        📱 SMS Recipient: {trackedIssue.citizenPhone}
                       </span>
                     )}
                   </div>
@@ -1154,20 +1124,11 @@ export const CitizenPortalPage: React.FC = () => {
                 </div>
               )}
 
-              {/* Progress Stage Timeline with SMS Verification */}
+              {/* Progress Stage Timeline */}
               <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-xs font-bold uppercase text-[#76777d] tracking-wider">
-                    Municipal Action Timeline & SMS Dispatches
-                  </h3>
-                  <button
-                    onClick={() => setIsSmsInboxOpen(true)}
-                    className="text-blue-700 hover:underline font-bold text-xs flex items-center gap-1"
-                  >
-                    <Smartphone size={13} />
-                    <span>View SMS Delivery Log</span>
-                  </button>
-                </div>
+                <h3 className="text-xs font-bold uppercase text-[#76777d] tracking-wider">
+                  Municipal Action Timeline
+                </h3>
 
                 <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
                   {[
@@ -1205,15 +1166,15 @@ export const CitizenPortalPage: React.FC = () => {
                 </div>
               </div>
 
-              {/* Interactive Status Progression Simulator (Allows live testing of SMS triggers) */}
+              {/* Interactive Status Progression (Sends Real SMS to physical mobile) */}
               <div className="p-4 bg-[#fcf8fa] border border-blue-200/80 rounded-2xl space-y-2.5">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 text-xs">
                   <span className="font-bold text-[#1b1b1d] flex items-center gap-1.5">
                     <Sparkles size={14} className="text-blue-700" />
-                    <span>Simulate Lifecycle Milestone & Dispatch Live SMS Alert:</span>
+                    <span>Advance Ticket Milestone & Send Real SMS to Phone:</span>
                   </span>
-                  <span className="text-[10px] text-[#76777d] font-mono">
-                    Target: {trackedIssue.citizenPhone || '+91 98224 11204'}
+                  <span className="text-[10px] text-emerald-800 font-mono font-bold">
+                    Fast2SMS ➔ {trackedIssue.citizenPhone || '+91 98224 11204'}
                   </span>
                 </div>
 
@@ -1223,7 +1184,7 @@ export const CitizenPortalPage: React.FC = () => {
                     className="px-3 py-1.5 bg-white hover:bg-slate-100 text-[#131b2e] border border-slate-300 font-bold rounded-lg transition-all flex items-center gap-1 shadow-xs"
                   >
                     <Truck size={13} className="text-blue-700" />
-                    <span>Dispatch Crew (Send Scheduled SMS)</span>
+                    <span>Dispatch Crew (SMS to Phone)</span>
                   </button>
 
                   <button
@@ -1231,7 +1192,7 @@ export const CitizenPortalPage: React.FC = () => {
                     className="px-3 py-1.5 bg-white hover:bg-slate-100 text-[#131b2e] border border-slate-300 font-bold rounded-lg transition-all flex items-center gap-1 shadow-xs"
                   >
                     <Wrench size={13} className="text-amber-700" />
-                    <span>Crew Arrived (Send On-Site SMS)</span>
+                    <span>Crew Arrived (SMS to Phone)</span>
                   </button>
 
                   <button
@@ -1239,7 +1200,7 @@ export const CitizenPortalPage: React.FC = () => {
                     className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-lg transition-all flex items-center gap-1 shadow-xs"
                   >
                     <CheckCheck size={14} />
-                    <span>Mark Resolved (Send Resolution SMS)</span>
+                    <span>Mark Resolved (SMS to Phone)</span>
                   </button>
                 </div>
               </div>
@@ -1263,7 +1224,7 @@ export const CitizenPortalPage: React.FC = () => {
             </div>
           ) : (
             <div className="p-12 text-center text-[#76777d] text-xs bg-white border border-[#76777d]/20 rounded-2xl">
-              No tickets found. Submit an issue to view real-time stage progression and SMS alerts.
+              No tickets found. Submit an issue to view real-time stage progression.
             </div>
           )}
         </div>
@@ -1274,13 +1235,6 @@ export const CitizenPortalPage: React.FC = () => {
         isOpen={isCameraModalOpen}
         onClose={() => setIsCameraModalOpen(false)}
         onCapture={handleLiveCapture}
-      />
-
-      {/* Citizen Mobile SMS Alert Inbox Simulator Modal */}
-      <CitizenSmsInboxModal
-        isOpen={isSmsInboxOpen}
-        onClose={() => setIsSmsInboxOpen(false)}
-        phoneFilter={citizenPhone}
       />
     </div>
   );
