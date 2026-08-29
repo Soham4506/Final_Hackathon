@@ -14,9 +14,14 @@ import {
   Languages,
   Database,
   ChevronDown,
+  Smartphone,
+  ShieldAlert,
+  UserCheck,
 } from 'lucide-react';
 import { useCivic } from '../../context/CivicContext';
 import { OperationalStatusModal } from '../modals/OperationalStatusModal';
+import { CitizenSmsInboxModal } from '../common/CitizenSmsInboxModal';
+import { UserRole } from '../../types';
 
 interface HeaderProps {
   sidebarOpen: boolean;
@@ -26,6 +31,7 @@ interface HeaderProps {
 export const Header: React.FC<HeaderProps> = ({ sidebarOpen, setSidebarOpen }) => {
   const {
     userRole,
+    setUserRole,
     currentUser,
     notifications,
     markNotificationAsRead,
@@ -40,6 +46,7 @@ export const Header: React.FC<HeaderProps> = ({ sidebarOpen, setSidebarOpen }) =
 
   const [searchQuery, setSearchQuery] = useState('');
   const [showStatusModal, setShowStatusModal] = useState(false);
+  const [showSmsModal, setShowSmsModal] = useState(false);
   const [showNotifs, setShowNotifs] = useState(false);
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
 
@@ -52,6 +59,15 @@ export const Header: React.FC<HeaderProps> = ({ sidebarOpen, setSidebarOpen }) =
 
   const toggleLanguage = () => {
     setLanguage(language === 'en' ? 'mr' : 'en');
+  };
+
+  const handleRoleChange = (newRole: UserRole) => {
+    setUserRole(newRole);
+    if (newRole === 'citizen') {
+      navigate('/citizen-portal');
+    } else {
+      navigate('/');
+    }
   };
 
   const handleSearchSubmit = (e: React.FormEvent) => {
@@ -94,13 +110,13 @@ export const Header: React.FC<HeaderProps> = ({ sidebarOpen, setSidebarOpen }) =
         {/* Right controls */}
         <div className="flex items-center gap-2 sm:gap-3">
           {/* Search input with submit handler */}
-          <form onSubmit={handleSearchSubmit} className="relative hidden md:block w-52 lg:w-68">
+          <form onSubmit={handleSearchSubmit} className="relative hidden md:block w-48 lg:w-60">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[#76777d] w-4 h-4" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search ID, Zone, Ward, Fleet..."
+              placeholder="Search ID, Ward, Fleet..."
               className="w-full bg-[#f6f3f5] border border-[#76777d]/20 rounded-lg pl-9 pr-3 py-1.5 text-xs text-[#1b1b1d] placeholder:text-[#76777d]/80 focus:outline-none focus:border-[#131b2e] focus:ring-1 focus:ring-[#131b2e] transition-all font-medium"
             />
             {searchQuery && (
@@ -113,6 +129,16 @@ export const Header: React.FC<HeaderProps> = ({ sidebarOpen, setSidebarOpen }) =
               </button>
             )}
           </form>
+
+          {/* Citizen Mobile SMS Inbox Gateway Button */}
+          <button
+            onClick={() => setShowSmsModal(true)}
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-bold bg-blue-50 hover:bg-blue-100 text-blue-900 border border-blue-200 transition-colors shadow-xs"
+            title="Citizen Mobile SMS Alert Gateway"
+          >
+            <Smartphone size={14} className="text-blue-700" />
+            <span className="hidden sm:inline">Citizen SMS</span>
+          </button>
 
           {/* Language Switcher */}
           <button
@@ -193,12 +219,12 @@ export const Header: React.FC<HeaderProps> = ({ sidebarOpen, setSidebarOpen }) =
             <span className="sm:hidden">Status</span>
           </button>
 
-          {/* User Profile Avatar with Dropdown */}
+          {/* User Profile Avatar with RBAC Role Switcher Dropdown */}
           <div className="relative">
             <button
               onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
               className="flex items-center gap-1.5 p-1 rounded-full hover:ring-2 hover:ring-[#131b2e]/20 transition-all ml-1"
-              title="User Profile"
+              title="User Profile & RBAC Role"
             >
               <div className="w-8 h-8 rounded-full overflow-hidden border border-[#76777d]/30 bg-[#131b2e] flex items-center justify-center text-white font-bold text-xs">
                 {currentUser.fullName ? currentUser.fullName.charAt(0).toUpperCase() : 'U'}
@@ -208,17 +234,57 @@ export const Header: React.FC<HeaderProps> = ({ sidebarOpen, setSidebarOpen }) =
             {profileDropdownOpen && (
               <div className="absolute right-0 mt-2 w-72 bg-white rounded-2xl shadow-2xl border border-slate-200 py-2 z-50 animate-in fade-in slide-in-from-top-2 duration-150 text-xs">
                 <div className="px-4 py-3 border-b border-slate-100">
-                  <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
+                  <div className="flex items-center justify-between">
                     <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
-                      Authenticated Session
+                      RBAC Security Profile
+                    </span>
+                    <span className="px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 font-mono text-[10px] font-bold uppercase">
+                      {userRole}
                     </span>
                   </div>
                   <p className="font-bold text-slate-900 text-sm mt-0.5">{currentUser.fullName}</p>
-                  <p className="text-xs text-emerald-700 font-semibold capitalize font-mono">{userRole}</p>
                   {currentUser.phone && (
-                    <p className="text-[11px] text-slate-500 mt-0.5">{currentUser.phone}</p>
+                    <p className="text-[11px] text-slate-500 mt-0.5 font-mono">{currentUser.phone}</p>
                   )}
+                </div>
+
+                {/* Role Switcher for Hackathon Demonstrations */}
+                <div className="p-3 bg-[#fcf8fa] border-b border-slate-100 space-y-2">
+                  <span className="text-[10px] font-bold uppercase text-[#76777d] block">
+                    Switch Security Role (RLS):
+                  </span>
+                  <div className="grid grid-cols-3 gap-1">
+                    <button
+                      onClick={() => handleRoleChange('citizen')}
+                      className={`px-2 py-1.5 rounded-lg text-[10px] font-bold uppercase transition-all ${
+                        userRole === 'citizen'
+                          ? 'bg-[#131b2e] text-white shadow-xs'
+                          : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-100'
+                      }`}
+                    >
+                      Citizen
+                    </button>
+                    <button
+                      onClick={() => handleRoleChange('officer')}
+                      className={`px-2 py-1.5 rounded-lg text-[10px] font-bold uppercase transition-all ${
+                        userRole === 'officer'
+                          ? 'bg-[#131b2e] text-white shadow-xs'
+                          : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-100'
+                      }`}
+                    >
+                      Officer
+                    </button>
+                    <button
+                      onClick={() => handleRoleChange('admin')}
+                      className={`px-2 py-1.5 rounded-lg text-[10px] font-bold uppercase transition-all ${
+                        userRole === 'admin'
+                          ? 'bg-[#131b2e] text-white shadow-xs'
+                          : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-100'
+                      }`}
+                    >
+                      Admin
+                    </button>
+                  </div>
                 </div>
 
                 <div className="p-2">
@@ -232,8 +298,8 @@ export const Header: React.FC<HeaderProps> = ({ sidebarOpen, setSidebarOpen }) =
                 </div>
 
                 <div className="px-4 py-2 border-t border-slate-100 text-[10px] text-slate-400 flex items-center justify-between font-mono">
+                  <span>RLS Security Active</span>
                   <span>Kopargaon Node #08</span>
-                  <span>v4.12.0</span>
                 </div>
               </div>
             )}
@@ -245,6 +311,13 @@ export const Header: React.FC<HeaderProps> = ({ sidebarOpen, setSidebarOpen }) =
       <OperationalStatusModal
         isOpen={showStatusModal}
         onClose={() => setShowStatusModal(false)}
+      />
+
+      {/* Citizen Mobile SMS Alert Inbox Simulator Modal */}
+      <CitizenSmsInboxModal
+        isOpen={showSmsModal}
+        onClose={() => setShowSmsModal(false)}
+        phoneFilter={currentUser.phone}
       />
     </>
   );

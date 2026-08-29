@@ -51,6 +51,7 @@ import { MultiStrategyEngine, AllocationStrategy, StrategyComparisonMetric } fro
 import { WaterQualityEngine } from '../services/waterQualityEngine';
 import { ReuseAllocationEngine } from '../services/reuseAllocationEngine';
 import { Language, DICTIONARY, Translations } from '../services/localizationService';
+import { SMSAlertService } from '../services/smsAlertService';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 
 
@@ -124,6 +125,8 @@ interface CivicContextType {
     longitude?: number;
     photoUrls?: string[];
     affectedPopulation?: number;
+    citizenPhone?: string;
+    citizenName?: string;
   }) => Promise<CivicIssue>;
 
   updateIssueStatus: (issueId: string, newStatus: IssueStatus, officerNotes?: string) => void;
@@ -447,6 +450,8 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     longitude?: number;
     photoUrls?: string[];
     affectedPopulation?: number;
+    citizenPhone?: string;
+    citizenName?: string;
   }): Promise<CivicIssue> => {
     const hasPhotos = Boolean(data.photoUrls && data.photoUrls.length > 0);
     const hasPreciseLocation = Boolean(data.latitude && data.longitude);
@@ -535,6 +540,14 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       };
       setNotifications((prev) => [notif, ...prev]);
 
+      // Automated SMS Alert for Merged Issue
+      SMSAlertService.sendLifecycleSms(
+        mergedIssue,
+        'submitted',
+        data.citizenPhone || currentUser.phone,
+        language
+      );
+
       if (isSupabaseConfigured) {
         supabase
           .from('issues')
@@ -554,13 +567,15 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     // -------------------------------------------------------------
     const ticketNumber = `KMC-2026-${String(Math.floor(10000 + Math.random() * 90000)).slice(0, 5)}`;
     const slaDueAt = new Date(now.getTime() + cat.defaultSlaHours * 3600 * 1000).toISOString();
+    const effectivePhone = data.citizenPhone || currentUser.phone || '+91 98224 11204';
+    const effectiveName = data.citizenName || currentUser.fullName || 'Citizen User';
 
     const newIssue: CivicIssue = {
       id: `iss-${Date.now()}`,
       ticketNumber,
       citizenId: currentUser.id,
-      citizenName: currentUser.fullName,
-      citizenPhone: currentUser.phone,
+      citizenName: effectiveName,
+      citizenPhone: effectivePhone,
       categoryId: cat.id,
       departmentId: dept.id,
       zoneId: zone.id,
@@ -625,6 +640,14 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       createdAt: now.toISOString(),
     };
     setNotifications((prev) => [notif, ...prev]);
+
+    // Send Automated Lifecycle SMS Alert upon Registration
+    SMSAlertService.sendLifecycleSms(
+      newIssue,
+      'submitted',
+      effectivePhone,
+      language
+    );
 
     if (isSupabaseConfigured) {
       supabase.from('issues').insert([{
@@ -691,10 +714,10 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     };
     setAuditLogs((prev) => [log, ...prev]);
 
-    if (targetIssue?.citizenId) {
+    if (targetIssue) {
       const notif: NotificationItem = {
         id: `notif-${Date.now()}`,
-        recipientId: targetIssue.citizenId,
+        recipientId: targetIssue.citizenId || 'citizen-public',
         issueId: targetIssue.id,
         ticketNumber: targetIssue.ticketNumber,
         title: `Status Updated: ${newStatus.toUpperCase()}`,
@@ -704,6 +727,14 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         createdAt: new Date().toISOString(),
       };
       setNotifications((prev) => [notif, ...prev]);
+
+      // Automated Lifecycle SMS Notification to Citizen Handset
+      SMSAlertService.sendLifecycleSms(
+        { ...targetIssue, status: newStatus },
+        newStatus,
+        targetIssue.citizenPhone,
+        language
+      );
     }
 
     if (isSupabaseConfigured) {
