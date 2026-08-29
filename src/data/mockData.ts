@@ -256,6 +256,8 @@ export const INITIAL_WEIGHT_CONFIG: PriorityWeightConfig = {
   isCurrent: true,
 };
 
+import { SEED_ISSUES } from './seedIssues';
+
 export const INITIAL_RESOURCES: MunicipalResource[] = [
   {
     id: 'f0000000-0000-0000-0000-000000000001',
@@ -263,7 +265,7 @@ export const INITIAL_RESOURCES: MunicipalResource[] = [
     resourceType: 'jetting_machine',
     identifierCode: 'KMC-JET-01',
     name: 'High-Pressure Sewer Jetting Machine #1',
-    capacityDescription: '4000L Suction & Pressure Vacuum',
+    capacityDescription: '4000L Suction & Pressure Vacuum (Active Fleet)',
     isOperational: true,
     dailyCostRate: 4500,
     currentStatus: 'available',
@@ -273,11 +275,11 @@ export const INITIAL_RESOURCES: MunicipalResource[] = [
     departmentId: 'b0000000-0000-0000-0000-000000000001',
     resourceType: 'jetting_machine',
     identifierCode: 'KMC-JET-02',
-    name: 'Compact Sewer Jetting Machine #2',
-    capacityDescription: '2000L Narrow Alley Vacuum',
-    isOperational: true,
+    name: 'Compact Sewer Jetting Machine #2 (Depot Overhaul)',
+    capacityDescription: '2000L Narrow Alley Vacuum (Under Maintenance)',
+    isOperational: false,
     dailyCostRate: 3500,
-    currentStatus: 'available',
+    currentStatus: 'maintenance',
   },
   {
     id: 'f0000000-0000-0000-0000-000000000003',
@@ -314,7 +316,7 @@ export const INITIAL_RESOURCES: MunicipalResource[] = [
   },
 ];
 
-// Operational Queues start clean
-export const INITIAL_ISSUES: CivicIssue[] = [];
+// Pre-seeded Kopargaon municipal operational queues
+export const INITIAL_ISSUES: CivicIssue[] = SEED_ISSUES;
 export const INITIAL_AUDIT_LOGS: AuditLog[] = [];
 export const INITIAL_NOTIFICATIONS: NotificationItem[] = [];
