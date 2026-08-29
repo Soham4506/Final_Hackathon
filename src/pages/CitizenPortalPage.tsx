@@ -6,6 +6,7 @@ import { StatusBadge } from '../components/common/StatusBadge';
 import { AIIntakeParser, AIIntakeResult } from '../services/aiIntakeParser';
 import { ExplainabilityService } from '../services/explainabilityService';
 import { PhotoGeoLocationService, GeolocationResult } from '../services/photoGeoLocation';
+import { LiveCameraModal } from '../components/common/CameraCaptureModal';
 import { UrgencyLevel, ResourceType } from '../types';
 import {
   PlusCircle,
@@ -32,6 +33,7 @@ import {
   Compass,
   Globe,
   RefreshCw,
+  Image as ImageIcon,
 } from 'lucide-react';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
@@ -56,6 +58,7 @@ export const CitizenPortalPage: React.FC = () => {
   const { zones, departments, categories, submitIssue, issues, currentUser, t, language } = useCivic();
   const [searchParams, setSearchParams] = useSearchParams();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
 
   const activeTab = searchParams.get('tab') || 'submit';
 
@@ -71,6 +74,7 @@ export const CitizenPortalPage: React.FC = () => {
   const [geoCoordinates, setGeoCoordinates] = useState<GeolocationResult | null>(null);
   const [isLocating, setIsLocating] = useState<boolean>(false);
   const [isAnalyzingImage, setIsAnalyzingImage] = useState<boolean>(false);
+  const [isCameraModalOpen, setIsCameraModalOpen] = useState<boolean>(false);
 
   // AI-Detected & User-Editable Form Parameters (SDDS Style)
   const [selectedDeptId, setSelectedDeptId] = useState<string>(departments[0]?.id || 'b0000000-0000-0000-0000-000000000001');
@@ -228,12 +232,22 @@ export const CitizenPortalPage: React.FC = () => {
     bufferReader.readAsArrayBuffer(file);
   };
 
+  // Handle Live Camera Snapshot from In-App Viewfinder Modal
+  const handleLiveCapture = async (dataUrl: string, fileName: string) => {
+    setPhotoDataUrl(dataUrl);
+    setPhotoFileName(fileName);
+    await handleAcquireGPS();
+  };
+
   const removePhoto = () => {
     setPhotoDataUrl(null);
     setPhotoFileName('');
     setGeoCoordinates(null);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
+    }
+    if (cameraInputRef.current) {
+      cameraInputRef.current.value = '';
     }
   };
 
@@ -343,7 +357,7 @@ export const CitizenPortalPage: React.FC = () => {
             Citizen Grievance & Tracking Portal
           </h1>
           <p className="text-xs sm:text-sm text-[#57657b] mt-1">
-            Upload incident photos with automatic GPS geotagging to identify Department, Severity, Machinery & Crew requirements with full review control.
+            Capture live photos or upload incident evidence with automatic GPS geotagging to identify Department, Severity, Machinery & Crew requirements with full review control.
           </p>
         </div>
 
@@ -424,7 +438,7 @@ export const CitizenPortalPage: React.FC = () => {
                 <div className="flex items-center justify-between">
                   <label className="text-[#1b1b1d] font-bold flex items-center gap-1.5">
                     <Camera size={14} className="text-[#131b2e]" />
-                    <span>Upload Site Photo & GPS Geotag</span>
+                    <span>Attach Site Photo (Live Camera or Gallery)</span>
                   </label>
                   <button
                     type="button"
@@ -437,6 +451,7 @@ export const CitizenPortalPage: React.FC = () => {
                   </button>
                 </div>
 
+                {/* Hidden File Picker for Gallery */}
                 <input
                   type="file"
                   ref={fileInputRef}
@@ -445,20 +460,59 @@ export const CitizenPortalPage: React.FC = () => {
                   className="hidden"
                 />
 
+                {/* Hidden Mobile Native Camera Picker */}
+                <input
+                  type="file"
+                  ref={cameraInputRef}
+                  accept="image/*"
+                  capture="environment"
+                  onChange={handleImageFileChange}
+                  className="hidden"
+                />
+
                 {!photoDataUrl ? (
-                  <div
-                    onClick={() => fileInputRef.current?.click()}
-                    className="border-2 border-dashed border-[#76777d]/30 hover:border-[#131b2e] bg-[#fcf8fa] hover:bg-slate-50 p-6 rounded-2xl text-center cursor-pointer transition-all space-y-2"
-                  >
-                    <div className="w-10 h-10 rounded-xl bg-slate-100 border border-slate-200 text-[#131b2e] flex items-center justify-center mx-auto">
-                      <UploadCloud size={20} />
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {/* OPTION 1: CAPTURE PHOTO NOW (CAMERA) */}
+                    <div
+                      onClick={() => setIsCameraModalOpen(true)}
+                      className="border-2 border-dashed border-[#131b2e]/30 hover:border-[#131b2e] bg-[#fcf8fa] hover:bg-blue-50/50 p-5 rounded-2xl text-center cursor-pointer transition-all flex flex-col items-center justify-center space-y-2 group shadow-xs"
+                    >
+                      <div className="w-11 h-11 rounded-2xl bg-[#131b2e] text-white flex items-center justify-center group-hover:scale-105 transition-transform shadow-xs">
+                        <Camera size={22} />
+                      </div>
+                      <div>
+                        <div className="text-xs font-bold text-[#1b1b1d]">
+                          Capture Photo Now (Live Camera)
+                        </div>
+                        <p className="text-[10px] text-[#76777d] mt-0.5">
+                          Opens live viewfinder with instant GPS geotagging & vision scan.
+                        </p>
+                      </div>
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-blue-700 bg-blue-50 border border-blue-200 px-2.5 py-1 rounded-lg">
+                        📸 Open Camera
+                      </span>
                     </div>
-                    <div className="text-xs font-bold text-[#1b1b1d]">
-                      Click to upload photo from camera / gallery
+
+                    {/* OPTION 2: CHOOSE FROM GALLERY / FILES */}
+                    <div
+                      onClick={() => fileInputRef.current?.click()}
+                      className="border-2 border-dashed border-[#76777d]/30 hover:border-[#131b2e] bg-[#fcf8fa] hover:bg-slate-50 p-5 rounded-2xl text-center cursor-pointer transition-all flex flex-col items-center justify-center space-y-2 group"
+                    >
+                      <div className="w-11 h-11 rounded-2xl bg-slate-100 border border-slate-200 text-[#131b2e] flex items-center justify-center group-hover:scale-105 transition-transform">
+                        <ImageIcon size={22} />
+                      </div>
+                      <div>
+                        <div className="text-xs font-bold text-[#1b1b1d]">
+                          Choose from Gallery / Files
+                        </div>
+                        <p className="text-[10px] text-[#76777d] mt-0.5">
+                          Select an existing image from your phone gallery or disk.
+                        </p>
+                      </div>
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-[#57657b] bg-slate-100 border border-slate-200 px-2.5 py-1 rounded-lg">
+                        🖼️ Browse Files
+                      </span>
                     </div>
-                    <p className="text-[10px] text-[#76777d]">
-                      Photo will be automatically geotagged with high-accuracy GPS coordinates & analyzed with Gemini Vision.
-                    </p>
                   </div>
                 ) : (
                   <div className="bg-[#fcf8fa] border border-[#76777d]/20 rounded-2xl p-3.5 space-y-3">
@@ -478,14 +532,24 @@ export const CitizenPortalPage: React.FC = () => {
                           </div>
                         </div>
                       </div>
-                      <button
-                        type="button"
-                        onClick={removePhoto}
-                        className="p-1.5 rounded-lg bg-white hover:bg-red-50 text-slate-500 hover:text-red-700 border border-slate-200 transition-colors"
-                        title="Remove Photo"
-                      >
-                        <X size={16} />
-                      </button>
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setIsCameraModalOpen(true)}
+                          className="px-3 py-1.5 rounded-lg bg-white hover:bg-slate-100 text-[#131b2e] font-bold text-[11px] border border-slate-200 flex items-center gap-1 transition-colors"
+                        >
+                          <Camera size={13} />
+                          <span>Retake</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={removePhoto}
+                          className="p-1.5 rounded-lg bg-white hover:bg-red-50 text-slate-500 hover:text-red-700 border border-slate-200 transition-colors"
+                          title="Remove Photo"
+                        >
+                          <X size={16} />
+                        </button>
+                      </div>
                     </div>
 
                     {/* Geotagged Location Coordinates Badge & Mini Preview */}
@@ -871,7 +935,7 @@ export const CitizenPortalPage: React.FC = () => {
               </div>
             ) : (
               <div className="p-8 text-center text-[#76777d] text-xs leading-relaxed">
-                Upload a site photo or write a description. Gemini Vision will analyze physical damage and auto-fill Department, Category, Severity, Machinery, and Crew requirements.
+                Capture a live photo or upload an image. Gemini Vision will analyze physical damage and auto-fill Department, Category, Severity, Machinery, and Crew requirements.
               </div>
             )}
           </div>
@@ -1016,6 +1080,13 @@ export const CitizenPortalPage: React.FC = () => {
           )}
         </div>
       )}
+
+      {/* Live Camera Viewfinder Modal */}
+      <LiveCameraModal
+        isOpen={isCameraModalOpen}
+        onClose={() => setIsCameraModalOpen(false)}
+        onCapture={handleLiveCapture}
+      />
     </div>
   );
 };
