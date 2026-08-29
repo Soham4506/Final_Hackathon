@@ -1,8 +1,7 @@
 // ==============================================================================
 // SUPABASE EDGE FUNCTION: parse-complaint
-// Multi-Model Gemini Vision Structured Intake Parser for Kopargaon Municipal Council
-// Supported Models: gemini-2.5-flash, gemini-2.5-flash-lite, gemini-1.5-flash, gemini-3.1-flash-lite
-// (Optimized for High Requests-Per-Day RPD Quotas)
+// Secure Multi-Model Gemini Vision Intake Parser for Kopargaon Municipal Council
+// Models: gemini-2.5-flash, gemini-2.5-flash-lite, gemini-1.5-flash, gemini-3.1-flash-lite
 // ==============================================================================
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
@@ -10,9 +9,9 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
-// 3-4 Selected High-Value Models (Excluding Antigravity, prioritizing Vision & high RPD)
 const CANDIDATE_MODELS = [
   "gemini-2.5-flash",
   "gemini-2.5-flash-lite",
@@ -21,6 +20,7 @@ const CANDIDATE_MODELS = [
 ];
 
 serve(async (req) => {
+  // Handle CORS preflight
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
@@ -31,14 +31,14 @@ serve(async (req) => {
     const apiKey = Deno.env.get("GEMINI_API_KEY");
     if (!apiKey) {
       return new Response(
-        JSON.stringify({ error: "GEMINI_API_KEY secret is not set in Supabase" }),
+        JSON.stringify({ error: "GEMINI_API_KEY secret is not set in Supabase. Set it using: supabase secrets set GEMINI_API_KEY=your_key" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
     const promptText = `You are the AI Municipal Vision & Intake Specialist for Kopargaon Municipal Council (District Ahilyanagar).
-Analyze this civic grievance complaint and the attached image (if provided).
-Complaint Title: "${title || "Visual Civic Issue"}"
+Analyze this civic complaint and attached photo.
+Complaint Title: "${title || "Civic Issue"}"
 Description: "${rawText || "See attached photo"}"
 Has Attached Image: ${Boolean(imageBase64 || hasPhotos)}
 
@@ -67,7 +67,6 @@ Return ONLY valid JSON matching this schema:
   "rationale": "one sentence explaining departmental assignment"
 }`;
 
-    // Build payload with image if available
     const contentsParts: any[] = [{ text: promptText }];
 
     if (imageBase64) {
@@ -80,8 +79,7 @@ Return ONLY valid JSON matching this schema:
       });
     }
 
-    // Try candidate models in order of capability & RPD quota
-    let lastError: any = null;
+    let lastError = "";
 
     for (const modelName of CANDIDATE_MODELS) {
       try {
@@ -115,13 +113,13 @@ Return ONLY valid JSON matching this schema:
           console.warn(`Model ${modelName} returned status ${res.status}:`, lastError);
         }
       } catch (err) {
-        lastError = err;
-        console.warn(`Model ${modelName} fetch failed:`, err);
+        lastError = String(err);
+        console.warn(`Model ${modelName} call failed:`, err);
       }
     }
 
     return new Response(
-      JSON.stringify({ error: `All candidate models failed: ${lastError}` }),
+      JSON.stringify({ error: `Candidate models failed: ${lastError}` }),
       { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error: any) {

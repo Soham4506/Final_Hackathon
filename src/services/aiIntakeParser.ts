@@ -20,29 +20,12 @@ export interface AIIntakeResult {
   modelUsed?: string;
 }
 
-const CLIENT_CANDIDATE_MODELS = [
-  'gemini-2.5-flash',
-  'gemini-2.5-flash-lite',
-  'gemini-1.5-flash',
-  'gemini-3.1-flash-lite',
-];
-
-// Helper to validate whether a key is actually provided or is a placeholder
-function isValidAPIKey(key: string | undefined): boolean {
-  if (!key) return false;
-  const trimmed = key.trim();
-  if (trimmed === '' || trimmed.includes('your-') || trimmed.includes('PLACEHOLDER') || trimmed.length < 15) {
-    return false;
-  }
-  return true;
-}
-
 export class AIIntakeParser {
   /**
-   * Primary Multimodal Intake Parser:
-   * 1. Attempts Supabase Edge Function 'parse-complaint' if available
-   * 2. Attempts direct client-side Gemini Vision API cascade across high-RPD models if real key is configured
-   * 3. Falls back seamlessly and cleanly to the deterministic rule engine without noisy network errors
+   * Secure Server-Side Multimodal Intake Parser:
+   * 1. Calls Supabase Edge Function 'parse-complaint' (where GEMINI_API_KEY is securely stored on the server)
+   * 2. If the Edge Function is not deployed or is offline, falls back seamlessly to the local rule engine
+   * (Zero client-side API key exposure)
    */
   public static async parseComplaintAsync(
     title: string,
@@ -51,11 +34,17 @@ export class AIIntakeParser {
     hasPreciseLocation: boolean = false,
     imageBase64?: string
   ): Promise<AIIntakeResult> {
-    // 1. Try Supabase Edge Function (if deployed)
+    // Call Supabase Edge Function with Gemini Vision on server
     if (isSupabaseConfigured) {
       try {
         const { data, error } = await supabase.functions.invoke('parse-complaint', {
-          body: { title, rawText, imageBase64, hasPhotos: Boolean(hasPhotos || imageBase64), hasPreciseLocation },
+          body: {
+            title: title || 'Civic Issue',
+            rawText: rawText || '',
+            imageBase64,
+            hasPhotos: Boolean(hasPhotos || imageBase64),
+            hasPreciseLocation,
+          },
         });
 
         if (!error && data && data.categoryIdSuggested) {
@@ -70,7 +59,7 @@ export class AIIntakeParser {
             healthHazardRisk: data.healthHazardRisk || 'moderate',
             isPublicTransitRoute: Boolean(data.isPublicTransitRoute),
             intakeSource: 'ai_llm',
-            aiRationale: data.rationale || data.visualFindings || 'Analyzed via Gemini Multimodal Vision API.',
+            aiRationale: data.rationale || data.visualFindings || 'Analyzed securely via Supabase Gemini Vision Edge Function.',
             extractedSummary: data.visualFindings || `Identified ${data.departmentCodeSuggested} issue with ${data.requiredEquipment || 'standard equipment'}.`,
           };
 
@@ -87,32 +76,18 @@ export class AIIntakeParser {
             requiredStaffCount: Number(data.requiredStaffCount) || 3,
             requiredEquipment: data.requiredEquipment,
             visualFindings: data.visualFindings,
-            modelUsed: data.modelUsed || 'gemini-2.5-flash',
+            modelUsed: data.modelUsed || 'Gemini 2.5 Flash (Supabase Edge)',
             intakeSource: 'ai_llm',
-            aiRationale: data.rationale || 'Multimodal vision assessment verified.',
+            aiRationale: data.rationale || 'Server-side Gemini Vision assessment verified.',
             aiExplanation: data.visualFindings || `Vision & text analysis identified ${data.departmentCodeSuggested} defect.`,
           };
         }
-      } catch {
-        // Edge function not deployed yet, proceed to direct client check
-      }
-    }
-
-    // 2. Direct client-side Gemini Vision API cascade (only if real valid key is present)
-    const geminiKey = import.meta.env.VITE_GEMINI_API_KEY || import.meta.env.VITE_AI_API_KEY;
-    if (isValidAPIKey(geminiKey)) {
-      try {
-        const result = await Promise.race([
-          AIIntakeParser.callGeminiVisionCascade(title, rawText, imageBase64, hasPreciseLocation, geminiKey!),
-          new Promise<null>((_, reject) => setTimeout(() => reject(new Error('Vision timeout')), 4500)),
-        ]);
-        if (result) return result;
       } catch (err) {
-        console.warn('Client-side Gemini Vision call failed, using rule fallback:', err);
+        console.warn('Supabase Edge Function invocation unavailable, using local engine:', err);
       }
     }
 
-    // 3. Clean deterministic rule-based fallback
+    // Deterministic rule-based fallback
     return AIIntakeParser.parseComplaint(title, rawText, Boolean(hasPhotos || imageBase64), hasPreciseLocation);
   }
 
@@ -141,7 +116,7 @@ export class AIIntakeParser {
       keywordsExtracted: [],
       intakeSource: 'rule_fallback',
       aiRationale: hasPhotos
-        ? 'Visual evidence verified. Classified via municipal hazard recognition engine.'
+        ? 'Visual evidence attached. Classified via municipal hazard recognition engine.'
         : 'Classified via municipal hazard recognition engine.',
     };
 
@@ -282,109 +257,10 @@ export class AIIntakeParser {
       requiredStaffCount,
       requiredEquipment,
       visualFindings,
-      modelUsed: 'Municipal Hazard Engine',
+      modelUsed: 'Municipal Classification Engine',
       intakeSource: 'rule_fallback',
       aiRationale: 'Evaluated via Kopargaon municipal hazard classification engine.',
       aiExplanation: visualFindings,
     };
-  }
-
-  private static async callGeminiVisionCascade(
-    title: string,
-    rawText: string,
-    imageBase64: string | undefined,
-    hasPreciseLocation: boolean,
-    apiKey: string
-  ): Promise<AIIntakeResult | null> {
-    const promptText = `Analyze this civic complaint and photo for Kopargaon Municipal Council.
-Title: "${title || 'Civic Issue'}"
-Description: "${rawText || 'Visual Report'}"
-
-Categories available:
-- 'c0000000-0000-0000-0000-000000000001' (Drinking water contamination - WSS - jetting_machine - 4 staff)
-- 'c0000000-0000-0000-0000-000000000002' (Major sewer overflow - WSS - jetting_machine - 3 staff)
-- 'c0000000-0000-0000-0000-000000000003' (Road cave-in / pothole - PWD - road_roller - 5 staff)
-- 'c0000000-0000-0000-0000-000000000004' (Live wire exposed - ELEC - hydraulic_bucket_truck - 3 staff)
-- 'c0000000-0000-0000-0000-000000000005' (Open garbage dump - SWM - tipper_truck - 4 staff)
-- 'c0000000-0000-0000-0000-000000000006' (Streetlight outage - ELEC - hydraulic_bucket_truck - 2 staff)
-- 'c0000000-0000-0000-0000-000000000007' (Dengue mosquito stagnation - PHD - fogging_machine - 2 staff)
-
-Return valid JSON with: categoryIdSuggested, departmentCodeSuggested ('WSS'|'PWD'|'SWM'|'ELEC'|'PHD'), suggestedUrgency ('critical'|'high'|'medium'|'low'), healthHazardRisk ('extreme'|'high'|'moderate'|'low'), requiredEquipment ('jetting_machine'|'road_roller'|'hydraulic_bucket_truck'|'tipper_truck'|'fogging_machine'), requiredStaffCount (number), estimatedCost (number), estimatedHours (number), affectedPopulationEstimate (number), confidenceScore (number), visualFindings (string).`;
-
-    const contentsParts: any[] = [{ text: promptText }];
-
-    if (imageBase64) {
-      const cleanBase64 = imageBase64.replace(/^data:image\/[a-z]+;base64,/, '');
-      contentsParts.unshift({
-        inlineData: {
-          mimeType: 'image/jpeg',
-          data: cleanBase64,
-        },
-      });
-    }
-
-    for (const modelName of CLIENT_CANDIDATE_MODELS) {
-      try {
-        const res = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`,
-          {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              contents: [{ parts: contentsParts }],
-              generationConfig: {
-                response_mime_type: 'application/json',
-                temperature: 0.1,
-              },
-            }),
-          }
-        );
-
-        if (res.ok) {
-          const data = await res.json();
-          const parsedText = data.candidates?.[0]?.content?.parts?.[0]?.text;
-          if (parsedText) {
-            const parsed = JSON.parse(parsedText);
-            const missingAttributes: string[] = [];
-            if (!imageBase64) missingAttributes.push('photo_evidence');
-            if (!hasPreciseLocation) missingAttributes.push('precise_coordinates');
-
-            const structuredData: StructuredIssueData = {
-              waterContaminationSuspected: Boolean(parsed.waterContaminationSuspected || parsed.categoryIdSuggested === 'c0000000-0000-0000-0000-000000000001'),
-              nearHospitalOrSchool: Boolean(parsed.nearHospitalOrSchool),
-              mainRoadBlockage: Boolean(parsed.mainRoadBlockage || parsed.categoryIdSuggested === 'c0000000-0000-0000-0000-000000000003'),
-              healthHazardRisk: parsed.healthHazardRisk || 'moderate',
-              isPublicTransitRoute: Boolean(parsed.isPublicTransitRoute),
-              intakeSource: 'ai_llm',
-              aiRationale: parsed.visualFindings || `Recognized via ${modelName} vision.`,
-              extractedSummary: parsed.visualFindings || `AI Vision Assessment: ${parsed.departmentCodeSuggested} issue.`,
-            };
-
-            return {
-              categoryIdSuggested: parsed.categoryIdSuggested || 'c0000000-0000-0000-0000-000000000003',
-              departmentCodeSuggested: parsed.departmentCodeSuggested || 'PWD',
-              structuredData,
-              affectedPopulationEstimate: Number(parsed.affectedPopulationEstimate) || 150,
-              confidenceScore: Math.min(1.0, Math.max(0.5, Number(parsed.confidenceScore) || (imageBase64 ? 0.95 : 0.80))),
-              missingAttributes,
-              suggestedUrgency: (parsed.suggestedUrgency as UrgencyLevel) || 'medium',
-              estimatedCost: Number(parsed.estimatedCost) || 6000,
-              estimatedHours: Number(parsed.estimatedHours) || 4.0,
-              requiredStaffCount: Number(parsed.requiredStaffCount) || 3,
-              requiredEquipment: parsed.requiredEquipment,
-              visualFindings: parsed.visualFindings,
-              modelUsed: modelName,
-              intakeSource: 'ai_llm',
-              aiRationale: parsed.visualFindings || `Recognized via ${modelName} vision.`,
-              aiExplanation: parsed.visualFindings || 'Multimodal vision assessment verified.',
-            };
-          }
-        }
-      } catch {
-        // Try next model in cascade
-      }
-    }
-
-    return null;
   }
 }

@@ -172,29 +172,32 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [resources, setResources] = useState<MunicipalResource[]>(() =>
     getStored('resources', INITIAL_RESOURCES)
   );
-  const [auditLogs, setAuditLogs] = useState<AuditLog[]>(() =>
-    getStored('audit_logs', INITIAL_AUDIT_LOGS)
-  );
-  const [notifications, setNotifications] = useState<NotificationItem[]>(() =>
-    getStored('notifications', INITIAL_NOTIFICATIONS)
-  );
-  const [activePlans, setActivePlans] = useState<AllocationPlan[]>(() =>
-    getStored('active_plans', [])
-  );
+  const [auditLogs, setAuditLogs] = useState<AuditLog[]>(() => {
+    const stored = getStored<AuditLog[] | null>('audit_logs', null);
+    if (!stored || !Array.isArray(stored)) return [];
+    return stored.filter((l) => !l.details?.mock);
+  });
+  const [notifications, setNotifications] = useState<NotificationItem[]>(() => {
+    const stored = getStored<NotificationItem[] | null>('notifications', null);
+    if (!stored || !Array.isArray(stored)) return [];
+    return stored.filter((n) => !n.ticketNumber?.startsWith('KMC-2026-0010'));
+  });
+  const [activePlans, setActivePlans] = useState<AllocationPlan[]>(() => {
+    const stored = getStored<AllocationPlan[] | null>('active_plans', null);
+    if (!stored || !Array.isArray(stored)) return [];
+    return stored.filter((p) => !p.planCode?.startsWith('PLAN-2026-001'));
+  });
 
-  // Issues start clean
+  // Issues start clean - filter out any legacy mock tickets
   const [issues, setIssues] = useState<CivicIssue[]>(() => {
     const stored = getStored<CivicIssue[] | null>('issues', null);
-    const baseIssues = stored || INITIAL_ISSUES;
-    return baseIssues.map((issue) => {
-      const cat = INITIAL_CATEGORIES.find((c) => c.id === issue.categoryId) || INITIAL_CATEGORIES[0];
-      const zone = INITIAL_ZONES.find((z) => z.id === issue.zoneId) || INITIAL_ZONES[0];
-      const score = PriorityEngine.calculateScore(issue, cat, zone, INITIAL_WEIGHT_CONFIG);
-      return {
-        ...issue,
-        priorityScore: issue.priorityScore || score,
-      };
-    });
+    if (!stored || !Array.isArray(stored)) return [];
+    const realOnly = stored.filter((i) => !i.ticketNumber?.startsWith('KMC-2026-0010'));
+    if (realOnly.length !== stored.length) {
+      localStorage.setItem('civicpulse_issues', JSON.stringify(realOnly));
+      return realOnly;
+    }
+    return stored;
   });
 
   // Login method: Sets actual user profile immediately and persists session
@@ -221,64 +224,75 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       const loadSupabaseData = async () => {
         try {
           const { data: dbIssues, error: issuesErr } = await supabase.from('issues').select('*');
-          if (!issuesErr && dbIssues && dbIssues.length > 0) {
-            setIssues(
-              dbIssues.map((dbIss: any) => {
-                const cat = categories.find((c) => c.id === dbIss.category_id) || categories[0];
-                const zone = zones.find((z) => z.id === dbIss.zone_id) || zones[0];
-                const issueObj: CivicIssue = {
-                  id: dbIss.id,
-                  ticketNumber: dbIss.ticket_number,
-                  citizenId: dbIss.citizen_id,
-                  categoryId: dbIss.category_id,
-                  departmentId: dbIss.department_id,
-                  zoneId: dbIss.zone_id,
-                  title: dbIss.title,
-                  rawDescription: dbIss.raw_description,
-                  locationAddress: dbIss.location_address,
-                  latitude: Number(dbIss.latitude),
-                  longitude: Number(dbIss.longitude),
-                  photoUrls: dbIss.photo_urls || [],
-                  structuredData: dbIss.structured_data || {},
-                  affectedPopulationEstimate: dbIss.affected_population_estimate,
-                  confidenceScore: Number(dbIss.confidence_score),
-                  missingAttributes: dbIss.missing_attributes || [],
-                  status: dbIss.status,
-                  urgency: dbIss.urgency,
-                  estimatedCost: Number(dbIss.estimated_cost),
-                  estimatedHours: Number(dbIss.estimated_hours),
-                  requiredStaffCount: dbIss.required_staff_count,
-                  requiredEquipment: dbIss.required_equipment,
-                  reportedAt: dbIss.reported_at,
-                  slaDueAt: dbIss.sla_due_at,
-                  resolvedAt: dbIss.resolved_at,
-                  escalationCount: dbIss.escalation_count,
-                };
-                issueObj.priorityScore = PriorityEngine.calculateScore(issueObj, cat, zone, weightConfig);
-                return issueObj;
-              })
-            );
+          if (!issuesErr) {
+            if (dbIssues && dbIssues.length > 0) {
+              setIssues(
+                dbIssues.map((dbIss: any) => {
+                  const cat = categories.find((c) => c.id === dbIss.category_id) || categories[0];
+                  const zone = zones.find((z) => z.id === dbIss.zone_id) || zones[0];
+                  const issueObj: CivicIssue = {
+                    id: dbIss.id,
+                    ticketNumber: dbIss.ticket_number,
+                    citizenId: dbIss.citizen_id,
+                    categoryId: dbIss.category_id,
+                    departmentId: dbIss.department_id,
+                    zoneId: dbIss.zone_id,
+                    title: dbIss.title,
+                    rawDescription: dbIss.raw_description,
+                    locationAddress: dbIss.location_address,
+                    latitude: Number(dbIss.latitude),
+                    longitude: Number(dbIss.longitude),
+                    photoUrls: dbIss.photo_urls || [],
+                    structuredData: dbIss.structured_data || {},
+                    affectedPopulationEstimate: dbIss.affected_population_estimate,
+                    confidenceScore: Number(dbIss.confidence_score),
+                    missingAttributes: dbIss.missing_attributes || [],
+                    status: dbIss.status,
+                    urgency: dbIss.urgency,
+                    estimatedCost: Number(dbIss.estimated_cost),
+                    estimatedHours: Number(dbIss.estimated_hours),
+                    requiredStaffCount: dbIss.required_staff_count,
+                    requiredEquipment: dbIss.required_equipment,
+                    reportedAt: dbIss.reported_at,
+                    slaDueAt: dbIss.sla_due_at,
+                    resolvedAt: dbIss.resolved_at,
+                    escalationCount: dbIss.escalation_count,
+                  };
+                  issueObj.priorityScore = PriorityEngine.calculateScore(issueObj, cat, zone, weightConfig);
+                  return issueObj;
+                })
+              );
+            } else {
+              // Database is clean (0 rows)
+              setIssues([]);
+              localStorage.setItem('civicpulse_issues', JSON.stringify([]));
+            }
             setIsSupabaseLive(true);
           }
 
-          const { data: dbLogs } = await supabase.from('audit_logs').select('*').order('created_at', { ascending: false });
-          if (dbLogs && dbLogs.length > 0) {
-            setAuditLogs(
-              dbLogs.map((l: any) => ({
-                id: l.id,
-                actorId: l.actor_id,
-                actorName: l.actor_id || 'Officer',
-                actorRole: l.actor_role || 'officer',
-                action: l.action,
-                entityType: l.entity_type,
-                entityId: l.entity_id,
-                details: l.details || {},
-                createdAt: l.created_at,
-              }))
-            );
+          const { data: dbLogs, error: logsErr } = await supabase.from('audit_logs').select('*').order('created_at', { ascending: false });
+          if (!logsErr) {
+            if (dbLogs && dbLogs.length > 0) {
+              setAuditLogs(
+                dbLogs.map((l: any) => ({
+                  id: l.id,
+                  actorId: l.actor_id,
+                  actorName: l.actor_id || 'Officer',
+                  actorRole: l.actor_role || 'officer',
+                  action: l.action,
+                  entityType: l.entity_type,
+                  entityId: l.entity_id,
+                  details: l.details || {},
+                  createdAt: l.created_at,
+                }))
+              );
+            } else {
+              setAuditLogs([]);
+              localStorage.setItem('civicpulse_audit_logs', JSON.stringify([]));
+            }
           }
         } catch (err) {
-          console.warn('Supabase fetch failed, operating in local mode:', err);
+          console.warn('Supabase fetch failed, operating in clean local mode:', err);
           setIsSupabaseLive(false);
         }
       };

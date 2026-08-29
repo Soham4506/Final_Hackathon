@@ -11,6 +11,8 @@ import {
   Languages,
   AlertCircle,
   ShieldCheck,
+  KeyRound,
+  ArrowRight,
 } from 'lucide-react';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 
@@ -35,6 +37,23 @@ export const LoginPage: React.FC = () => {
   const [authError, setAuthError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
+  const proceedWithLocalAuth = (roleToUse: UserRole, name?: string) => {
+    const derivedName = name || email.split('@')[0].replace(/[\._]/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()) || 'Municipal Officer';
+    const userObj: UserProfile = {
+      id: `usr-${Date.now()}`,
+      role: roleToUse,
+      fullName: derivedName,
+      phone: phone || '9822000000',
+      wardId: roleToUse === 'citizen' ? wardId : undefined,
+      departmentId: roleToUse === 'officer' ? departmentId : undefined,
+      employeeId: roleToUse !== 'citizen' ? employeeId || 'KMC-001' : undefined,
+      isVerified: true,
+    };
+
+    login(roleToUse, userObj);
+    navigate(roleToUse === 'citizen' ? '/citizen-portal' : '/');
+  };
+
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setAuthError('');
@@ -48,7 +67,11 @@ export const LoginPage: React.FC = () => {
         });
 
         if (error) {
-          setAuthError(error.message);
+          if (error.message.toLowerCase().includes('api key')) {
+            setAuthError('Invalid Supabase Anon Key in .env. Please copy your anon public key from Supabase Dashboard -> Project Settings -> API.');
+          } else {
+            setAuthError(error.message);
+          }
           setIsLoading(false);
           return;
         }
@@ -78,30 +101,19 @@ export const LoginPage: React.FC = () => {
           return;
         }
       } catch (err: any) {
-        console.warn('Supabase auth fallback:', err);
+        console.warn('Supabase auth attempt failed:', err);
       }
     }
 
-    // Direct local authentication with exact entered user credentials
+    // Direct local authentication fallback
     setTimeout(() => {
       let resolvedRole = selectedRole;
       const lowerEmail = email.toLowerCase();
       if (lowerEmail.includes('citizen') || lowerEmail.includes('pawar')) resolvedRole = 'citizen';
-      else if (lowerEmail.includes('admin') || lowerEmail.includes('chief') || lowerEmail.includes('kulkarni')) resolvedRole = 'admin';
+      else if (lowerEmail.includes('admin') || lowerEmail.includes('chief')) resolvedRole = 'admin';
       else if (lowerEmail.includes('officer') || lowerEmail.includes('deshmukh')) resolvedRole = 'officer';
 
-      const userName = email.split('@')[0].replace(/[\._]/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()) || 'Municipal User';
-
-      const userObj: UserProfile = {
-        id: `usr-${Date.now()}`,
-        role: resolvedRole,
-        fullName: userName,
-        phone: '9822000000',
-        isVerified: true,
-      };
-
-      login(resolvedRole, userObj);
-      navigate(resolvedRole === 'citizen' ? '/citizen-portal' : '/');
+      proceedWithLocalAuth(resolvedRole);
       setIsLoading(false);
     }, 300);
   };
@@ -125,7 +137,11 @@ export const LoginPage: React.FC = () => {
         });
 
         if (error) {
-          setAuthError(error.message);
+          if (error.message.toLowerCase().includes('api key')) {
+            setAuthError('Invalid Supabase Anon Key in .env. Copy anon public key from Supabase Dashboard -> Project Settings -> API.');
+          } else {
+            setAuthError(error.message);
+          }
           setIsLoading(false);
           return;
         }
@@ -158,25 +174,13 @@ export const LoginPage: React.FC = () => {
           return;
         }
       } catch (err: any) {
-        console.warn('Supabase signup fallback:', err);
+        console.warn('Supabase signup attempt failed:', err);
       }
     }
 
-    // Direct local registration: Immediately logs in with YOUR exact registered details
+    // Direct local registration fallback
     setTimeout(() => {
-      const userObj: UserProfile = {
-        id: `usr-${Date.now()}`,
-        role: selectedRole,
-        fullName: fullName.trim(),
-        phone: phone.trim(),
-        wardId: selectedRole === 'citizen' ? wardId : undefined,
-        departmentId: selectedRole === 'officer' ? departmentId : undefined,
-        employeeId: selectedRole !== 'citizen' ? employeeId.trim() : undefined,
-        isVerified: true,
-      };
-
-      login(selectedRole, userObj);
-      navigate(selectedRole === 'citizen' ? '/citizen-portal' : '/');
+      proceedWithLocalAuth(selectedRole, fullName.trim());
       setIsLoading(false);
     }, 300);
   };
@@ -343,9 +347,20 @@ export const LoginPage: React.FC = () => {
             </div>
 
             {authError && (
-              <div className="p-3 bg-red-950/60 border border-red-800 rounded-xl text-red-300 flex items-center gap-2">
-                <AlertCircle size={14} className="shrink-0" />
-                <span>{authError}</span>
+              <div className="p-3.5 bg-red-950/80 border border-red-800 rounded-xl text-red-200 text-xs space-y-2">
+                <div className="flex items-center gap-2 font-bold text-red-300">
+                  <AlertCircle size={15} className="shrink-0" />
+                  <span>Authentication Notice</span>
+                </div>
+                <p className="leading-relaxed text-[11px]">{authError}</p>
+                <button
+                  type="button"
+                  onClick={() => proceedWithLocalAuth(selectedRole)}
+                  className="mt-1 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-white rounded-lg font-bold text-[11px] flex items-center gap-1.5 transition-colors border border-slate-700"
+                >
+                  <KeyRound size={13} className="text-emerald-400" />
+                  <span>Continue in Local Session Mode →</span>
+                </button>
               </div>
             )}
 
@@ -458,9 +473,20 @@ export const LoginPage: React.FC = () => {
             </div>
 
             {authError && (
-              <div className="p-3 bg-red-950/60 border border-red-800 rounded-xl text-red-300 flex items-center gap-2">
-                <AlertCircle size={14} className="shrink-0" />
-                <span>{authError}</span>
+              <div className="p-3.5 bg-red-950/80 border border-red-800 rounded-xl text-red-200 text-xs space-y-2">
+                <div className="flex items-center gap-2 font-bold text-red-300">
+                  <AlertCircle size={15} className="shrink-0" />
+                  <span>Registration Notice</span>
+                </div>
+                <p className="leading-relaxed text-[11px]">{authError}</p>
+                <button
+                  type="button"
+                  onClick={() => proceedWithLocalAuth(selectedRole, fullName.trim())}
+                  className="mt-1 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-white rounded-lg font-bold text-[11px] flex items-center gap-1.5 transition-colors border border-slate-700"
+                >
+                  <KeyRound size={13} className="text-emerald-400" />
+                  <span>Continue with Local Account →</span>
+                </button>
               </div>
             )}
 
@@ -483,7 +509,7 @@ export const LoginPage: React.FC = () => {
                 isSupabaseLive ? 'bg-emerald-400 animate-pulse' : 'bg-emerald-400'
               }`}
             />
-            <span>{isSupabaseLive ? 'Supabase Live' : 'Active Municipal Node'}</span>
+            <span>{isSupabaseLive ? 'Supabase Live' : 'Active Local Session'}</span>
           </div>
           <span className="font-mono text-slate-500">Track 2</span>
         </div>
