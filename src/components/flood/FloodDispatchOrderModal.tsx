@@ -52,13 +52,14 @@ export const FloodDispatchOrderModal: React.FC<FloodDispatchOrderModalProps> = (
           </p>
         </div>
 
-        <div className="flex items-center gap-1.5 pl-2 border-l border-slate-200">
+        <div className="flex items-center gap-2 pl-2 border-l border-slate-200">
           <button
             onClick={() => setIsMinimized(false)}
-            className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-[#1b1b1d] transition-all"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#ba1a1a] hover:bg-[#93000a] text-white font-bold text-xs transition-all shadow-xs"
             title="Expand Work Order"
           >
-            <Maximize2 size={16} />
+            <Maximize2 size={14} />
+            <span>{language === 'mr' ? 'उघडा (Expand)' : 'Expand Order'}</span>
           </button>
           <button
             onClick={onClose}
@@ -83,7 +84,17 @@ export const FloodDispatchOrderModal: React.FC<FloodDispatchOrderModalProps> = (
               {language === 'mr' ? 'आपत्कालीन पूर नियंत्रण कार्य आदेश' : 'Official Flood Emergency Dispatch Order'}
             </span>
           </div>
+
           <div className="flex items-center gap-2">
+            <button
+              onClick={() => setIsMinimized(true)}
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-slate-100 border border-slate-300 hover:bg-slate-200 text-[#1b1b1d] text-xs font-bold transition-all shadow-xs"
+              title="Minimize Order to bottom bar"
+            >
+              <Minus size={15} />
+              <span>{language === 'mr' ? 'लहान करा (Minimize)' : 'Minimize'}</span>
+            </button>
+
             <button
               onClick={handlePrint}
               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white border border-[#76777d]/30 hover:bg-slate-50 text-[#1b1b1d] text-xs font-semibold transition-all shadow-xs"
@@ -91,6 +102,7 @@ export const FloodDispatchOrderModal: React.FC<FloodDispatchOrderModalProps> = (
               <Printer size={14} />
               <span>{language === 'mr' ? 'प्रत मुद्रित करा (Print)' : 'Print'}</span>
             </button>
+
             {!order.isApproved && onApprove && (
               <button
                 onClick={() => onApprove(order.id)}
@@ -100,17 +112,11 @@ export const FloodDispatchOrderModal: React.FC<FloodDispatchOrderModalProps> = (
                 <span>{language === 'mr' ? 'मंजूर करा (Authorize)' : 'Authorize'}</span>
               </button>
             )}
-            <button
-              onClick={() => setIsMinimized(true)}
-              className="p-1.5 rounded-lg text-[#76777d] hover:text-[#1b1b1d] hover:bg-slate-100 transition-all"
-              title="Minimize to bottom bar"
-            >
-              <Minus size={18} />
-            </button>
+
             <button
               onClick={onClose}
-              className="p-1.5 rounded-lg text-[#76777d] hover:text-[#1b1b1d] hover:bg-slate-100 transition-all"
-              title="Close"
+              className="p-1.5 rounded-lg text-[#76777d] hover:text-[#1b1b1d] hover:bg-slate-200 transition-all ml-1"
+              title="Close Order"
             >
               <X size={18} />
             </button>
