@@ -54,11 +54,27 @@ USING (
     auth.uid() = id OR public.is_officer()
 );
 
+-- INSERT: Authenticated users can create their own profile row (id must match auth.uid())
+DROP POLICY IF EXISTS "Users can insert own profile" ON public.profiles;
+CREATE POLICY "Users can insert own profile"
+ON public.profiles FOR INSERT
+WITH CHECK (
+    auth.uid() = id
+);
+
+-- UPDATE: Users can update own profile BUT cannot change their own role (only admins can)
 DROP POLICY IF EXISTS "Users can update own profile" ON public.profiles;
 CREATE POLICY "Users can update own profile"
 ON public.profiles FOR UPDATE
 USING (auth.uid() = id)
-WITH CHECK (auth.uid() = id);
+WITH CHECK (
+    auth.uid() = id
+    AND (
+        -- Either the role hasn't changed, or the user is an admin
+        role = (SELECT p.role FROM public.profiles p WHERE p.id = auth.uid())
+        OR public.is_admin()
+    )
+);
 
 DROP POLICY IF EXISTS "Admins have full access on profiles" ON public.profiles;
 CREATE POLICY "Admins have full access on profiles"

@@ -279,84 +279,156 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     localStorage.setItem('civicpulse_current_user', JSON.stringify(userProfile));
   };
 
-  // Logout method: Clears authentication gate
-  const logout = () => {
+  // Logout method: Clears authentication gate and Supabase session
+  const logout = async () => {
+    // Sign out from Supabase to invalidate the session token
+    if (isSupabaseConfigured) {
+      try {
+        await supabase.auth.signOut();
+      } catch (err) {
+        console.warn('Supabase signOut error:', err);
+      }
+    }
     setIsAuthenticated(false);
+    setUserRole('citizen');
+    setCurrentUser(DEFAULT_GUEST_USER);
     localStorage.setItem('civicpulse_is_auth', JSON.stringify(false));
     localStorage.removeItem('civicpulse_current_user');
-    setCurrentUser(DEFAULT_GUEST_USER);
+    localStorage.removeItem('civicpulse_user_role');
   };
 
-  // Hydrate from Supabase on load if configured
+  // Hydrate auth session and data from Supabase on load if configured
   useEffect(() => {
-    if (isSupabaseConfigured) {
-      const loadSupabaseData = async () => {
-        try {
-          const { data: dbIssues, error: issuesErr } = await supabase.from('issues').select('*');
-          if (!issuesErr && dbIssues && dbIssues.length > 0) {
-            setIssues(
-              dbIssues.map((dbIss: any) => {
-                const cat = categories.find((c) => c.id === dbIss.category_id) || categories[0];
-                const zone = zones.find((z) => z.id === dbIss.zone_id) || zones[0];
-                const issueObj: CivicIssue = {
-                  id: dbIss.id,
-                  ticketNumber: dbIss.ticket_number,
-                  citizenId: dbIss.citizen_id,
-                  categoryId: dbIss.category_id,
-                  departmentId: dbIss.department_id,
-                  zoneId: dbIss.zone_id,
-                  title: dbIss.title,
-                  rawDescription: dbIss.raw_description,
-                  locationAddress: dbIss.location_address,
-                  latitude: Number(dbIss.latitude),
-                  longitude: Number(dbIss.longitude),
-                  photoUrls: dbIss.photo_urls || [],
-                  structuredData: dbIss.structured_data || {},
-                  affectedPopulationEstimate: dbIss.affected_population_estimate,
-                  confidenceScore: Number(dbIss.confidence_score),
-                  missingAttributes: dbIss.missing_attributes || [],
-                  status: dbIss.status,
-                  urgency: dbIss.urgency,
-                  estimatedCost: Number(dbIss.estimated_cost),
-                  estimatedHours: Number(dbIss.estimated_hours),
-                  requiredStaffCount: dbIss.required_staff_count,
-                  requiredEquipment: dbIss.required_equipment,
-                  reportedAt: dbIss.reported_at,
-                  slaDueAt: dbIss.sla_due_at,
-                  resolvedAt: dbIss.resolved_at,
-                  escalationCount: dbIss.escalation_count,
-                };
-                issueObj.priorityScore = PriorityEngine.calculateScore(issueObj, cat, zone, weightConfig);
-                return issueObj;
-              })
-            );
-            setIsSupabaseLive(true);
-          }
+    if (!isSupabaseConfigured) return;
 
-          const { data: dbLogs } = await supabase.from('audit_logs').select('*').order('created_at', { ascending: false });
-          if (dbLogs && dbLogs.length > 0) {
-            setAuditLogs(
-              dbLogs.map((l: any) => ({
-                id: l.id,
-                actorId: l.actor_id,
-                actorName: l.actor_id || 'Officer',
-                actorRole: l.actor_role || 'officer',
-                action: l.action,
-                entityType: l.entity_type,
-                entityId: l.entity_id,
-                details: l.details || {},
-                createdAt: l.created_at,
-              }))
-            );
+    // 1. Restore session: check if a valid Supabase auth session exists
+    const restoreSession = async () => {
+      try {
+        const { data: sessionData } = await supabase.auth.getSession();
+        const session = sessionData?.session;
+
+        if (session?.user) {
+          // We have a valid session — fetch the profile
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', session.user.id)
+            .single();
+
+          if (profile) {
+            const role = (profile.role as UserRole) || 'citizen';
+            const userObj: UserProfile = {
+              id: session.user.id,
+              role,
+              fullName: profile.full_name || session.user.email?.split('@')[0] || 'Citizen',
+              phone: profile.phone || '',
+              address: profile.address || 'Kopargaon',
+              wardId: profile.ward_id,
+              departmentId: profile.department_id,
+              employeeId: profile.employee_id,
+              isVerified: profile.is_verified ?? true,
+            };
+            setUserRole(role);
+            setCurrentUser(userObj);
+            setIsAuthenticated(true);
+            localStorage.setItem('civicpulse_is_auth', JSON.stringify(true));
+            localStorage.setItem('civicpulse_user_role', JSON.stringify(role));
+            localStorage.setItem('civicpulse_current_user', JSON.stringify(userObj));
           }
-        } catch (err) {
-          console.warn('Supabase fetch failed, operating in local mode:', err);
-          setIsSupabaseLive(false);
         }
-      };
+      } catch (err) {
+        console.warn('Session restore failed:', err);
+      }
+    };
 
-      loadSupabaseData();
-    }
+    restoreSession();
+
+    // 2. Listen for auth state changes (sign in, sign out, token refresh)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        if (event === 'SIGNED_OUT' || !session) {
+          setIsAuthenticated(false);
+          setUserRole('citizen');
+          setCurrentUser(DEFAULT_GUEST_USER);
+          localStorage.setItem('civicpulse_is_auth', JSON.stringify(false));
+          localStorage.removeItem('civicpulse_current_user');
+          localStorage.removeItem('civicpulse_user_role');
+        }
+      }
+    );
+
+    // 3. Load operational data from Supabase
+    const loadSupabaseData = async () => {
+      try {
+        const { data: dbIssues, error: issuesErr } = await supabase.from('issues').select('*');
+        if (!issuesErr && dbIssues && dbIssues.length > 0) {
+          setIssues(
+            dbIssues.map((dbIss: any) => {
+              const cat = categories.find((c) => c.id === dbIss.category_id) || categories[0];
+              const zone = zones.find((z) => z.id === dbIss.zone_id) || zones[0];
+              const issueObj: CivicIssue = {
+                id: dbIss.id,
+                ticketNumber: dbIss.ticket_number,
+                citizenId: dbIss.citizen_id,
+                categoryId: dbIss.category_id,
+                departmentId: dbIss.department_id,
+                zoneId: dbIss.zone_id,
+                title: dbIss.title,
+                rawDescription: dbIss.raw_description,
+                locationAddress: dbIss.location_address,
+                latitude: Number(dbIss.latitude),
+                longitude: Number(dbIss.longitude),
+                photoUrls: dbIss.photo_urls || [],
+                structuredData: dbIss.structured_data || {},
+                affectedPopulationEstimate: dbIss.affected_population_estimate,
+                confidenceScore: Number(dbIss.confidence_score),
+                missingAttributes: dbIss.missing_attributes || [],
+                status: dbIss.status,
+                urgency: dbIss.urgency,
+                estimatedCost: Number(dbIss.estimated_cost),
+                estimatedHours: Number(dbIss.estimated_hours),
+                requiredStaffCount: dbIss.required_staff_count,
+                requiredEquipment: dbIss.required_equipment,
+                reportedAt: dbIss.reported_at,
+                slaDueAt: dbIss.sla_due_at,
+                resolvedAt: dbIss.resolved_at,
+                escalationCount: dbIss.escalation_count,
+              };
+              issueObj.priorityScore = PriorityEngine.calculateScore(issueObj, cat, zone, weightConfig);
+              return issueObj;
+            })
+          );
+          setIsSupabaseLive(true);
+        }
+
+        const { data: dbLogs } = await supabase.from('audit_logs').select('*').order('created_at', { ascending: false });
+        if (dbLogs && dbLogs.length > 0) {
+          setAuditLogs(
+            dbLogs.map((l: any) => ({
+              id: l.id,
+              actorId: l.actor_id,
+              actorName: l.actor_id || 'Officer',
+              actorRole: l.actor_role || 'officer',
+              action: l.action,
+              entityType: l.entity_type,
+              entityId: l.entity_id,
+              details: l.details || {},
+              createdAt: l.created_at,
+            }))
+          );
+        }
+      } catch (err) {
+        console.warn('Supabase fetch failed, operating in local mode:', err);
+        setIsSupabaseLive(false);
+      }
+    };
+
+    loadSupabaseData();
+
+    // Cleanup subscription on unmount
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
 
   // Sync state changes to localStorage
