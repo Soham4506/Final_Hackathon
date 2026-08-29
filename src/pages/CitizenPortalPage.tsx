@@ -39,6 +39,7 @@ import {
   Phone,
   Truck,
   CheckCheck,
+  UserCheck,
 } from 'lucide-react';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
@@ -71,8 +72,6 @@ export const CitizenPortalPage: React.FC = () => {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [address, setAddress] = useState('');
-  const [citizenPhone, setCitizenPhone] = useState(currentUser.phone || '+91 98224 11204');
-  const [citizenName, setCitizenName] = useState(currentUser.fullName !== 'Citizen User' ? currentUser.fullName : 'Rameshwar Kolhe');
   const [selectedZoneId, setSelectedZoneId] = useState<string>(zones[0]?.id || 'a0000000-0000-0000-0000-000000000001');
 
   // Real Uploaded Photo & Location Geotagging State
@@ -273,8 +272,8 @@ export const CitizenPortalPage: React.FC = () => {
         longitude: geoCoordinates?.longitude,
         photoUrls: photoDataUrl ? [photoDataUrl] : [],
         affectedPopulation: affectedPop,
-        citizenPhone: citizenPhone.trim(),
-        citizenName: citizenName.trim(),
+        citizenPhone: currentUser.phone || '+91 98224 11204',
+        citizenName: currentUser.fullName || 'Citizen User',
       });
 
       setSubmittedTicket(newIssue.ticketNumber);
@@ -440,7 +439,7 @@ export const CitizenPortalPage: React.FC = () => {
                   </span>
                 </div>
                 <p>
-                  Your ticket number is <strong className="font-mono text-[#131b2e]">{submittedTicket}</strong>. An initial confirmation SMS has been dispatched directly to your mobile handset <strong>{citizenPhone}</strong> with priority score and SLA timing.
+                  Your ticket number is <strong className="font-mono text-[#131b2e]">{submittedTicket}</strong>. An initial confirmation SMS has been dispatched directly to your mobile handset <strong>{currentUser.phone || '+91 98224 11204'}</strong> with priority score and SLA timing.
                 </p>
                 <div className="pt-1">
                   <button
@@ -454,6 +453,30 @@ export const CitizenPortalPage: React.FC = () => {
             )}
 
             <form onSubmit={handleSubmit} className="space-y-4 text-xs">
+              {/* Authenticated Citizen Account Badge (Directly Uses Logged-In User Details) */}
+              <div className="bg-[#fcf8fa] p-3.5 rounded-2xl border border-[#76777d]/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-[#131b2e] text-white flex items-center justify-center font-bold text-sm shrink-0 shadow-xs">
+                    {currentUser.fullName ? currentUser.fullName.charAt(0).toUpperCase() : 'U'}
+                  </div>
+                  <div>
+                    <div className="font-bold text-[#1b1b1d] flex items-center gap-2">
+                      <span>{currentUser.fullName || 'Rameshwar Kolhe'}</span>
+                      <span className="text-[10px] bg-emerald-100 text-emerald-800 font-mono font-bold px-1.5 py-0.5 rounded flex items-center gap-1">
+                        <CheckCircle2 size={11} /> Verified Citizen Account
+                      </span>
+                    </div>
+                    <div className="text-[11px] text-[#57657b] flex items-center gap-1 mt-0.5 font-mono">
+                      <Phone size={12} className="text-blue-700" />
+                      <span>Real-time SMS Alerts to: <strong>{currentUser.phone || '+91 98224 11204'}</strong></span>
+                    </div>
+                  </div>
+                </div>
+                <div className="text-[10px] text-emerald-800 font-bold bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-lg self-start sm:self-auto font-mono">
+                  ⚡ Fast2SMS Cellular Auto-Linked
+                </div>
+              </div>
+
               {/* Photo Upload & Geotag Area */}
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
@@ -673,44 +696,6 @@ export const CitizenPortalPage: React.FC = () => {
                     )}
                   </div>
                 )}
-              </div>
-
-              {/* Citizen Contact Details (Phone & Name for Real Cellular SMS Alerts) */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-blue-50/40 p-3.5 rounded-2xl border border-blue-100">
-                <div>
-                  <label className="block text-[#1b1b1d] font-bold mb-1 flex items-center gap-1.5">
-                    <Phone size={13} className="text-blue-700" />
-                    <span>Citizen Mobile Number (Real SMS Alerts) *</span>
-                  </label>
-                  <input
-                    type="tel"
-                    required
-                    placeholder="+91 98224 11204"
-                    value={citizenPhone}
-                    onChange={(e) => setCitizenPhone(e.target.value)}
-                    className="w-full bg-white border border-[#76777d]/20 rounded-xl px-3 py-2 text-[#1b1b1d] font-mono text-xs font-semibold focus:outline-none focus:border-[#131b2e]"
-                  />
-                  <span className="text-[10px] text-emerald-800 font-medium block mt-0.5">
-                    ⚡ Real SMS messages will be sent directly to this mobile phone via Fast2SMS network.
-                  </span>
-                </div>
-
-                <div>
-                  <label className="block text-[#1b1b1d] font-bold mb-1">
-                    Complainant Full Name *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="e.g. Rameshwar Kolhe"
-                    value={citizenName}
-                    onChange={(e) => setCitizenName(e.target.value)}
-                    className="w-full bg-white border border-[#76777d]/20 rounded-xl px-3 py-2 text-[#1b1b1d] text-xs font-semibold focus:outline-none focus:border-[#131b2e]"
-                  />
-                  <span className="text-[10px] text-[#57657b] block mt-0.5">
-                    Used for official municipal verification records.
-                  </span>
-                </div>
               </div>
 
               {/* Title */}
