@@ -74,10 +74,10 @@ export const FloodDispatchOrderModal: React.FC<FloodDispatchOrderModalProps> = (
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs overflow-y-auto">
-      <div className="relative w-full max-w-4xl bg-white border border-[#76777d]/30 rounded-2xl shadow-2xl overflow-hidden print:border-none print:shadow-none print:bg-white print:text-black my-8">
-        {/* Top Header / Actions */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-[#76777d]/20 bg-[#fcf8fa] print:hidden">
+    <div className="fixed inset-0 z-50 flex items-start justify-center p-3 sm:p-6 bg-black/60 backdrop-blur-xs overflow-y-auto">
+      <div className="relative w-full max-w-4xl bg-white border border-[#76777d]/30 rounded-2xl shadow-2xl my-4 sm:my-8 flex flex-col max-h-[90vh] overflow-hidden print:border-none print:shadow-none print:bg-white print:text-black print:my-0 print:max-h-none">
+        {/* Sticky Top Header / Actions Bar */}
+        <div className="sticky top-0 z-30 shrink-0 flex items-center justify-between px-6 py-3.5 border-b border-[#76777d]/20 bg-[#fcf8fa] shadow-xs print:hidden">
           <div className="flex items-center gap-2 text-[#ba1a1a]">
             <ShieldAlert size={20} />
             <span className="font-bold text-sm tracking-wide uppercase">
@@ -88,10 +88,10 @@ export const FloodDispatchOrderModal: React.FC<FloodDispatchOrderModalProps> = (
           <div className="flex items-center gap-2">
             <button
               onClick={() => setIsMinimized(true)}
-              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-slate-100 border border-slate-300 hover:bg-slate-200 text-[#1b1b1d] text-xs font-bold transition-all shadow-xs"
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-white border-2 border-slate-300 hover:bg-slate-100 text-[#1b1b1d] text-xs font-bold transition-all shadow-xs"
               title="Minimize Order to bottom bar"
             >
-              <Minus size={15} />
+              <Minus size={15} className="text-[#ba1a1a]" />
               <span>{language === 'mr' ? 'लहान करा (Minimize)' : 'Minimize'}</span>
             </button>
 
@@ -123,8 +123,8 @@ export const FloodDispatchOrderModal: React.FC<FloodDispatchOrderModalProps> = (
           </div>
         </div>
 
-        {/* Printable Document Body */}
-        <div className="p-6 md:p-8 space-y-6 text-[#1b1b1d] print:p-0">
+        {/* Scrollable Document Body */}
+        <div className="p-6 md:p-8 space-y-6 text-[#1b1b1d] overflow-y-auto flex-1 print:p-0 print:overflow-visible">
           {/* Official Letterhead */}
           <div className="border-b-2 border-[#ba1a1a] pb-4 text-center space-y-1">
             <div className="inline-flex items-center gap-2 justify-center">

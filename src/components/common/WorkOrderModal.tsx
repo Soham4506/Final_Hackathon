@@ -56,28 +56,29 @@ export const WorkOrderModal: React.FC<WorkOrderModalProps> = ({ plan, onClose })
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm overflow-y-auto">
-      <div className="bg-white text-slate-900 rounded-2xl w-full max-w-4xl shadow-2xl overflow-hidden my-8 flex flex-col max-h-[90vh]">
-        {/* Modal Action Header (Non-printable) */}
-        <div className="px-6 py-3.5 bg-slate-900 text-white flex justify-between items-center shrink-0 print:hidden">
+    <div className="fixed inset-0 z-50 flex items-start justify-center p-3 sm:p-6 bg-slate-950/80 backdrop-blur-sm overflow-y-auto">
+      <div className="bg-white text-slate-900 rounded-2xl w-full max-w-4xl shadow-2xl overflow-hidden my-4 sm:my-8 flex flex-col max-h-[90vh]">
+        {/* Sticky Modal Action Header (Non-printable) */}
+        <div className="sticky top-0 z-30 px-6 py-3.5 bg-slate-900 text-white flex justify-between items-center shrink-0 shadow-xs print:hidden">
           <div className="flex items-center gap-2">
             <FileText size={18} className="text-emerald-400" />
             <span className="font-bold text-sm">Official Municipal Work Order Document</span>
           </div>
           <div className="flex items-center gap-2">
             <button
+              onClick={() => setIsMinimized(true)}
+              className="px-3.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors"
+              title="Minimize to bottom bar"
+            >
+              <Minus size={14} className="text-emerald-400" />
+              <span>Minimize</span>
+            </button>
+            <button
               onClick={handlePrint}
               className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-semibold flex items-center gap-1.5 shadow transition-colors"
             >
               <Printer size={14} />
               <span>Print / Save PDF</span>
-            </button>
-            <button
-              onClick={() => setIsMinimized(true)}
-              className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
-              title="Minimize to bottom bar"
-            >
-              <Minus size={18} />
             </button>
             <button
               onClick={onClose}
