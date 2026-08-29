@@ -20,7 +20,6 @@ import {
   INITIAL_WEIGHT_CONFIG, 
   INITIAL_RESOURCES, 
   INITIAL_ISSUES, 
-  INITIAL_USERS,
   INITIAL_AUDIT_LOGS,
   INITIAL_NOTIFICATIONS
 } from '../data/mockData';
@@ -29,6 +28,15 @@ import { AllocationEngine, ResourceDeficitReport } from '../services/allocationE
 import { AIIntakeParser } from '../services/aiIntakeParser';
 import { MultiStrategyEngine, AllocationStrategy, StrategyComparisonMetric } from '../services/multiStrategyEngine';
 import { Language, DICTIONARY, Translations } from '../services/localizationService';
+import { supabase, isSupabaseConfigured } from '../lib/supabase';
+
+const DEFAULT_GUEST_USER: UserProfile = {
+  id: 'usr-guest',
+  role: 'citizen',
+  fullName: 'Citizen User',
+  phone: '',
+  isVerified: false,
+};
 
 interface CivicContextType {
   // Localization & Language
@@ -36,12 +44,17 @@ interface CivicContextType {
   setLanguage: (lang: Language) => void;
   t: Translations;
 
-  // Roles & Profiles
+  // Authentication & RBAC
+  isAuthenticated: boolean;
   userRole: UserRole;
-  setUserRole: (role: UserRole) => void;
   currentUser: UserProfile;
+  login: (role: UserRole, userProfile: UserProfile) => void;
+  logout: () => void;
+  setUserRole: (role: UserRole) => void;
   setCurrentUser: (user: UserProfile) => void;
-  users: UserProfile[];
+
+  // Supabase Live Status
+  isSupabaseLive: boolean;
 
   // Master Data
   zones: Zone[];
@@ -68,7 +81,7 @@ interface CivicContextType {
     longitude?: number;
     photoUrls?: string[];
     affectedPopulation?: number;
-  }) => CivicIssue;
+  }) => Promise<CivicIssue>;
 
   updateIssueStatus: (issueId: string, newStatus: IssueStatus, officerNotes?: string) => void;
   
@@ -100,8 +113,6 @@ interface CivicContextType {
 
   markNotificationAsRead: (notificationId: string) => void;
 
-  loadDemoScenario: (scenario: 'monsoon' | 'market_outage' | 'deficit_showcase') => void;
-
   resetAllDataToDefaults: () => void;
 }
 
@@ -117,13 +128,39 @@ const getStored = <T,>(key: string, fallback: T): T => {
   }
 };
 
+function calculateDistanceMeters(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 6371e3;
+  const φ1 = (lat1 * Math.PI) / 180;
+  const φ2 = (lat2 * Math.PI) / 180;
+  const Δφ = ((lat2 - lat1) * Math.PI) / 180;
+  const Δλ = ((lon2 - lon1) * Math.PI) / 180;
+
+  const a =
+    Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
+    Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+  return R * c;
+}
+
 export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [language, setLanguage] = useState<Language>(() => getStored('lang', 'en'));
   const t = DICTIONARY[language];
 
-  const [userRole, setUserRole] = useState<UserRole>('officer');
-  const [currentUser, setCurrentUser] = useState<UserProfile>(INITIAL_USERS[0]);
-  const [users] = useState<UserProfile[]>(INITIAL_USERS);
+  const [isSupabaseLive, setIsSupabaseLive] = useState<boolean>(isSupabaseConfigured);
+
+  // Authentication State: ALWAYS DEFAULT TO FALSE IF NO ACTIVE SESSION
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
+    return getStored<boolean>('is_auth', false);
+  });
+
+  const [userRole, setUserRole] = useState<UserRole>(() => {
+    return getStored<UserRole>('user_role', 'citizen');
+  });
+
+  const [currentUser, setCurrentUser] = useState<UserProfile>(() => {
+    return getStored<UserProfile>('current_user', DEFAULT_GUEST_USER);
+  });
 
   const [zones] = useState<Zone[]>(INITIAL_ZONES);
   const [departments] = useState<Department[]>(INITIAL_DEPARTMENTS);
@@ -145,7 +182,7 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     getStored('active_plans', [])
   );
 
-  // Issues initial load with score calculation
+  // Issues start clean
   const [issues, setIssues] = useState<CivicIssue[]>(() => {
     const stored = getStored<CivicIssue[] | null>('issues', null);
     const baseIssues = stored || INITIAL_ISSUES;
@@ -160,10 +197,103 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     });
   });
 
+  // Login method: Sets actual user profile immediately and persists session
+  const login = (role: UserRole, userProfile: UserProfile) => {
+    setUserRole(role);
+    setCurrentUser(userProfile);
+    setIsAuthenticated(true);
+    localStorage.setItem('civicpulse_is_auth', JSON.stringify(true));
+    localStorage.setItem('civicpulse_user_role', JSON.stringify(role));
+    localStorage.setItem('civicpulse_current_user', JSON.stringify(userProfile));
+  };
+
+  // Logout method: Clears authentication gate
+  const logout = () => {
+    setIsAuthenticated(false);
+    localStorage.setItem('civicpulse_is_auth', JSON.stringify(false));
+    localStorage.removeItem('civicpulse_current_user');
+    setCurrentUser(DEFAULT_GUEST_USER);
+  };
+
+  // Hydrate from Supabase on load if configured
+  useEffect(() => {
+    if (isSupabaseConfigured) {
+      const loadSupabaseData = async () => {
+        try {
+          const { data: dbIssues, error: issuesErr } = await supabase.from('issues').select('*');
+          if (!issuesErr && dbIssues && dbIssues.length > 0) {
+            setIssues(
+              dbIssues.map((dbIss: any) => {
+                const cat = categories.find((c) => c.id === dbIss.category_id) || categories[0];
+                const zone = zones.find((z) => z.id === dbIss.zone_id) || zones[0];
+                const issueObj: CivicIssue = {
+                  id: dbIss.id,
+                  ticketNumber: dbIss.ticket_number,
+                  citizenId: dbIss.citizen_id,
+                  categoryId: dbIss.category_id,
+                  departmentId: dbIss.department_id,
+                  zoneId: dbIss.zone_id,
+                  title: dbIss.title,
+                  rawDescription: dbIss.raw_description,
+                  locationAddress: dbIss.location_address,
+                  latitude: Number(dbIss.latitude),
+                  longitude: Number(dbIss.longitude),
+                  photoUrls: dbIss.photo_urls || [],
+                  structuredData: dbIss.structured_data || {},
+                  affectedPopulationEstimate: dbIss.affected_population_estimate,
+                  confidenceScore: Number(dbIss.confidence_score),
+                  missingAttributes: dbIss.missing_attributes || [],
+                  status: dbIss.status,
+                  urgency: dbIss.urgency,
+                  estimatedCost: Number(dbIss.estimated_cost),
+                  estimatedHours: Number(dbIss.estimated_hours),
+                  requiredStaffCount: dbIss.required_staff_count,
+                  requiredEquipment: dbIss.required_equipment,
+                  reportedAt: dbIss.reported_at,
+                  slaDueAt: dbIss.sla_due_at,
+                  resolvedAt: dbIss.resolved_at,
+                  escalationCount: dbIss.escalation_count,
+                };
+                issueObj.priorityScore = PriorityEngine.calculateScore(issueObj, cat, zone, weightConfig);
+                return issueObj;
+              })
+            );
+            setIsSupabaseLive(true);
+          }
+
+          const { data: dbLogs } = await supabase.from('audit_logs').select('*').order('created_at', { ascending: false });
+          if (dbLogs && dbLogs.length > 0) {
+            setAuditLogs(
+              dbLogs.map((l: any) => ({
+                id: l.id,
+                actorId: l.actor_id,
+                actorName: l.actor_id || 'Officer',
+                actorRole: l.actor_role || 'officer',
+                action: l.action,
+                entityType: l.entity_type,
+                entityId: l.entity_id,
+                details: l.details || {},
+                createdAt: l.created_at,
+              }))
+            );
+          }
+        } catch (err) {
+          console.warn('Supabase fetch failed, operating in local mode:', err);
+          setIsSupabaseLive(false);
+        }
+      };
+
+      loadSupabaseData();
+    }
+  }, []);
+
   // Sync state changes to localStorage
   useEffect(() => {
     try {
       localStorage.setItem('civicpulse_lang', JSON.stringify(language));
+      localStorage.setItem('civicpulse_is_auth', JSON.stringify(isAuthenticated));
+      localStorage.setItem('civicpulse_user_role', JSON.stringify(userRole));
+      localStorage.setItem('civicpulse_current_user', JSON.stringify(currentUser));
       localStorage.setItem('civicpulse_issues', JSON.stringify(issues));
       localStorage.setItem('civicpulse_resources', JSON.stringify(resources));
       localStorage.setItem('civicpulse_audit_logs', JSON.stringify(auditLogs));
@@ -173,20 +303,9 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     } catch {
       // ignore
     }
-  }, [language, issues, resources, auditLogs, notifications, activePlans, weightConfig]);
+  }, [language, isAuthenticated, userRole, currentUser, issues, resources, auditLogs, notifications, activePlans, weightConfig]);
 
-  // Sync currentUser with role changes
-  useEffect(() => {
-    if (userRole === 'citizen') {
-      setCurrentUser(INITIAL_USERS.find((u) => u.role === 'citizen') || INITIAL_USERS[1]);
-    } else if (userRole === 'officer') {
-      setCurrentUser(INITIAL_USERS.find((u) => u.role === 'officer') || INITIAL_USERS[0]);
-    } else {
-      setCurrentUser(INITIAL_USERS.find((u) => u.role === 'admin') || INITIAL_USERS[2]);
-    }
-  }, [userRole]);
-
-  // Recalculate all scores when weight configuration changes
+  // Recalculate all scores
   const recalculateAllPriorities = () => {
     setIssues((prev) =>
       prev.map((issue) => {
@@ -210,10 +329,19 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       createdAt: new Date().toISOString(),
     };
     setAuditLogs((prev) => [log, ...prev]);
+
+    if (isSupabaseConfigured) {
+      supabase.from('audit_logs').insert([{
+        action: 'RECALCULATED_ALL_PRIORITIES',
+        entity_type: 'weight_config',
+        actor_role: currentUser.role,
+        details: { weights: weightConfig },
+      }]).then();
+    }
   };
 
-  // Submit a new issue
-  const submitIssue = (data: {
+  // Submit issue with AI extraction & Duplicate Clustering
+  const submitIssue = async (data: {
     title: string;
     description: string;
     address: string;
@@ -223,11 +351,11 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     longitude?: number;
     photoUrls?: string[];
     affectedPopulation?: number;
-  }): CivicIssue => {
+  }): Promise<CivicIssue> => {
     const hasPhotos = Boolean(data.photoUrls && data.photoUrls.length > 0);
     const hasPreciseLocation = Boolean(data.latitude && data.longitude);
 
-    const parsed = AIIntakeParser.parseComplaint(
+    const parsed = await AIIntakeParser.parseComplaintAsync(
       data.title,
       data.description,
       hasPhotos,
@@ -239,8 +367,96 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     const dept = departments.find((d) => d.id === cat.departmentId) || departments[0];
     const zone = zones.find((z) => z.id === data.zoneId) || zones[0];
 
-    const ticketNumber = `KMC-2026-${String(Math.floor(10000 + Math.random() * 90000)).slice(0, 5)}`;
+    const targetLat = data.latitude || zone.coordinates?.[0] || 19.8900;
+    const targetLng = data.longitude || zone.coordinates?.[1] || 74.4800;
     const now = new Date();
+    const seventyTwoHoursAgo = now.getTime() - 72 * 3600 * 1000;
+
+    // -------------------------------------------------------------
+    // DUPLICATE CLUSTERING PASS (150m radius + same category + 72h window)
+    // -------------------------------------------------------------
+    const existingDuplicate = issues.find((iss) => {
+      if (iss.categoryId !== cat.id) return false;
+      if (iss.status === 'resolved' || iss.status === 'rejected') return false;
+
+      const reportedTime = new Date(iss.reportedAt).getTime();
+      if (reportedTime < seventyTwoHoursAgo) return false;
+
+      const distMeters = calculateDistanceMeters(targetLat, targetLng, iss.latitude, iss.longitude);
+      return distMeters <= 150;
+    });
+
+    if (existingDuplicate) {
+      const updatedEscalation = existingDuplicate.escalationCount + 1;
+      const mergedPhotos = Array.from(new Set([...existingDuplicate.photoUrls, ...(data.photoUrls || [])]));
+      const newMergedCount = (existingDuplicate.mergedTicketCount || 1) + 1;
+      const updatedEvidenceNotes = [
+        ...(existingDuplicate.mergedEvidenceNotes || []),
+        `[${now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}] Citizen Report: "${data.description.slice(0, 100)}..."`,
+      ];
+
+      const mergedIssue: CivicIssue = {
+        ...existingDuplicate,
+        escalationCount: updatedEscalation,
+        mergedTicketCount: newMergedCount,
+        photoUrls: mergedPhotos,
+        mergedEvidenceNotes: updatedEvidenceNotes,
+      };
+
+      const recomputedScore = PriorityEngine.calculateScore(mergedIssue, cat, zone, weightConfig, now);
+      mergedIssue.priorityScore = recomputedScore;
+
+      setIssues((prev) => prev.map((iss) => (iss.id === existingDuplicate.id ? mergedIssue : iss)));
+
+      const mergeLog: AuditLog = {
+        id: `log-merge-${Date.now()}`,
+        actorName: currentUser.fullName,
+        actorRole: currentUser.role,
+        action: 'ISSUE_MERGED_DUPLICATE',
+        entityType: 'issue',
+        entityId: existingDuplicate.id,
+        details: {
+          ticketNumber: existingDuplicate.ticketNumber,
+          escalationCount: updatedEscalation,
+          mergedReportTitle: data.title,
+          clusterRadiusMeters: 150,
+          newPriorityScore: recomputedScore.finalScore,
+        },
+        createdAt: now.toISOString(),
+      };
+      setAuditLogs((prev) => [mergeLog, ...prev]);
+
+      const notif: NotificationItem = {
+        id: `notif-merge-${Date.now()}`,
+        recipientId: currentUser.id,
+        issueId: existingDuplicate.id,
+        ticketNumber: existingDuplicate.ticketNumber,
+        title: `Merged with Existing Issue (${existingDuplicate.ticketNumber})`,
+        message: `Your report was merged with an existing municipal ticket (${existingDuplicate.ticketNumber}) — ${updatedEscalation} total reports for this cluster. Priority updated to ${recomputedScore.finalScore}/100.`,
+        channel: 'app',
+        isRead: false,
+        createdAt: now.toISOString(),
+      };
+      setNotifications((prev) => [notif, ...prev]);
+
+      if (isSupabaseConfigured) {
+        supabase
+          .from('issues')
+          .update({
+            escalation_count: updatedEscalation,
+            photo_urls: mergedPhotos,
+          })
+          .eq('id', existingDuplicate.id)
+          .then();
+      }
+
+      return mergedIssue;
+    }
+
+    // -------------------------------------------------------------
+    // CREATE NEW TICKET
+    // -------------------------------------------------------------
+    const ticketNumber = `KMC-2026-${String(Math.floor(10000 + Math.random() * 90000)).slice(0, 5)}`;
     const slaDueAt = new Date(now.getTime() + cat.defaultSlaHours * 3600 * 1000).toISOString();
 
     const newIssue: CivicIssue = {
@@ -255,13 +471,17 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       title: data.title,
       rawDescription: data.description,
       locationAddress: data.address,
-      latitude: data.latitude || zone.coordinates?.[0] || 19.8900,
-      longitude: data.longitude || zone.coordinates?.[1] || 74.4800,
+      latitude: targetLat,
+      longitude: targetLng,
       photoUrls: data.photoUrls || [],
       structuredData: parsed.structuredData,
       affectedPopulationEstimate: data.affectedPopulation || parsed.affectedPopulationEstimate,
       confidenceScore: parsed.confidenceScore,
       missingAttributes: parsed.missingAttributes,
+      intakeSource: parsed.intakeSource,
+      aiRationale: parsed.aiRationale,
+      mergedTicketCount: 1,
+      mergedEvidenceNotes: [],
       status: 'prioritized',
       urgency: parsed.suggestedUrgency,
       estimatedCost: parsed.estimatedCost,
@@ -288,6 +508,7 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       details: {
         ticketNumber: newIssue.ticketNumber,
         category: cat.name,
+        intakeSource: parsed.intakeSource,
         deterministicScore: score.finalScore,
         confidence: parsed.confidenceScore,
         missingAttributes: parsed.missingAttributes,
@@ -302,12 +523,40 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       issueId: newIssue.id,
       ticketNumber: newIssue.ticketNumber,
       title: `Civic Report Registered (${newIssue.ticketNumber})`,
-      message: `Your report has been evaluated. Deterministic Priority Score: ${score.finalScore}/100. Target SLA: ${cat.defaultSlaHours} hours.`,
+      message: `Your report has been evaluated. Deterministic Priority Score: ${score.finalScore}/100. Target SLA: ${cat.defaultSlaHours} hours. (Intake: ${parsed.intakeSource})`,
       channel: 'app',
       isRead: false,
       createdAt: now.toISOString(),
     };
     setNotifications((prev) => [notif, ...prev]);
+
+    if (isSupabaseConfigured) {
+      supabase.from('issues').insert([{
+        ticket_number: newIssue.ticketNumber,
+        citizen_id: currentUser.id,
+        category_id: cat.id,
+        department_id: dept.id,
+        zone_id: zone.id,
+        title: newIssue.title,
+        raw_description: newIssue.rawDescription,
+        location_address: newIssue.locationAddress,
+        latitude: newIssue.latitude,
+        longitude: newIssue.longitude,
+        photo_urls: newIssue.photoUrls,
+        structured_data: newIssue.structuredData,
+        affected_population_estimate: newIssue.affectedPopulationEstimate,
+        confidence_score: newIssue.confidenceScore,
+        missing_attributes: newIssue.missingAttributes,
+        status: newIssue.status,
+        urgency: newIssue.urgency,
+        estimated_cost: newIssue.estimatedCost,
+        estimated_hours: newIssue.estimatedHours,
+        required_staff_count: newIssue.requiredStaffCount,
+        required_equipment: newIssue.requiredEquipment,
+        reported_at: newIssue.reportedAt,
+        sla_due_at: newIssue.slaDueAt,
+      }]).then();
+    }
 
     return newIssue;
   };
@@ -360,6 +609,10 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       };
       setNotifications((prev) => [notif, ...prev]);
     }
+
+    if (isSupabaseConfigured) {
+      supabase.from('issues').update({ status: newStatus }).eq('id', issueId).then();
+    }
   };
 
   // Officer Override
@@ -405,9 +658,21 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       createdAt: new Date().toISOString(),
     };
     setAuditLogs((prev) => [log, ...prev]);
+
+    if (isSupabaseConfigured) {
+      supabase.from('priority_decisions').insert([{
+        issue_id: issueId,
+        officer_id: currentUser.id,
+        action_type: 'priority_override',
+        previous_score: targetIssue?.priorityScore?.finalScore,
+        overridden_score: overriddenScore,
+        override_reason: overrideReason,
+        officer_notes: officerNotes,
+      }]).then();
+    }
   };
 
-  // Run Allocation Engine with strategy support
+  // Run Allocation Engine
   const generateAllocationPlan = (
     departmentId: string,
     budgetCap?: number,
@@ -585,65 +850,18 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     );
   };
 
-  // Load Hackathon Demo Presets
-  const loadDemoScenario = (scenario: 'monsoon' | 'market_outage' | 'deficit_showcase') => {
-    if (scenario === 'monsoon') {
-      setIssues((prev) =>
-        prev.map((iss) => {
-          if (iss.categoryId === 'cat-water-contam' || iss.categoryId === 'cat-sewer-overflow') {
-            return {
-              ...iss,
-              escalationCount: iss.escalationCount + 3,
-              status: 'prioritized',
-              priorityScore: PriorityEngine.calculateScore(
-                { ...iss, escalationCount: iss.escalationCount + 3 },
-                categories.find((c) => c.id === iss.categoryId) || categories[0],
-                zones.find((z) => z.id === iss.zoneId) || zones[0],
-                weightConfig
-              ),
-            };
-          }
-          return iss;
-        })
-      );
-    } else if (scenario === 'deficit_showcase') {
-      setResources((prev) =>
-        prev.map((r) =>
-          r.identifierCode === 'KMC-JET-02'
-            ? { ...r, isOperational: false, currentStatus: 'maintenance' }
-            : r
-        )
-      );
-    }
-
-    const log: AuditLog = {
-      id: `log-${Date.now()}`,
-      actorName: currentUser.fullName,
-      actorRole: currentUser.role,
-      action: 'LOADED_DEMO_SCENARIO',
-      entityType: 'issue',
-      details: { scenarioName: scenario },
-      createdAt: new Date().toISOString(),
-    };
-    setAuditLogs((prev) => [log, ...prev]);
-  };
-
   // Reset all to clean defaults
   const resetAllDataToDefaults = () => {
     localStorage.clear();
-    setIssues(
-      INITIAL_ISSUES.map((issue) => {
-        const cat = INITIAL_CATEGORIES.find((c) => c.id === issue.categoryId) || INITIAL_CATEGORIES[0];
-        const zone = INITIAL_ZONES.find((z) => z.id === issue.zoneId) || INITIAL_ZONES[0];
-        const score = PriorityEngine.calculateScore(issue, cat, zone, INITIAL_WEIGHT_CONFIG);
-        return { ...issue, priorityScore: score };
-      })
-    );
+    setIssues([]);
     setResources(INITIAL_RESOURCES);
-    setAuditLogs(INITIAL_AUDIT_LOGS);
-    setNotifications(INITIAL_NOTIFICATIONS);
+    setAuditLogs([]);
+    setNotifications([]);
     setActivePlans([]);
     setWeightConfig(INITIAL_WEIGHT_CONFIG);
+    setIsAuthenticated(false);
+    setUserRole('citizen');
+    setCurrentUser(DEFAULT_GUEST_USER);
   };
 
   return (
@@ -652,11 +870,14 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         language,
         setLanguage,
         t,
+        isAuthenticated,
         userRole,
-        setUserRole,
         currentUser,
+        login,
+        logout,
+        setUserRole,
         setCurrentUser,
-        users,
+        isSupabaseLive,
         zones,
         departments,
         categories,
@@ -676,7 +897,6 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         updateResource,
         recalculateAllPriorities,
         markNotificationAsRead,
-        loadDemoScenario,
         resetAllDataToDefaults,
       }}
     >

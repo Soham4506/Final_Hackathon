@@ -1,10 +1,10 @@
 import React from 'react';
 import { useCivic } from '../context/CivicContext';
-import { Bell, CheckCircle2, MessageSquare, Phone, Mail, Clock, MapPin } from 'lucide-react';
+import { Bell, CheckCircle2, MessageSquare, Phone, Mail, Clock, MapPin, Radio } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 export const NotificationsPage: React.FC = () => {
-  const { notifications, markNotificationAsRead } = useCivic();
+  const { notifications, markNotificationAsRead, t } = useCivic();
   const navigate = useNavigate();
 
   return (
@@ -14,15 +14,15 @@ export const NotificationsPage: React.FC = () => {
         <div>
           <div className="flex items-center gap-2 mb-1">
             <span className="bg-emerald-950 text-emerald-300 border border-emerald-800 text-[10px] font-mono uppercase font-bold px-2 py-0.5 rounded flex items-center gap-1">
-              <Bell size={12} /> Dispatch Broadcasts
+              <Bell size={12} /> Municipal In-App Feed
             </span>
-            <span className="text-xs text-slate-400">Citizen SMS / App Feed</span>
+            <span className="text-xs text-slate-400">Citizen In-App Notifications</span>
           </div>
           <h1 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
-            Notifications & Civic Dispatch Feed
+            {t.notifications}
           </h1>
           <p className="text-xs sm:text-sm text-slate-400 mt-1">
-            Real-time automated status updates sent to citizens and technical work crews.
+            Real-time in-app civic status updates, stage progressions, and work order dispatch notices sent to citizens.
           </p>
         </div>
       </div>
@@ -41,7 +41,7 @@ export const NotificationsPage: React.FC = () => {
               }`}
             >
               <div className="p-2.5 rounded-xl bg-slate-950 border border-slate-800 text-emerald-400 shrink-0 mt-0.5">
-                {n.channel === 'sms' ? <Phone size={18} /> : <Bell size={18} />}
+                <Bell size={18} />
               </div>
 
               <div className="flex-1 space-y-1.5">

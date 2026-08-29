@@ -3,17 +3,18 @@ import { useCivic } from '../../context/CivicContext';
 import { 
   Building2, 
   Bell, 
-  Sparkles, 
-  ShieldAlert, 
-  SlidersHorizontal,
-  Radio,
-  Languages,
-  Menu,
-  X,
-  RotateCcw
+  Radio, 
+  Languages, 
+  Menu, 
+  X, 
+  Database, 
+  LogOut, 
+  User, 
+  ChevronDown 
 } from 'lucide-react';
 import { UserRole } from '../../types';
 import { EmergencyBroadcastModal } from '../common/EmergencyBroadcastModal';
+import { useNavigate } from 'react-router-dom';
 
 interface HeaderProps {
   sidebarOpen: boolean;
@@ -23,25 +24,27 @@ interface HeaderProps {
 export const Header: React.FC<HeaderProps> = ({ sidebarOpen, setSidebarOpen }) => {
   const { 
     userRole, 
-    setUserRole, 
     currentUser, 
     notifications, 
     markNotificationAsRead,
-    loadDemoScenario,
     language,
     setLanguage,
     t,
-    resetAllDataToDefaults
+    isSupabaseLive,
+    logout,
   } = useCivic();
 
+  const navigate = useNavigate();
+
   const [showNotifs, setShowNotifs] = useState(false);
-  const [showScenarioMenu, setShowScenarioMenu] = useState(false);
   const [showBroadcastModal, setShowBroadcastModal] = useState(false);
+  const [showUserMenu, setShowUserMenu] = useState(false);
 
   const unreadNotifs = notifications.filter((n) => !n.isRead);
 
-  const handleRoleChange = (role: UserRole) => {
-    setUserRole(role);
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
   };
 
   const toggleLanguage = () => {
@@ -61,6 +64,25 @@ export const Header: React.FC<HeaderProps> = ({ sidebarOpen, setSidebarOpen }) =
           <span className="hidden sm:inline">{t.subTitle}</span>
         </div>
         <div className="flex items-center gap-3 text-xs">
+          {/* Supabase Live Indicator */}
+          {isSupabaseLive ? (
+            <span
+              className="bg-emerald-950 text-emerald-300 border border-emerald-800 px-2 py-0.5 rounded text-[10px] font-mono font-semibold flex items-center gap-1"
+              title="Connected to live Supabase PostgreSQL backend"
+            >
+              <Database size={10} />
+              <span>Supabase Live</span>
+            </span>
+          ) : (
+            <span
+              className="bg-slate-900 text-slate-300 border border-slate-800 px-2 py-0.5 rounded text-[10px] font-mono font-semibold flex items-center gap-1"
+              title="Operating in Local Offline Storage mode"
+            >
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+              <span>Local Storage</span>
+            </span>
+          )}
+
           {/* Language Switcher */}
           <button
             onClick={toggleLanguage}
@@ -69,10 +91,6 @@ export const Header: React.FC<HeaderProps> = ({ sidebarOpen, setSidebarOpen }) =
             <Languages size={12} />
             <span>{language === 'en' ? 'मराठी' : 'English'}</span>
           </button>
-
-          <span className="bg-emerald-950 text-emerald-300 border border-emerald-800 px-2 py-0.5 rounded text-[10px] font-mono font-semibold hidden md:inline">
-            v1.2 ACTIVE
-          </span>
         </div>
       </div>
 
@@ -86,7 +104,10 @@ export const Header: React.FC<HeaderProps> = ({ sidebarOpen, setSidebarOpen }) =
             {sidebarOpen ? <X size={20} /> : <Menu size={20} />}
           </button>
 
-          <div className="flex items-center gap-3">
+          <div 
+            className="flex items-center gap-3 cursor-pointer" 
+            onClick={() => navigate(userRole === 'citizen' ? '/citizen-portal' : '/')}
+          >
             <div className="w-10 h-10 rounded-lg bg-emerald-700 flex items-center justify-center text-white shadow-inner font-bold text-xl border border-emerald-500/30">
               <Building2 size={22} className="text-emerald-100" />
             </div>
@@ -94,7 +115,7 @@ export const Header: React.FC<HeaderProps> = ({ sidebarOpen, setSidebarOpen }) =
               <div className="flex items-center gap-2">
                 <span className="font-extrabold text-lg tracking-tight text-white">CivicPulse</span>
                 <span className="bg-amber-500/20 text-amber-300 border border-amber-500/30 text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded hidden sm:inline">
-                  Municipal Decision System
+                  KMC Council
                 </span>
               </div>
               <p className="text-xs text-slate-400 hidden sm:block">
@@ -111,102 +132,12 @@ export const Header: React.FC<HeaderProps> = ({ sidebarOpen, setSidebarOpen }) =
             <button
               onClick={() => setShowBroadcastModal(true)}
               className="hidden sm:flex items-center gap-1.5 text-xs bg-amber-950/80 hover:bg-amber-900/90 text-amber-300 border border-amber-800 px-3 py-1.5 rounded-lg transition-colors font-medium"
-              title="Broadcast SMS / App alert to ward residents"
+              title="Broadcast alert to ward residents"
             >
               <Radio size={14} className="text-amber-400 animate-pulse" />
               <span>{t.broadcastAlert}</span>
             </button>
           )}
-
-          {/* Demo Scenario Presets Dropdown */}
-          <div className="relative">
-            <button
-              onClick={() => setShowScenarioMenu(!showScenarioMenu)}
-              className="flex items-center gap-1.5 text-xs bg-slate-800 hover:bg-slate-700 text-amber-300 border border-amber-500/40 px-3 py-1.5 rounded-lg transition-colors font-medium shadow-sm"
-              title="Test realistic municipal crisis trade-offs"
-            >
-              <Sparkles size={14} className="text-amber-400" />
-              <span className="hidden md:inline">Scenarios</span>
-            </button>
-
-            {showScenarioMenu && (
-              <div className="absolute right-0 mt-2 w-64 bg-slate-900 border border-slate-700 rounded-lg shadow-xl py-2 z-50 text-xs">
-                <div className="px-3 py-1.5 text-slate-400 font-semibold uppercase text-[10px] border-b border-slate-800">
-                  Select Crisis Simulation
-                </div>
-                <button
-                  onClick={() => {
-                    loadDemoScenario('monsoon');
-                    setShowScenarioMenu(false);
-                  }}
-                  className="w-full text-left px-3 py-2 hover:bg-slate-800 text-slate-200 hover:text-white flex items-start gap-2"
-                >
-                  <ShieldAlert size={16} className="text-red-400 shrink-0 mt-0.5" />
-                  <div>
-                    <div className="font-medium text-emerald-400">Monsoon Pipeline Flood</div>
-                    <div className="text-[11px] text-slate-400">Sewage contamination vs road repair dilemma</div>
-                  </div>
-                </button>
-                <button
-                  onClick={() => {
-                    loadDemoScenario('deficit_showcase');
-                    setShowScenarioMenu(false);
-                  }}
-                  className="w-full text-left px-3 py-2 hover:bg-slate-800 text-slate-200 hover:text-white flex items-start gap-2 border-t border-slate-800/60"
-                >
-                  <SlidersHorizontal size={16} className="text-amber-400 shrink-0 mt-0.5" />
-                  <div>
-                    <div className="font-medium text-amber-300">Jetting Machine Deficit</div>
-                    <div className="text-[11px] text-slate-400">Machinery breakdown & explainable deferral</div>
-                  </div>
-                </button>
-                <button
-                  onClick={() => {
-                    resetAllDataToDefaults();
-                    setShowScenarioMenu(false);
-                  }}
-                  className="w-full text-left px-3 py-2 hover:bg-slate-800 text-slate-400 hover:text-white flex items-center gap-2 border-t border-slate-800/60"
-                >
-                  <RotateCcw size={14} className="text-slate-400" />
-                  <span>Reset to Fresh Defaults</span>
-                </button>
-              </div>
-            )}
-          </div>
-
-          {/* Role Switcher Pills */}
-          <div className="bg-slate-950 p-1 rounded-lg border border-slate-800 flex items-center text-xs">
-            <button
-              onClick={() => handleRoleChange('citizen')}
-              className={`px-2.5 py-1 rounded-md transition-all font-medium ${
-                userRole === 'citizen'
-                  ? 'bg-blue-600 text-white shadow-sm'
-                  : 'text-slate-400 hover:text-slate-200'
-              }`}
-            >
-              {t.citizen}
-            </button>
-            <button
-              onClick={() => handleRoleChange('officer')}
-              className={`px-2.5 py-1 rounded-md transition-all font-medium ${
-                userRole === 'officer'
-                  ? 'bg-emerald-600 text-white shadow-sm'
-                  : 'text-slate-400 hover:text-slate-200'
-              }`}
-            >
-              {t.officer}
-            </button>
-            <button
-              onClick={() => handleRoleChange('admin')}
-              className={`px-2.5 py-1 rounded-md transition-all font-medium ${
-                userRole === 'admin'
-                  ? 'bg-purple-600 text-white shadow-sm'
-                  : 'text-slate-400 hover:text-slate-200'
-              }`}
-            >
-              {t.admin}
-            </button>
-          </div>
 
           {/* Notifications Center */}
           <div className="relative">
@@ -256,6 +187,53 @@ export const Header: React.FC<HeaderProps> = ({ sidebarOpen, setSidebarOpen }) =
                       </div>
                     ))
                   )}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* User Profile Card & Sign Out */}
+          <div className="relative">
+            <button
+              onClick={() => setShowUserMenu(!showUserMenu)}
+              className="flex items-center gap-2 pl-2 border-l border-slate-800 text-xs hover:opacity-90"
+            >
+              <div className="w-8 h-8 rounded-xl bg-emerald-800 flex items-center justify-center text-white font-bold text-xs border border-emerald-600/40">
+                {currentUser.fullName ? currentUser.fullName.charAt(0).toUpperCase() : 'U'}
+              </div>
+              <div className="hidden lg:block leading-tight text-left">
+                <div className="font-semibold text-white truncate max-w-[130px]">
+                  {currentUser.fullName || 'Active User'}
+                </div>
+                <div className="text-[10px] text-emerald-400 capitalize font-mono font-medium">
+                  {userRole}
+                </div>
+              </div>
+              <ChevronDown size={14} className="text-slate-400" />
+            </button>
+
+            {showUserMenu && (
+              <div className="absolute right-0 mt-2 w-56 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl py-2 z-50 text-xs">
+                <div className="px-3 py-2 border-b border-slate-800">
+                  <div className="font-bold text-white truncate">{currentUser.fullName}</div>
+                  <div className="text-[11px] text-slate-400 capitalize font-mono">
+                    Role: {userRole}
+                  </div>
+                  {currentUser.phone && (
+                    <div className="text-[10px] text-slate-500 mt-0.5">
+                      Phone: {currentUser.phone}
+                    </div>
+                  )}
+                </div>
+
+                <div className="pt-1">
+                  <button
+                    onClick={handleLogout}
+                    className="w-full text-left px-3 py-2 text-rose-400 hover:bg-rose-950/50 flex items-center gap-1.5 font-semibold transition-colors"
+                  >
+                    <LogOut size={13} />
+                    <span>Sign Out</span>
+                  </button>
                 </div>
               </div>
             )}

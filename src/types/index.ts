@@ -107,6 +107,8 @@ export interface StructuredIssueData {
   isPublicTransitRoute?: boolean;
   keywordsExtracted?: string[];
   extractedSummary?: string;
+  intakeSource?: 'ai_llm' | 'rule_fallback';
+  aiRationale?: string;
 }
 
 export interface PriorityScoreBreakdown {
@@ -163,6 +165,10 @@ export interface CivicIssue {
   affectedPopulationEstimate: number;
   confidenceScore: number; // 0.00 to 1.00
   missingAttributes: string[];
+  intakeSource?: 'ai_llm' | 'rule_fallback';
+  aiRationale?: string;
+  mergedTicketCount?: number;
+  mergedEvidenceNotes?: string[];
   
   status: IssueStatus;
   urgency: UrgencyLevel;
@@ -200,6 +206,7 @@ export interface AllocationPlanItem {
   allocatedResourceId?: string;
   allocatedResource?: MunicipalResource;
   itemStatus: PlanItemStatus;
+  allocationMethod?: 'priority' | 'backfill' | 'override';
   priorityAtAllocation: number;
   allocatedStaffCount: number;
   allocatedHours: number;

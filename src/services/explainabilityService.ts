@@ -128,6 +128,24 @@ export class ExplainabilityService {
   }
 
   /**
+   * Generates a precise, transparent allocation explanation, handling both priority-scheduled and backfilled items
+   */
+  public static generateAllocationExplanation(item: AllocationPlanItem): string {
+    if (item.itemStatus === 'approved') {
+      if (item.allocationMethod === 'backfill') {
+        return 'Approved via capacity backfill: fits remaining shift slack after higher-priority items were scheduled or deferred.';
+      }
+      return `Approved for shift execution based on priority rank #${item.scheduledOrder}.`;
+    }
+
+    if (item.deferralReason) {
+      return item.deferralReason;
+    }
+
+    return 'Deferred: Exceeds shift budget or machinery limits.';
+  }
+
+  /**
    * Generates a precise, transparent deferral explanation for issues that could not fit today's shift
    */
   public static generateDeferralExplanation(
@@ -164,6 +182,15 @@ export class ExplainabilityService {
   } {
     const score = issue.priorityScore?.finalScore ?? 50;
 
+    // Check if issue was merged duplicate
+    if (issue.mergedTicketCount && issue.mergedTicketCount > 1) {
+      return {
+        statusHeadline: `Merged Issue (${issue.mergedTicketCount} reports cluster)`,
+        detail: `Your report was merged with an existing municipal ticket (${issue.ticketNumber}) — ${issue.escalationCount} total reports for this issue. Priority elevated to ${score.toFixed(1)}/100 due to cluster frequency.`,
+        expectedAction: `Department SLA target: ${new Date(issue.slaDueAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', day: 'numeric', month: 'short' })}`,
+      };
+    }
+
     switch (issue.status) {
       case 'submitted':
         return {
@@ -173,7 +200,7 @@ export class ExplainabilityService {
         };
       case 'prioritized':
         return {
-          statusHeadline: `Prioritized (Score: ${score}/100)`,
+          statusHeadline: `Prioritized (Score: ${score.toFixed(1)}/100)`,
           detail: score >= 80 
             ? 'Classified as Critical Civic Emergency. High priority assigned due to public health/safety impact.'
             : 'Classified in active municipal queue. Evaluated against current departmental resources and scheduled shift plans.',

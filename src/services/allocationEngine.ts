@@ -30,7 +30,9 @@ export interface ResourceDeficitReport {
 
 export class AllocationEngine {
   /**
-   * Runs resource-aware multi-constraint allocation optimization
+   * Runs resource-aware multi-constraint allocation optimization with two passes:
+   * Pass 1: Priority-Ordered Knapsack Pass (Strict S_priority ranking)
+   * Pass 2: Capacity Backfill Pass (Greedy fill of remaining budget/staff slack with smaller deferred items)
    */
   public static generatePlan(input: AllocationEngineInput): {
     plan: AllocationPlan;
@@ -48,19 +50,15 @@ export class AllocationEngine {
       generatedBy = 'System Optimization Engine',
     } = input;
 
-    // Filter active operational resources for this department
     const deptResources = resources.filter(
       (r) => r.departmentId === department.id && r.isOperational
     );
 
-    // Track available resource pool
     let remainingBudget = budgetCap;
     let remainingStaff = availableStaff;
-    let totalStaffHoursPool = availableStaff * shiftHours;
     let staffHoursUtilized = 0;
     let budgetUtilized = 0;
 
-    // Available equipment map: ResourceType -> Available Resource objects
     const availableEquipmentPool = new Map<ResourceType, MunicipalResource[]>();
     for (const res of deptResources) {
       if (res.currentStatus === 'available') {
@@ -70,7 +68,6 @@ export class AllocationEngine {
       }
     }
 
-    // Sort issues by priority score descending (critical first)
     const sortedIssues = [...candidateIssues]
       .filter((iss) => iss.departmentId === department.id && iss.status !== 'resolved' && iss.status !== 'rejected')
       .sort((a, b) => {
@@ -79,13 +76,14 @@ export class AllocationEngine {
         return scoreB - scoreA;
       });
 
-    const planItems: AllocationPlanItem[] = [];
+    const approvedItems: AllocationPlanItem[] = [];
+    const initiallyDeferredItems: { issue: CivicIssue; bottleneck?: ResourceType; deferralReason?: string }[] = [];
     const blockedEquipmentCounts = new Map<ResourceType, { countNeeded: number; blockedIssuesCount: number }>();
-    let budgetShortfall = 0;
-    let staffShortfall = 0;
-
     let scheduledOrder = 1;
 
+    // -------------------------------------------------------------
+    // PASS 1: Strict Priority-Ordered Allocation Pass
+    // -------------------------------------------------------------
     for (const issue of sortedIssues) {
       const estimatedCost = issue.estimatedCost || 2000;
       const requiredStaff = issue.requiredStaffCount || 2;
@@ -111,7 +109,6 @@ export class AllocationEngine {
             blockedIssuesCount: current.blockedIssuesCount + 1,
           });
         } else {
-          // Temporarily hold candidate resource
           assignedResource = availableMachinery[0];
         }
       }
@@ -121,7 +118,6 @@ export class AllocationEngine {
         canAllocate = false;
         bottleneck = 'budget_funds';
         deferralReason = `Deferred: Estimated cost (₹${estimatedCost.toLocaleString()}) exceeds remaining daily budget (₹${remainingBudget.toLocaleString()}).`;
-        budgetShortfall += (estimatedCost - remainingBudget);
       }
 
       // 3. Check Staff Constraints
@@ -129,18 +125,15 @@ export class AllocationEngine {
         canAllocate = false;
         bottleneck = 'staff_crew';
         deferralReason = `Deferred: Requires ${requiredStaff} crew members, but only ${remainingStaff} unassigned technicians available.`;
-        staffShortfall += (requiredStaff - remainingStaff);
       }
 
       if (canAllocate) {
-        // COMMIT ALLOCATION
         remainingBudget -= estimatedCost;
         budgetUtilized += estimatedCost;
         remainingStaff -= requiredStaff;
         staffHoursUtilized += (requiredStaff * estimatedHours);
 
         if (requiredEquipmentType && assignedResource) {
-          // Remove assigned unit from available pool for this shift
           const pool = availableEquipmentPool.get(requiredEquipmentType) || [];
           availableEquipmentPool.set(
             requiredEquipmentType,
@@ -148,7 +141,7 @@ export class AllocationEngine {
           );
         }
 
-        planItems.push({
+        approvedItems.push({
           id: `item-${issue.id}-${Date.now()}`,
           planId: '',
           issueId: issue.id,
@@ -156,6 +149,7 @@ export class AllocationEngine {
           allocatedResourceId: assignedResource?.id,
           allocatedResource: assignedResource,
           itemStatus: 'approved',
+          allocationMethod: 'priority',
           priorityAtAllocation: issue.priorityScore?.finalScore ?? 0,
           allocatedStaffCount: requiredStaff,
           allocatedHours: estimatedHours,
@@ -163,26 +157,92 @@ export class AllocationEngine {
           scheduledOrder: scheduledOrder++,
         });
       } else {
-        // RECORD DEFERRAL
-        planItems.push({
+        initiallyDeferredItems.push({ issue, bottleneck, deferralReason });
+      }
+    }
+
+    // -------------------------------------------------------------
+    // PASS 2: Capacity Backfill Pass
+    // Greedily allocate smaller deferred items into remaining slack
+    // -------------------------------------------------------------
+    const remainingDeferredItems: AllocationPlanItem[] = [];
+    const sortedDeferred = [...initiallyDeferredItems].sort((a, b) => {
+      const footprintA = (a.issue.estimatedCost || 2000) + (a.issue.requiredStaffCount || 2) * 1000;
+      const footprintB = (b.issue.estimatedCost || 2000) + (b.issue.requiredStaffCount || 2) * 1000;
+      return footprintA - footprintB; // smallest footprint first
+    });
+
+    for (const item of sortedDeferred) {
+      const issue = item.issue;
+      const cost = issue.estimatedCost || 2000;
+      const staff = issue.requiredStaffCount || 2;
+      const hours = issue.estimatedHours || 4.0;
+      const eqType = issue.requiredEquipment;
+
+      let canBackfill = true;
+      let assignedResource: MunicipalResource | undefined = undefined;
+
+      if (eqType) {
+        const availableMachinery = availableEquipmentPool.get(eqType) || [];
+        if (availableMachinery.length === 0) {
+          canBackfill = false;
+        } else {
+          assignedResource = availableMachinery[0];
+        }
+      }
+
+      if (canBackfill && cost <= remainingBudget && staff <= remainingStaff) {
+        // Backfill committed
+        remainingBudget -= cost;
+        budgetUtilized += cost;
+        remainingStaff -= staff;
+        staffHoursUtilized += (staff * hours);
+
+        if (eqType && assignedResource) {
+          const pool = availableEquipmentPool.get(eqType) || [];
+          availableEquipmentPool.set(
+            eqType,
+            pool.filter((r) => r.id !== assignedResource!.id)
+          );
+        }
+
+        approvedItems.push({
+          id: `item-backfill-${issue.id}-${Date.now()}`,
+          planId: '',
+          issueId: issue.id,
+          issue,
+          allocatedResourceId: assignedResource?.id,
+          allocatedResource: assignedResource,
+          itemStatus: 'approved',
+          allocationMethod: 'backfill',
+          priorityAtAllocation: issue.priorityScore?.finalScore ?? 0,
+          allocatedStaffCount: staff,
+          allocatedHours: hours,
+          allocatedCost: cost,
+          scheduledOrder: scheduledOrder++,
+        });
+      } else {
+        remainingDeferredItems.push({
           id: `item-${issue.id}-${Date.now()}`,
           planId: '',
           issueId: issue.id,
           issue,
           itemStatus: 'deferred',
+          allocationMethod: 'priority',
           priorityAtAllocation: issue.priorityScore?.finalScore ?? 0,
           allocatedStaffCount: 0,
           allocatedHours: 0,
           allocatedCost: 0,
-          deferralReason,
-          bottleneckResource: bottleneck,
+          deferralReason: item.deferralReason,
+          bottleneckResource: item.bottleneck,
           scheduledOrder: scheduledOrder++,
         });
       }
     }
 
-    const approvedCount = planItems.filter((i) => i.itemStatus === 'approved').length;
-    const deferredCount = planItems.filter((i) => i.itemStatus === 'deferred').length;
+    const allPlanItems = [...approvedItems, ...remainingDeferredItems];
+    const approvedCount = approvedItems.length;
+    const deferredCount = remainingDeferredItems.length;
 
     const planCode = `PLAN-${department.code}-${targetDate.replace(/-/g, '')}-S${shiftNumber}`;
 
@@ -200,7 +260,7 @@ export class AllocationEngine {
       totalIssuesEvaluated: sortedIssues.length,
       issuesApprovedCount: approvedCount,
       issuesDeferredCount: deferredCount,
-      items: planItems,
+      items: allPlanItems,
       generatedBy,
       createdAt: new Date().toISOString(),
     };
@@ -211,6 +271,9 @@ export class AllocationEngine {
       countNeeded: Math.min(stats.countNeeded, 2),
       blockedIssuesCount: stats.blockedIssuesCount,
     }));
+
+    const budgetShortfall = remainingDeferredItems.reduce((sum, item) => sum + (item.issue?.estimatedCost || 0), 0);
+    const staffShortfall = remainingDeferredItems.reduce((sum, item) => sum + (item.issue?.requiredStaffCount || 0), 0);
 
     const recommendations: string[] = [];
     if (missingEquipmentTypes.length > 0) {

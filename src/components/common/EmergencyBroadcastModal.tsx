@@ -7,7 +7,7 @@ interface EmergencyBroadcastModalProps {
 }
 
 export const EmergencyBroadcastModal: React.FC<EmergencyBroadcastModalProps> = ({ onClose }) => {
-  const { zones, departments, currentUser, users } = useCivic();
+  const { zones, departments, currentUser } = useCivic();
 
   const [selectedWardId, setSelectedWardId] = useState<string>(zones[0]?.id || 'all');
   const [broadcastTitle, setBroadcastTitle] = useState<string>('Drinking Water Pipeline Maintenance Alert');

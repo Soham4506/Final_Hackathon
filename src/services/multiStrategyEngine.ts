@@ -24,7 +24,9 @@ export interface StrategyComparisonMetric {
 
 export class MultiStrategyEngine {
   /**
-   * Generates plan based on selected municipal optimization objective
+   * Generates plan based on selected municipal optimization objective with 2 passes:
+   * Pass 1: Strategy-sorted knapsack pass
+   * Pass 2: Capacity backfill pass for remaining shift slack
    */
   public static optimizePlan(
     department: Department,
@@ -54,32 +56,29 @@ export class MultiStrategyEngine {
       }
     }
 
-    // Filter relevant non-closed issues
     const issuesToEvaluate = [...candidateIssues].filter(
       (iss) => iss.departmentId === department.id && iss.status !== 'resolved' && iss.status !== 'rejected'
     );
 
-    // Sort candidate issues according to chosen strategy
     issuesToEvaluate.sort((a, b) => {
       if (strategy === 'max_population') {
-        // Population per rupee efficiency
         const effA = (a.affectedPopulationEstimate || 10) / Math.max(500, a.estimatedCost || 1000);
         const effB = (b.affectedPopulationEstimate || 10) / Math.max(500, b.estimatedCost || 1000);
         return effB - effA;
       } else if (strategy === 'cost_efficiency') {
-        // Lowest cost first to maximize volume of cleared tickets
         return (a.estimatedCost || 1000) - (b.estimatedCost || 1000);
       } else {
-        // Standard Max Risk / Deterministic Priority Score
         const scoreA = a.priorityScore?.finalScore ?? 0;
         const scoreB = b.priorityScore?.finalScore ?? 0;
         return scoreB - scoreA;
       }
     });
 
-    const planItems: AllocationPlanItem[] = [];
+    const approvedItems: AllocationPlanItem[] = [];
+    const initiallyDeferredItems: { issue: CivicIssue; bottleneck?: ResourceType; deferralReason?: string }[] = [];
     let scheduledOrder = 1;
 
+    // PASS 1: Strategy-Ordered Allocation
     for (const issue of issuesToEvaluate) {
       const cost = issue.estimatedCost || 2000;
       const staff = issue.requiredStaffCount || 2;
@@ -91,7 +90,6 @@ export class MultiStrategyEngine {
       let deferralReason: string | undefined = undefined;
       let assignedResource: MunicipalResource | undefined = undefined;
 
-      // Equipment constraint
       if (eqType) {
         const pool = availableEquipmentPool.get(eqType) || [];
         if (pool.length === 0) {
@@ -103,14 +101,12 @@ export class MultiStrategyEngine {
         }
       }
 
-      // Budget constraint
       if (canAllocate && cost > remainingBudget) {
         canAllocate = false;
         bottleneck = 'budget_funds';
         deferralReason = `Deferred: Cost ₹${cost.toLocaleString()} exceeds remaining budget ₹${remainingBudget.toLocaleString()}.`;
       }
 
-      // Staff constraint
       if (canAllocate && staff > remainingStaff) {
         canAllocate = false;
         bottleneck = 'staff_crew';
@@ -131,7 +127,7 @@ export class MultiStrategyEngine {
           );
         }
 
-        planItems.push({
+        approvedItems.push({
           id: `item-${issue.id}-${Date.now()}`,
           planId: '',
           issueId: issue.id,
@@ -139,6 +135,7 @@ export class MultiStrategyEngine {
           allocatedResourceId: assignedResource?.id,
           allocatedResource: assignedResource,
           itemStatus: 'approved',
+          allocationMethod: 'priority',
           priorityAtAllocation: issue.priorityScore?.finalScore ?? 0,
           allocatedStaffCount: staff,
           allocatedHours: hours,
@@ -146,25 +143,88 @@ export class MultiStrategyEngine {
           scheduledOrder: scheduledOrder++,
         });
       } else {
-        planItems.push({
+        initiallyDeferredItems.push({ issue, bottleneck, deferralReason });
+      }
+    }
+
+    // PASS 2: Capacity Backfill Pass
+    const remainingDeferredItems: AllocationPlanItem[] = [];
+    const sortedDeferred = [...initiallyDeferredItems].sort((a, b) => {
+      const footprintA = (a.issue.estimatedCost || 2000) + (a.issue.requiredStaffCount || 2) * 1000;
+      const footprintB = (b.issue.estimatedCost || 2000) + (b.issue.requiredStaffCount || 2) * 1000;
+      return footprintA - footprintB;
+    });
+
+    for (const item of sortedDeferred) {
+      const issue = item.issue;
+      const cost = issue.estimatedCost || 2000;
+      const staff = issue.requiredStaffCount || 2;
+      const hours = issue.estimatedHours || 4.0;
+      const eqType = issue.requiredEquipment;
+
+      let canBackfill = true;
+      let assignedResource: MunicipalResource | undefined = undefined;
+
+      if (eqType) {
+        const availableMachinery = availableEquipmentPool.get(eqType) || [];
+        if (availableMachinery.length === 0) {
+          canBackfill = false;
+        } else {
+          assignedResource = availableMachinery[0];
+        }
+      }
+
+      if (canBackfill && cost <= remainingBudget && staff <= remainingStaff) {
+        remainingBudget -= cost;
+        budgetUtilized += cost;
+        remainingStaff -= staff;
+        staffHoursUtilized += (staff * hours);
+
+        if (eqType && assignedResource) {
+          const pool = availableEquipmentPool.get(eqType) || [];
+          availableEquipmentPool.set(
+            eqType,
+            pool.filter((r) => r.id !== assignedResource!.id)
+          );
+        }
+
+        approvedItems.push({
+          id: `item-backfill-${issue.id}-${Date.now()}`,
+          planId: '',
+          issueId: issue.id,
+          issue,
+          allocatedResourceId: assignedResource?.id,
+          allocatedResource: assignedResource,
+          itemStatus: 'approved',
+          allocationMethod: 'backfill',
+          priorityAtAllocation: issue.priorityScore?.finalScore ?? 0,
+          allocatedStaffCount: staff,
+          allocatedHours: hours,
+          allocatedCost: cost,
+          scheduledOrder: scheduledOrder++,
+        });
+      } else {
+        remainingDeferredItems.push({
           id: `item-${issue.id}-${Date.now()}`,
           planId: '',
           issueId: issue.id,
           issue,
           itemStatus: 'deferred',
+          allocationMethod: 'priority',
           priorityAtAllocation: issue.priorityScore?.finalScore ?? 0,
           allocatedStaffCount: 0,
           allocatedHours: 0,
           allocatedCost: 0,
-          deferralReason,
-          bottleneckResource: bottleneck,
+          deferralReason: item.deferralReason,
+          bottleneckResource: item.bottleneck,
           scheduledOrder: scheduledOrder++,
         });
       }
     }
 
-    const approvedCount = planItems.filter((i) => i.itemStatus === 'approved').length;
-    const deferredCount = planItems.filter((i) => i.itemStatus === 'deferred').length;
+    const allPlanItems = [...approvedItems, ...remainingDeferredItems];
+    const approvedCount = approvedItems.length;
+    const deferredCount = remainingDeferredItems.length;
     const targetDate = new Date().toISOString().split('T')[0];
 
     return {
@@ -181,14 +241,11 @@ export class MultiStrategyEngine {
       totalIssuesEvaluated: issuesToEvaluate.length,
       issuesApprovedCount: approvedCount,
       issuesDeferredCount: deferredCount,
-      items: planItems,
+      items: allPlanItems,
       createdAt: new Date().toISOString(),
     };
   }
 
-  /**
-   * Evaluates and compares all 3 strategies side-by-side to assist officer decision trade-offs
-   */
   public static compareStrategies(
     department: Department,
     candidateIssues: CivicIssue[],
