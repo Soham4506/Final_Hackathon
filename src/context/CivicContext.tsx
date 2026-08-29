@@ -29,6 +29,7 @@ import {
   FloodDispatchOrder,
   ZoneDispatchPlanItem,
   DamDischargeAlertLevel,
+  SolverMode,
 } from '../types';
 import { 
   INITIAL_ZONES, 
@@ -165,7 +166,8 @@ interface CivicContextType {
     departmentId: string, 
     budgetCap?: number, 
     availableStaff?: number,
-    strategy?: AllocationStrategy
+    strategy?: AllocationStrategy,
+    solverMode?: SolverMode
   ) => { plan: AllocationPlan; deficitReport: ResourceDeficitReport };
 
   getStrategyComparisons: (
@@ -993,12 +995,13 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   };
 
-  // Run Allocation Engine
+  // Run Allocation Engine with optional exact DP Knapsack or Greedy mode
   const generateAllocationPlan = (
     departmentId: string,
     budgetCap?: number,
     availableStaff?: number,
-    strategy: AllocationStrategy = 'max_risk'
+    strategy: AllocationStrategy = 'max_risk',
+    solverMode: SolverMode = 'greedy'
   ) => {
     const dept = departments.find((d) => d.id === departmentId) || departments[0];
     const { plan, deficitReport } = AllocationEngine.generatePlan({
@@ -1008,6 +1011,7 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       budgetCap,
       availableStaff,
       generatedBy: currentUser.fullName,
+      solverMode,
     });
 
     if (strategy !== 'max_risk') {
@@ -1019,6 +1023,8 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         budgetCap || dept.dailyBudgetLimit,
         availableStaff || 8
       );
+      specializedPlan.solverMode = solverMode;
+      specializedPlan.optimalityComparison = plan.optimalityComparison;
       setActivePlans((prev) => [specializedPlan, ...prev.filter((p) => p.departmentId !== departmentId)]);
       return { plan: specializedPlan, deficitReport };
     }

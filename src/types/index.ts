@@ -223,6 +223,22 @@ export interface AllocationPlanItem {
   overrideReason?: string;
 }
 
+export type SolverMode = 'greedy' | 'dp_knapsack';
+
+export interface OptimalityComparison {
+  greedyValue: number;
+  greedyApprovedCount: number;
+  greedyBudgetUtilized: number;
+  dpValue: number;
+  dpApprovedCount: number;
+  dpBudgetUtilized: number;
+  optimalityGapPct: number; // e.g. 98.4%
+  activeSolver: SolverMode;
+  candidateCount: number;
+  isCapped: boolean;
+  capMessage?: string;
+}
+
 export interface AllocationPlan {
   id: string;
   planCode: string; // e.g. 'PLAN-2026-08-29-SHIFT-1'
@@ -230,6 +246,8 @@ export interface AllocationPlan {
   targetDate: string;
   shiftNumber: number;
   status: PlanStatus;
+  solverMode?: SolverMode;
+  optimalityComparison?: OptimalityComparison;
   
   totalBudgetCap: number;
   totalStaffAvailable: number;

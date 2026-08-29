@@ -50,6 +50,7 @@ export const PriorityEnginePage: React.FC = () => {
   const [availableStaff, setAvailableStaff] = useState<number>(8);
   const [shiftNumber, setShiftNumber] = useState<number>(1);
   const [selectedStrategy, setSelectedStrategy] = useState<AllocationStrategy>('max_risk');
+  const [solverMode, setSolverMode] = useState<'greedy' | 'dp_knapsack'>('greedy');
 
   const [currentPlan, setCurrentPlan] = useState<AllocationPlan | null>(null);
   const [deficitReport, setDeficitReport] = useState<ResourceDeficitReport | null>(null);
@@ -66,15 +67,15 @@ export const PriorityEnginePage: React.FC = () => {
   useEffect(() => {
     if (selectedDept) {
       setBudgetCap(selectedDept.dailyBudgetLimit);
-      handleRunEngine(selectedStrategy);
+      handleRunEngine(selectedStrategy, solverMode);
     }
-  }, [selectedDeptId, selectedStrategy]);
+  }, [selectedDeptId, selectedStrategy, solverMode]);
 
-  const handleRunEngine = (strat: AllocationStrategy = selectedStrategy) => {
+  const handleRunEngine = (strat: AllocationStrategy = selectedStrategy, mode: 'greedy' | 'dp_knapsack' = solverMode) => {
     setIsGenerating(true);
     setPlanCommitted(false);
     setTimeout(() => {
-      const result = generateAllocationPlan(selectedDeptId, budgetCap, availableStaff, strat);
+      const result = generateAllocationPlan(selectedDeptId, budgetCap, availableStaff, strat, mode);
       setCurrentPlan(result.plan);
       setDeficitReport(result.deficitReport);
       
@@ -98,6 +99,7 @@ export const PriorityEnginePage: React.FC = () => {
 
   const approvedItems = currentPlan?.items.filter((i) => i.itemStatus === 'approved') || [];
   const deferredItems = currentPlan?.items.filter((i) => i.itemStatus === 'deferred') || [];
+  const optComp = currentPlan?.optimalityComparison;
 
   return (
     <div className="space-y-5">
@@ -120,7 +122,7 @@ export const PriorityEnginePage: React.FC = () => {
 
         <div className="flex items-center gap-3">
           <button
-            onClick={() => handleRunEngine(selectedStrategy)}
+            onClick={() => handleRunEngine(selectedStrategy, solverMode)}
             disabled={isGenerating}
             className="flex items-center gap-2 bg-[#131b2e] hover:bg-[#1e2a47] text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow-xs transition-all tracking-wider uppercase"
           >
@@ -130,7 +132,7 @@ export const PriorityEnginePage: React.FC = () => {
         </div>
       </div>
 
-      {/* Control Panel Strip (Department, Budget, Staff, Strategy) */}
+      {/* Control Panel Strip (Department, Budget, Staff, Strategy, Solver Algorithm) */}
       <div className="bg-white border border-[#76777d]/20 rounded-2xl p-5 shadow-xs space-y-4">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-xs">
           {/* Department */}
@@ -176,7 +178,7 @@ export const PriorityEnginePage: React.FC = () => {
 
           {/* Strategy Selector */}
           <div>
-            <label className="block text-[#1b1b1d] font-bold mb-1">Mathematical Strategy</label>
+            <label className="block text-[#1b1b1d] font-bold mb-1">Municipal Objective</label>
             <select
               value={selectedStrategy}
               onChange={(e) => setSelectedStrategy(e.target.value as AllocationStrategy)}
@@ -188,6 +190,58 @@ export const PriorityEnginePage: React.FC = () => {
               <option value="balanced">4. Balanced Multi-Objective</option>
             </select>
           </div>
+        </div>
+
+        {/* Algorithm Solver Toggle & Optimality Defense Strip */}
+        <div className="pt-3 border-t border-[#76777d]/15 flex flex-col md:flex-row items-start md:items-center justify-between gap-3 text-xs">
+          <div className="flex items-center gap-2">
+            <span className="font-bold text-[#1b1b1d] text-[11px] uppercase tracking-wider">Solver Algorithm:</span>
+            <div className="bg-[#f0edef] p-1 rounded-xl border border-[#76777d]/15 flex items-center gap-1">
+              <button
+                type="button"
+                onClick={() => setSolverMode('greedy')}
+                className={`px-3 py-1.5 rounded-lg font-bold text-[11px] transition-all flex items-center gap-1.5 ${
+                  solverMode === 'greedy'
+                    ? 'bg-[#131b2e] text-white shadow-xs'
+                    : 'text-[#57657b] hover:text-[#1b1b1d]'
+                }`}
+              >
+                <span>⚡ Fast Greedy Heuristic</span>
+                <span className="font-mono text-[10px] opacity-75">O(N log N)</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setSolverMode('dp_knapsack')}
+                className={`px-3 py-1.5 rounded-lg font-bold text-[11px] transition-all flex items-center gap-1.5 ${
+                  solverMode === 'dp_knapsack'
+                    ? 'bg-[#131b2e] text-white shadow-xs'
+                    : 'text-[#57657b] hover:text-[#1b1b1d]'
+                }`}
+              >
+                <span>🎯 Exact 0/1 Knapsack DP</span>
+                <span className="font-mono text-[10px] opacity-75">O(N · W)</span>
+              </button>
+            </div>
+          </div>
+
+          {optComp && (
+            <div className="flex flex-wrap items-center gap-2 text-[11px]">
+              <span className="bg-emerald-50 text-emerald-800 border border-emerald-300 font-mono font-bold px-2.5 py-1 rounded-lg flex items-center gap-1.5 shadow-2xs">
+                <span>Greedy Yield: <strong>{optComp.greedyValue} pts</strong></span>
+                <span>•</span>
+                <span>DP Optimum: <strong>{optComp.dpValue} pts</strong></span>
+                <span>•</span>
+                <span className="text-emerald-900 bg-emerald-100 px-1.5 py-0.2 rounded">
+                  {optComp.optimalityGapPct}% Optimal
+                </span>
+              </span>
+              {optComp.isCapped && (
+                <span className="bg-amber-50 text-amber-800 border border-amber-300 px-2 py-1 rounded-lg text-[10px] font-bold">
+                  Queue &gt; 40 (Fast Greedy Active)
+                </span>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Strategy Comparison Matrix */}
