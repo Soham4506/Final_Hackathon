@@ -9,14 +9,12 @@ import {
   Users,
   Navigation,
   CheckCircle2,
-  FileCheck,
-  Building,
-  ArrowRight,
+  FileText,
   HelpCircle,
   Clock,
   Radio,
-  FileText,
-  MapPin,
+  Building2,
+  ArrowRight,
 } from 'lucide-react';
 import { useCivic } from '../context/CivicContext';
 import { FloodPriorityEngine } from '../services/floodPriorityEngine';
@@ -28,47 +26,35 @@ export const FloodPriorityPage: React.FC = () => {
     damTelemetry,
     zoneFloodProfiles,
     emergencyInventory,
-    floodDispatchOrders,
     updateDamDischarge,
     generateFloodDispatchPlan,
     approveFloodDispatchOrder,
     language,
-    t,
   } = useCivic();
 
   const [simulatedDischarge, setSimulatedDischarge] = useState<number>(
     damTelemetry.currentDischargeCusecs
   );
-  const [simulatedRainfall, setSimulatedRainfall] = useState<number>(
-    damTelemetry.rainfallMmPerHour
-  );
   const [selectedZoneAId, setSelectedZoneAId] = useState<string>(
     zoneFloodProfiles[0]?.id || 'zf-01'
   );
   const [selectedZoneBId, setSelectedZoneBId] = useState<string>(
-    zoneFloodProfiles[3]?.id || 'zf-03'
+    zoneFloodProfiles[2]?.id || 'zf-02'
   );
   const [activeModalOrder, setActiveModalOrder] = useState<FloodDispatchOrder | null>(null);
 
-  // Synchronize telemetry with slider changes
+  // Sync telemetry with slider
   const handleDischargeChange = (val: number) => {
     setSimulatedDischarge(val);
-    updateDamDischarge(val, simulatedRainfall);
+    updateDamDischarge(val);
   };
 
-  const handleRainfallChange = (val: number) => {
-    setSimulatedRainfall(val);
-    updateDamDischarge(simulatedDischarge, val);
-  };
-
-  // Preset scenarios
-  const applyPreset = (discharge: number, rain: number) => {
+  const applyPreset = (discharge: number) => {
     setSimulatedDischarge(discharge);
-    setSimulatedRainfall(rain);
-    updateDamDischarge(discharge, rain);
+    updateDamDischarge(discharge);
   };
 
-  // Compute live dispatch plan for current simulation parameters
+  // Compute live dispatch plan
   const currentPlan = useMemo(() => {
     return FloodPriorityEngine.generateEmergencyDispatchPlan(
       zoneFloodProfiles,
@@ -79,7 +65,7 @@ export const FloodPriorityPage: React.FC = () => {
 
   // Compute pairwise comparison
   const zoneA = zoneFloodProfiles.find((z) => z.id === selectedZoneAId) || zoneFloodProfiles[0];
-  const zoneB = zoneFloodProfiles.find((z) => z.id === selectedZoneBId) || zoneFloodProfiles[3];
+  const zoneB = zoneFloodProfiles.find((z) => z.id === selectedZoneBId) || zoneFloodProfiles[2];
 
   const pairwiseComparison = useMemo(() => {
     if (!zoneA || !zoneB) return null;
@@ -92,56 +78,55 @@ export const FloodPriorityPage: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6 pb-12">
-      {/* PAGE HEADER */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-gradient-to-r from-slate-900 via-rose-950/40 to-slate-900 p-6 rounded-2xl border border-rose-900/50 shadow-xl">
-        <div className="space-y-1">
-          <div className="flex items-center gap-2 text-rose-400">
-            <ShieldAlert size={22} className="animate-pulse" />
-            <span className="text-xs font-mono font-bold uppercase tracking-widest">
-              {language === 'mr' ? 'कोपरगाव नगरपरिषद • पूर नियंत्रण केंद्र' : 'KOPARGAON MUNICIPAL COUNCIL • DISASTER RESPONSE'}
+    <div className="space-y-5 pb-10">
+      {/* 1. TOP HEADER BANNER */}
+      <div className="bg-white border border-[#76777d]/20 rounded-2xl p-5 sm:p-6 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <div className="flex items-center gap-2 mb-1">
+            <span className="bg-rose-50 text-rose-800 border border-rose-200 text-[10px] font-mono uppercase font-bold px-2 py-0.5 rounded flex items-center gap-1">
+              <Waves size={12} className="text-rose-600 animate-pulse" />
+              Godavari River Flood Command
             </span>
+            <span className="text-xs text-[#76777d]">Ahilyanagar District, Kopargaon</span>
           </div>
-          <h1 className="text-2xl md:text-3xl font-black text-white tracking-tight">
-            {language === 'mr' ? 'पूर इशारा व आपत्कालीन साधन वाटप' : 'Flood Alert & Emergency Resource Dispatch'}
+          <h1 className="text-xl sm:text-2xl font-bold text-[#1b1b1d] tracking-tight">
+            {language === 'mr' ? 'पूर आपत्कालीन साधन वाटप व प्राधान्यक्रम' : 'Flood Alert & Emergency Resource Dispatch'}
           </h1>
-          <p className="text-sm text-slate-300">
+          <p className="text-xs sm:text-sm text-[#57657b] mt-1 max-w-2xl">
             {language === 'mr'
-              ? 'गोदावरी नदी पूर धोका विश्लेषण: कोणत्या प्रभागाला प्रथम आपत्कालीन मदत मिळेल व का?'
-              : 'Deterministic Godavari River flood risk engine: which zone gets rescue fleet first, why, and in what exact sequence.'}
+              ? 'एकाच वेळी अनेक भागात पूर धोका उद्भवल्यास ज्या भागात तीव्रता (Severity) जास्त असते, त्या भागाला मर्यादित बचाव नौका व पंप प्रथम दिले जातात.'
+              : 'When multiple areas are at risk, emergency rescue teams and heavy pumps are dispatched strictly in order of Area Severity.'}
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
-          <button
-            onClick={handleGenerateOfficialOrder}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-500 hover:to-red-500 text-white text-xs font-bold transition-all shadow-lg shadow-rose-950 border border-rose-400/30"
-          >
-            <FileText size={16} />
-            <span>{language === 'mr' ? 'अधिकृत आपत्कालीन कार्य आदेश' : 'Issue Official Dispatch Order'}</span>
-          </button>
-        </div>
+        <button
+          onClick={handleGenerateOfficialOrder}
+          className="flex items-center gap-2 bg-[#ba1a1a] hover:bg-[#93000a] text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow-xs transition-all tracking-wider uppercase shrink-0"
+        >
+          <FileText size={14} />
+          <span>{language === 'mr' ? 'अधिकृत कार्य आदेश जारी करा' : 'Issue Official Work Order'}</span>
+        </button>
       </div>
 
-      {/* SECTION 1: LIVE DAM DISCHARGE & TELEMETRY SIMULATOR */}
-      <div className="p-5 md:p-6 rounded-2xl bg-slate-900/90 border border-slate-800 space-y-4 shadow-lg">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800 pb-3">
+      {/* 2. DAM DISCHARGE CONTROLLER & TELEMETRY */}
+      <div className="bg-white border border-[#76777d]/20 rounded-2xl p-5 shadow-xs space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[#76777d]/15 pb-3">
           <div className="flex items-center gap-2">
-            <Waves className="text-rose-400" size={20} />
-            <h3 className="text-sm font-bold uppercase tracking-wider text-white">
-              {language === 'mr' ? 'धरण विसर्ग व नदी पातळी सिम्युलेटर' : 'Upstream Dam Discharge & River Inflow Telemetry'}
+            <Sliders size={16} className="text-[#131b2e]" />
+            <h3 className="font-bold text-xs uppercase tracking-wider text-[#1b1b1d]">
+              {language === 'mr' ? 'धरण विसर्ग व पूर सिम्युलेटर' : 'Upstream Dam Release Telemetry & Simulation'}
             </h3>
           </div>
 
           <div className="flex items-center gap-2 text-xs">
-            <span className="text-slate-400 font-mono">Status:</span>
+            <span className="text-[#76777d] font-medium">Alert Status:</span>
             <span
-              className={`px-2.5 py-1 rounded-full text-xs font-mono font-bold uppercase border ${
+              className={`px-2.5 py-0.5 rounded-md text-[11px] font-mono font-bold uppercase ${
                 damTelemetry.alertLevel === 'catastrophic' || damTelemetry.alertLevel === 'danger_red'
-                  ? 'bg-red-950 text-red-300 border-red-800 animate-pulse'
+                  ? 'bg-red-100 text-red-800 border border-red-300 animate-pulse'
                   : damTelemetry.alertLevel === 'alert_orange'
-                  ? 'bg-amber-950 text-amber-300 border-amber-800'
-                  : 'bg-emerald-950 text-emerald-300 border-emerald-800'
+                  ? 'bg-amber-100 text-amber-800 border border-amber-300'
+                  : 'bg-emerald-100 text-emerald-800 border border-emerald-300'
               }`}
             >
               {damTelemetry.alertLevel.replace('_', ' ')}
@@ -149,394 +134,320 @@ export const FloodPriorityPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Quick Scenario Presets */}
+        {/* Quick Presets */}
         <div className="flex flex-wrap items-center gap-2 text-xs">
-          <span className="text-slate-400 text-xs font-semibold mr-1">Presets:</span>
+          <span className="text-[#76777d] font-semibold mr-1">Discharge Presets:</span>
           <button
-            onClick={() => applyPreset(6500, 10)}
-            className={`px-2.5 py-1 rounded-lg border text-xs transition-all ${
+            onClick={() => applyPreset(6500)}
+            className={`px-3 py-1.5 rounded-lg border text-xs font-semibold transition-all ${
               simulatedDischarge <= 10000
-                ? 'bg-emerald-950 text-emerald-300 border-emerald-700 font-bold'
-                : 'bg-slate-800/80 text-slate-300 border-slate-700 hover:bg-slate-800'
+                ? 'bg-emerald-50 text-emerald-800 border-emerald-300 font-bold'
+                : 'bg-[#fcf8fa] text-[#1b1b1d] border-[#76777d]/20 hover:bg-slate-100'
             }`}
           >
-            Normal (6.5k cusecs)
+            Normal Flow (6,500 Cusecs)
           </button>
           <button
-            onClick={() => applyPreset(22000, 28)}
-            className={`px-2.5 py-1 rounded-lg border text-xs transition-all ${
-              simulatedDischarge > 15000 && simulatedDischarge <= 25000
-                ? 'bg-yellow-950 text-yellow-300 border-yellow-700 font-bold'
-                : 'bg-slate-800/80 text-slate-300 border-slate-700 hover:bg-slate-800'
-            }`}
-          >
-            Advisory Gate Rise (22k cusecs)
-          </button>
-          <button
-            onClick={() => applyPreset(38000, 45)}
-            className={`px-2.5 py-1 rounded-lg border text-xs transition-all ${
+            onClick={() => applyPreset(32000)}
+            className={`px-3 py-1.5 rounded-lg border text-xs font-semibold transition-all ${
               simulatedDischarge > 25000 && simulatedDischarge <= 45000
-                ? 'bg-amber-950 text-amber-300 border-amber-700 font-bold'
-                : 'bg-slate-800/80 text-slate-300 border-slate-700 hover:bg-slate-800'
+                ? 'bg-amber-50 text-amber-800 border-amber-300 font-bold'
+                : 'bg-[#fcf8fa] text-[#1b1b1d] border-[#76777d]/20 hover:bg-slate-100'
             }`}
           >
-            Alert Orange (38k cusecs)
+            Alert Orange (32,000 Cusecs)
           </button>
           <button
-            onClick={() => applyPreset(58000, 65)}
-            className={`px-2.5 py-1 rounded-lg border text-xs transition-all ${
-              simulatedDischarge > 45000 && simulatedDischarge <= 65000
-                ? 'bg-rose-950 text-rose-300 border-rose-700 font-bold'
-                : 'bg-slate-800/80 text-slate-300 border-slate-700 hover:bg-slate-800'
+            onClick={() => applyPreset(62000)}
+            className={`px-3 py-1.5 rounded-lg border text-xs font-semibold transition-all ${
+              simulatedDischarge > 45000
+                ? 'bg-red-50 text-red-800 border-red-300 font-bold'
+                : 'bg-[#fcf8fa] text-[#1b1b1d] border-[#76777d]/20 hover:bg-slate-100'
             }`}
           >
-            Danger Red Spillage (58k cusecs)
-          </button>
-          <button
-            onClick={() => applyPreset(75000, 90)}
-            className={`px-2.5 py-1 rounded-lg border text-xs transition-all ${
-              simulatedDischarge > 65000
-                ? 'bg-red-950 text-red-300 border-red-700 font-bold animate-pulse'
-                : 'bg-slate-800/80 text-slate-300 border-slate-700 hover:bg-slate-800'
-            }`}
-          >
-            Flash Flood Emergency (75k cusecs)
+            Danger Red Spillage (62,000 Cusecs)
           </button>
         </div>
 
-        {/* Sliders Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-2 text-xs">
-          {/* Dam Discharge Slider */}
-          <div className="space-y-2 md:col-span-2">
+        {/* Slider & River Level Gauge */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5 pt-1 text-xs">
+          <div className="md:col-span-2 space-y-2 bg-[#fcf8fa] p-4 rounded-xl border border-[#76777d]/15">
             <div className="flex justify-between items-center">
-              <label className="text-slate-300 font-semibold flex items-center gap-1.5">
-                <Sliders size={14} className="text-rose-400" />
-                <span>Nandur Madhmeshwar Dam Release Rate</span>
-              </label>
-              <span className="font-mono text-base font-black text-rose-400">
+              <span className="font-semibold text-[#1b1b1d]">
+                Nandur Madhmeshwar Dam Release Rate:
+              </span>
+              <span className="font-mono text-base font-bold text-[#ba1a1a]">
                 {simulatedDischarge.toLocaleString()} Cusecs
               </span>
             </div>
             <input
               type="range"
-              min="2000"
-              max="80000"
+              min="3000"
+              max="75000"
               step="1000"
               value={simulatedDischarge}
               onChange={(e) => handleDischargeChange(parseInt(e.target.value))}
-              className="w-full accent-rose-500 cursor-pointer h-2 bg-slate-950 rounded-lg"
+              className="w-full accent-red-600 cursor-pointer h-2 bg-slate-200 rounded-lg"
             />
-            <div className="flex justify-between text-[10px] text-slate-500 font-mono">
-              <span>0 (Safe Flow)</span>
-              <span>25k (Alert Orange)</span>
-              <span>50k (Danger Red)</span>
-              <span>80k (Catastrophic)</span>
+            <div className="flex justify-between text-[10px] text-[#76777d] font-mono">
+              <span>0 (Normal Flow)</span>
+              <span>25,000 (Alert Orange)</span>
+              <span>50,000+ (Danger Red)</span>
             </div>
           </div>
 
-          {/* Gauge Level & Rainfall */}
-          <div className="p-3.5 bg-slate-950 rounded-xl border border-slate-800 space-y-2">
+          <div className="bg-[#fcf8fa] p-4 rounded-xl border border-[#76777d]/15 space-y-2">
             <div className="flex justify-between items-center">
-              <span className="text-slate-400 font-medium">Godavari Gauge Level:</span>
-              <span className="font-mono font-bold text-white text-sm">
+              <span className="text-[#76777d] font-medium">Godavari Gauge Level:</span>
+              <span className="font-mono font-bold text-[#1b1b1d] text-sm">
                 {damTelemetry.waterLevelMeters} m
               </span>
             </div>
             <div className="flex justify-between items-center text-[11px]">
-              <span className="text-slate-400">High Flood Danger Level:</span>
-              <span className="font-mono font-semibold text-rose-400">498.50 m</span>
+              <span className="text-[#76777d]">High Flood Line (HFL):</span>
+              <span className="font-mono font-bold text-red-700">498.50 m</span>
             </div>
-            <div className="w-full bg-slate-900 h-2 rounded-full overflow-hidden border border-slate-800">
+            <div className="w-full bg-slate-200 h-2 rounded-full overflow-hidden">
               <div
                 className={`h-full transition-all duration-300 ${
                   damTelemetry.waterLevelMeters >= 498
-                    ? 'bg-red-500'
+                    ? 'bg-red-600'
                     : damTelemetry.waterLevelMeters >= 496
                     ? 'bg-amber-500'
-                    : 'bg-emerald-500'
+                    : 'bg-emerald-600'
                 }`}
                 style={{
                   width: `${Math.min(100, ((damTelemetry.waterLevelMeters - 490) / 10) * 100)}%`,
                 }}
               />
             </div>
-            <div className="text-[10px] text-slate-500 flex justify-between">
-              <span>Rainfall: {damTelemetry.rainfallMmPerHour} mm/hr</span>
-              <span>ETA Peak: {damTelemetry.timeToPeakArrivalHours} hrs</span>
-            </div>
           </div>
         </div>
       </div>
 
-      {/* SECTION 2: EMERGENCY FLEET INVENTORY KNAPSACK */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 text-xs">
-        {/* Rescue Boats */}
-        <div className="p-3.5 bg-slate-900/80 rounded-xl border border-slate-800 space-y-1.5 shadow-sm">
-          <div className="flex items-center justify-between text-blue-400">
-            <LifeBuoy size={18} />
-            <span className="text-[10px] uppercase font-bold text-slate-400">Rescue Boats</span>
+      {/* 3. EMERGENCY FLEET INVENTORY (5 Clean Cards) */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+        <div className="bg-white p-3.5 rounded-xl border border-[#76777d]/20 shadow-xs space-y-1">
+          <div className="flex items-center justify-between text-blue-700">
+            <LifeBuoy size={16} />
+            <span className="text-[10px] font-bold uppercase tracking-wider text-[#76777d]">Rescue Boats</span>
           </div>
-          <div className="font-mono font-bold text-lg text-white">
-            {emergencyInventory.rescueBoats.available} / {emergencyInventory.rescueBoats.total}
+          <div className="text-xl font-bold font-mono text-[#1b1b1d]">
+            {emergencyInventory.rescueBoats.available} <span className="text-xs font-normal text-[#76777d]">/ {emergencyInventory.rescueBoats.total}</span>
           </div>
-          <span className="text-[10px] text-slate-400 block">12-person motorized SDRF</span>
+          <span className="text-[10px] text-[#76777d] block">Motorized 12-man boats</span>
         </div>
 
-        {/* De-watering Pumps */}
-        <div className="p-3.5 bg-slate-900/80 rounded-xl border border-slate-800 space-y-1.5 shadow-sm">
-          <div className="flex items-center justify-between text-emerald-400">
-            <Sliders size={18} />
-            <span className="text-[10px] uppercase font-bold text-slate-400">Heavy Pumps</span>
+        <div className="bg-white p-3.5 rounded-xl border border-[#76777d]/20 shadow-xs space-y-1">
+          <div className="flex items-center justify-between text-emerald-700">
+            <Sliders size={16} />
+            <span className="text-[10px] font-bold uppercase tracking-wider text-[#76777d]">Heavy Pumps</span>
           </div>
-          <div className="font-mono font-bold text-lg text-white">
-            {emergencyInventory.dewateringPumps.available} / {emergencyInventory.dewateringPumps.total}
+          <div className="text-xl font-bold font-mono text-[#1b1b1d]">
+            {emergencyInventory.dewateringPumps.available} <span className="text-xs font-normal text-[#76777d]">/ {emergencyInventory.dewateringPumps.total}</span>
           </div>
-          <span className="text-[10px] text-slate-400 block">4,500 LPM diesel submersible</span>
+          <span className="text-[10px] text-[#76777d] block">4,500 LPM diesel pumps</span>
         </div>
 
-        {/* Sandbag Bunding Trucks */}
-        <div className="p-3.5 bg-slate-900/80 rounded-xl border border-slate-800 space-y-1.5 shadow-sm">
-          <div className="flex items-center justify-between text-amber-400">
-            <Truck size={18} />
-            <span className="text-[10px] uppercase font-bold text-slate-400">Sandbag Trucks</span>
+        <div className="bg-white p-3.5 rounded-xl border border-[#76777d]/20 shadow-xs space-y-1">
+          <div className="flex items-center justify-between text-amber-700">
+            <Truck size={16} />
+            <span className="text-[10px] font-bold uppercase tracking-wider text-[#76777d]">Sandbag Trucks</span>
           </div>
-          <div className="font-mono font-bold text-lg text-white">
-            {emergencyInventory.sandbagTrucks.available} / {emergencyInventory.sandbagTrucks.total}
+          <div className="text-xl font-bold font-mono text-[#1b1b1d]">
+            {emergencyInventory.sandbagTrucks.available} <span className="text-xs font-normal text-[#76777d]">/ {emergencyInventory.sandbagTrucks.total}</span>
           </div>
-          <span className="text-[10px] text-slate-400 block">500 bags per tipper truck</span>
+          <span className="text-[10px] text-[#76777d] block">500 bags per truck</span>
         </div>
 
-        {/* Evacuation Buses */}
-        <div className="p-3.5 bg-slate-900/80 rounded-xl border border-slate-800 space-y-1.5 shadow-sm">
-          <div className="flex items-center justify-between text-purple-400">
-            <Users size={18} />
-            <span className="text-[10px] uppercase font-bold text-slate-400">Evac Buses</span>
+        <div className="bg-white p-3.5 rounded-xl border border-[#76777d]/20 shadow-xs space-y-1">
+          <div className="flex items-center justify-between text-purple-700">
+            <Users size={16} />
+            <span className="text-[10px] font-bold uppercase tracking-wider text-[#76777d]">Evac Buses</span>
           </div>
-          <div className="font-mono font-bold text-lg text-white">
-            {emergencyInventory.evacuationBuses.available} / {emergencyInventory.evacuationBuses.total}
+          <div className="text-xl font-bold font-mono text-[#1b1b1d]">
+            {emergencyInventory.evacuationBuses.available} <span className="text-xs font-normal text-[#76777d]">/ {emergencyInventory.evacuationBuses.total}</span>
           </div>
-          <span className="text-[10px] text-slate-400 block">45-seater citizen evacuation</span>
+          <span className="text-[10px] text-[#76777d] block">45-seater transit buses</span>
         </div>
 
-        {/* Medical Relief Vans */}
-        <div className="p-3.5 bg-slate-900/80 rounded-xl border border-slate-800 space-y-1.5 shadow-sm col-span-2 sm:col-span-1">
-          <div className="flex items-center justify-between text-rose-400">
-            <Radio size={18} />
-            <span className="text-[10px] uppercase font-bold text-slate-400">Medical Vans</span>
+        <div className="bg-white p-3.5 rounded-xl border border-[#76777d]/20 shadow-xs space-y-1 col-span-2 sm:col-span-1">
+          <div className="flex items-center justify-between text-rose-700">
+            <Radio size={16} />
+            <span className="text-[10px] font-bold uppercase tracking-wider text-[#76777d]">Medical Vans</span>
           </div>
-          <div className="font-mono font-bold text-lg text-white">
-            {emergencyInventory.medicalReliefVans.available} / {emergencyInventory.medicalReliefVans.total}
+          <div className="text-xl font-bold font-mono text-[#1b1b1d]">
+            {emergencyInventory.medicalReliefVans.available} <span className="text-xs font-normal text-[#76777d]">/ {emergencyInventory.medicalReliefVans.total}</span>
           </div>
-          <span className="text-[10px] text-slate-400 block">Mobile emergency clinic</span>
+          <span className="text-[10px] text-[#76777d] block">Rapid trauma clinics</span>
         </div>
       </div>
 
-      {/* SECTION 3: DETERMINISTIC SEVERITY-DRIVEN EMERGENCY RESOURCE DISPATCH */}
-      <div className="p-5 md:p-6 rounded-2xl bg-slate-900/90 border border-slate-800 space-y-4 shadow-xl">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800 pb-3">
+      {/* 4. SEVERITY-BASED RESOURCE DISPATCH TABLE */}
+      <div className="bg-white border border-[#76777d]/20 rounded-2xl shadow-xs overflow-hidden">
+        {/* Card Header */}
+        <div className="p-5 border-b border-[#76777d]/15 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
           <div>
-            <span className="text-[10px] font-mono uppercase text-rose-400 font-bold tracking-widest block">
-              Multi-Area High Severity Conflict Resolution Matrix
-            </span>
-            <h3 className="text-base font-bold text-white flex items-center gap-2 mt-0.5">
-              <Navigation size={18} className="text-rose-400" />
+            <h3 className="font-bold text-sm text-[#1b1b1d] uppercase tracking-wider flex items-center gap-2">
+              <Navigation size={16} className="text-[#ba1a1a]" />
               <span>
                 {language === 'mr'
-                  ? 'तीव्रता-आधारित आपत्कालीन पथके वाटप क्रमवारी'
-                  : 'Severity-First Emergency Team & Resource Dispatch Sequence (Rank #1 to #8)'}
+                  ? 'तीव्रता-आधारित आपत्कालीन वाटप क्रमवारी (Severity Ranking)'
+                  : 'Severity-First Emergency Resource Dispatch Sequence'}
               </span>
             </h3>
-            <p className="text-xs text-slate-300 mt-1">
-              {language === 'mr'
-                ? 'जेव्हा एकाच वेळी अनेक भागांना पूर धोका असतो, तेव्हा ज्या भागात जीविताचा व जलमग्नतेचा तीव्रता गुण (Severity) सर्वाधिक असतो, त्या भागाला मर्यादित बचाव नौका व पंप प्रथम दिले जातात.'
-                : 'When multiple areas are simultaneously at risk, the area with highest Severity Score (Life Threat + Submergence Head + Infrastructure) receives limited emergency rescue teams and pumps first.'}
+            <p className="text-xs text-[#57657b] mt-0.5">
+              Ranked from highest severity to lowest. Limited emergency teams are deployed to Rank #1 first.
             </p>
           </div>
 
-          <div className="text-xs text-slate-400 font-mono text-right shrink-0">
-            <div>Zones at Risk: <strong className="text-rose-400">{currentPlan.totalZonesAtRisk}</strong></div>
-            <div>Covered Citizens: <strong className="text-white">{currentPlan.totalVulnerableCitizensCovered.toLocaleString()}</strong></div>
+          <div className="text-xs font-mono text-[#76777d] bg-[#fcf8fa] px-3 py-1.5 rounded-xl border border-[#76777d]/15">
+            At-Risk Zones: <strong className="text-[#ba1a1a]">{currentPlan.totalZonesAtRisk}</strong> • Citizens Protected: <strong className="text-[#1b1b1d]">{currentPlan.totalVulnerableCitizensCovered.toLocaleString()}</strong>
           </div>
         </div>
 
-        {/* Ranked Zone Cards with Severity Breakdown */}
-        <div className="space-y-3.5">
-          {currentPlan.items.map((item) => (
-            <div
-              key={item.zoneId}
-              className={`p-4.5 rounded-xl border transition-all space-y-3 ${
-                item.severityAssessment.severityLevel === 'extreme'
-                  ? 'bg-rose-950/35 border-rose-600 shadow-lg shadow-rose-950/50'
-                  : item.severityAssessment.severityLevel === 'critical'
-                  ? 'bg-rose-950/20 border-rose-800/60'
-                  : item.severityAssessment.severityLevel === 'high'
-                  ? 'bg-amber-950/20 border-amber-800/40'
-                  : 'bg-slate-950/60 border-slate-800'
-              }`}
-            >
-              {/* Top Row: Rank, Zone Name, Severity Badge, Fleet */}
-              <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
-                {/* Left: Severity Rank & Zone Title */}
-                <div className="flex items-start gap-3 min-w-0 flex-1">
-                  <div
-                    className={`shrink-0 w-11 h-11 rounded-xl flex flex-col items-center justify-center font-mono font-black border ${
-                      item.rank === 1
-                        ? 'bg-rose-600 text-white border-rose-400 shadow-md shadow-rose-900'
-                        : item.rank === 2
-                        ? 'bg-rose-900 text-rose-200 border-rose-700'
-                        : item.severityAssessment.severityLevel === 'critical'
-                        ? 'bg-amber-900 text-amber-200 border-amber-700'
-                        : 'bg-slate-800 text-slate-300 border-slate-700'
-                    }`}
-                  >
-                    <span className="text-[9px] uppercase font-bold tracking-tight opacity-75">RANK</span>
-                    <span className="text-sm leading-none">#{item.rank}</span>
-                  </div>
+        {/* Clean Table View */}
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-xs border-collapse">
+            <thead>
+              <tr className="bg-[#fcf8fa] text-[#76777d] border-b border-[#76777d]/15 text-[11px] font-bold uppercase tracking-wider">
+                <th className="py-3 px-4 w-16">Rank</th>
+                <th className="py-3 px-4">Zone / Ward</th>
+                <th className="py-3 px-4">Severity Level</th>
+                <th className="py-3 px-4">Why This Area First? (Threat Reason)</th>
+                <th className="py-3 px-4">Assigned Emergency Fleet</th>
+                <th className="py-3 px-4">Designated Shelter</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-[#76777d]/10">
+              {currentPlan.items.map((item) => (
+                <tr
+                  key={item.zoneId}
+                  className={`hover:bg-slate-50/80 transition-colors ${
+                    item.severityAssessment.severityLevel === 'extreme'
+                      ? 'bg-red-50/30'
+                      : item.severityAssessment.severityLevel === 'critical'
+                      ? 'bg-amber-50/20'
+                      : ''
+                  }`}
+                >
+                  {/* Rank */}
+                  <td className="py-3.5 px-4 font-mono font-bold">
+                    <span
+                      className={`inline-flex items-center justify-center w-7 h-7 rounded-lg text-xs font-bold ${
+                        item.rank === 1
+                          ? 'bg-[#ba1a1a] text-white shadow-xs'
+                          : item.rank === 2
+                          ? 'bg-[#131b2e] text-white'
+                          : 'bg-slate-100 text-[#1b1b1d]'
+                      }`}
+                    >
+                      #{item.rank}
+                    </span>
+                  </td>
 
-                  <div className="space-y-1 min-w-0 flex-1">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <h4 className="font-bold text-white text-sm truncate" title={item.zoneName}>
-                        {item.zoneName}
-                      </h4>
-                      <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-800 text-slate-300">
-                        {item.zoneCode}
-                      </span>
+                  {/* Zone Name */}
+                  <td className="py-3.5 px-4">
+                    <div className="font-bold text-[#1b1b1d] text-xs">{item.zoneName}</div>
+                    <div className="text-[11px] text-[#76777d] font-mono">{item.zoneCode}</div>
+                  </td>
+
+                  {/* Severity Badge */}
+                  <td className="py-3.5 px-4">
+                    <div className="space-y-1">
                       <span
-                        className={`text-[10px] font-mono font-bold uppercase px-2 py-0.5 rounded border ${
+                        className={`inline-block px-2 py-0.5 rounded text-[10px] font-bold uppercase font-mono ${
                           item.severityAssessment.severityLevel === 'extreme'
-                            ? 'bg-rose-950 text-rose-300 border-rose-700 animate-pulse'
+                            ? 'bg-red-100 text-red-800 border border-red-200'
                             : item.severityAssessment.severityLevel === 'critical'
-                            ? 'bg-amber-950 text-amber-300 border-amber-700'
+                            ? 'bg-amber-100 text-amber-800 border border-amber-200'
                             : item.severityAssessment.severityLevel === 'high'
-                            ? 'bg-yellow-950 text-yellow-300 border-yellow-700'
-                            : 'bg-slate-800 text-slate-300 border-slate-700'
+                            ? 'bg-yellow-100 text-yellow-800 border border-yellow-200'
+                            : 'bg-emerald-100 text-emerald-800 border border-emerald-200'
                         }`}
                       >
-                        {item.severityAssessment.severityLevel.toUpperCase()} SEVERITY • {item.severityAssessment.severityScore} pts
+                        {item.severityAssessment.severityLevel} • {item.severityAssessment.severityScore} pts
+                      </span>
+                      <span className="text-[10px] text-[#76777d] block font-mono">
+                        ETA: {item.dispatchEtaMinutes}m ({item.severityAssessment.urgencyWindowMinutes}m window)
                       </span>
                     </div>
+                  </td>
 
-                    <p className="text-xs text-slate-300">
+                  {/* Rationale */}
+                  <td className="py-3.5 px-4 max-w-xs">
+                    <p className="text-xs text-[#1b1b1d] font-medium line-clamp-2">
                       {item.severityAssessment.severityRationale}
                     </p>
-                  </div>
-                </div>
+                    <span className="text-[10px] text-[#76777d] block mt-0.5 italic">
+                      {item.severityConflictResolutionNote}
+                    </span>
+                  </td>
 
-                {/* Right: ETA & Shelter */}
-                <div className="text-right text-xs space-y-1 shrink-0">
-                  <div className="font-mono text-slate-300">
-                    Response Window: <strong className="text-rose-400">{item.severityAssessment.urgencyWindowMinutes} mins</strong> (ETA: {item.dispatchEtaMinutes}m)
-                  </div>
-                  <div className="text-emerald-400 font-medium truncate max-w-[240px]" title={item.designatedShelterSite}>
-                    🏥 Shelter: {item.designatedShelterSite}
-                  </div>
-                </div>
-              </div>
+                  {/* Assigned Fleet */}
+                  <td className="py-3.5 px-4">
+                    <div className="flex flex-wrap gap-1 font-mono text-[11px]">
+                      {item.allocatedResources.rescueBoats > 0 && (
+                        <span className="px-2 py-0.5 rounded bg-blue-50 text-blue-800 border border-blue-200 font-bold">
+                          🚤 {item.allocatedResources.rescueBoats} Boats
+                        </span>
+                      )}
+                      {item.allocatedResources.dewateringPumps > 0 && (
+                        <span className="px-2 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-200 font-bold">
+                          ⚙️ {item.allocatedResources.dewateringPumps} Pumps
+                        </span>
+                      )}
+                      {item.allocatedResources.sandbagTrucks > 0 && (
+                        <span className="px-2 py-0.5 rounded bg-amber-50 text-amber-800 border border-amber-200 font-bold">
+                          🧱 {item.allocatedResources.sandbagTrucks} Trucks
+                        </span>
+                      )}
+                      {item.allocatedResources.evacuationBuses > 0 && (
+                        <span className="px-2 py-0.5 rounded bg-purple-50 text-purple-800 border border-purple-200 font-bold">
+                          🚌 {item.allocatedResources.evacuationBuses} Buses
+                        </span>
+                      )}
+                      {item.allocatedResources.rescueBoats === 0 &&
+                        item.allocatedResources.dewateringPumps === 0 &&
+                        item.allocatedResources.sandbagTrucks === 0 && (
+                          <span className="text-[#76777d] italic text-[11px]">Standby Monitoring</span>
+                        )}
+                    </div>
+                  </td>
 
-              {/* Middle Row: Severity Score Factor Bars */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2 border-t border-slate-800/80 text-[11px]">
-                <div className="p-2 rounded-lg bg-slate-900 border border-slate-800 space-y-1">
-                  <div className="flex justify-between text-slate-400">
-                    <span>Life Threat (40%)</span>
-                    <strong className="text-rose-400 font-mono">{item.severityAssessment.lifeThreatSeverity}/100</strong>
-                  </div>
-                  <div className="w-full bg-slate-950 h-1.5 rounded-full overflow-hidden">
-                    <div
-                      className="bg-rose-500 h-full"
-                      style={{ width: `${item.severityAssessment.lifeThreatSeverity}%` }}
-                    />
-                  </div>
-                </div>
-
-                <div className="p-2 rounded-lg bg-slate-900 border border-slate-800 space-y-1">
-                  <div className="flex justify-between text-slate-400">
-                    <span>Submergence Head (30%)</span>
-                    <strong className="text-blue-400 font-mono">{item.severityAssessment.submergenceDepthSeverity}/100</strong>
-                  </div>
-                  <div className="w-full bg-slate-950 h-1.5 rounded-full overflow-hidden">
-                    <div
-                      className="bg-blue-500 h-full"
-                      style={{ width: `${item.severityAssessment.submergenceDepthSeverity}%` }}
-                    />
-                  </div>
-                </div>
-
-                <div className="p-2 rounded-lg bg-slate-900 border border-slate-800 space-y-1">
-                  <div className="flex justify-between text-slate-400">
-                    <span>Critical Infra (20%)</span>
-                    <strong className="text-amber-400 font-mono">{item.severityAssessment.criticalInfrastructureSeverity}/100</strong>
-                  </div>
-                  <div className="w-full bg-slate-950 h-1.5 rounded-full overflow-hidden">
-                    <div
-                      className="bg-amber-500 h-full"
-                      style={{ width: `${item.severityAssessment.criticalInfrastructureSeverity}%` }}
-                    />
-                  </div>
-                </div>
-
-                <div className="p-2 rounded-lg bg-slate-900 border border-slate-800 space-y-1">
-                  <div className="flex justify-between text-slate-400">
-                    <span>Drainage Blockage (10%)</span>
-                    <strong className="text-teal-400 font-mono">{item.severityAssessment.isolationBlockageSeverity}/100</strong>
-                  </div>
-                  <div className="w-full bg-slate-950 h-1.5 rounded-full overflow-hidden">
-                    <div
-                      className="bg-teal-500 h-full"
-                      style={{ width: `${item.severityAssessment.isolationBlockageSeverity}%` }}
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Bottom Row: Deployed Emergency Teams & Conflict Rationale */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-2 border-t border-slate-800/80 text-xs">
-                <div className="flex flex-wrap items-center gap-1.5">
-                  <span className="text-[10px] uppercase font-bold text-slate-400 mr-1">Emergency Teams:</span>
-                  {item.assignedTeams.length > 0 ? (
-                    item.assignedTeams.map((team) => (
-                      <span
-                        key={team.teamId}
-                        className="px-2 py-0.5 rounded-lg bg-slate-900 text-slate-200 border border-slate-700 text-[11px] font-mono font-medium"
-                      >
-                        🚨 {team.teamName}
-                      </span>
-                    ))
-                  ) : (
-                    <span className="text-slate-500 italic text-[11px]">No active teams required (Precautionary monitoring)</span>
-                  )}
-                </div>
-
-                <div className="text-[11px] text-slate-400 italic">
-                  💡 {item.severityConflictResolutionNote}
-                </div>
-              </div>
-            </div>
-          ))}
+                  {/* Shelter */}
+                  <td className="py-3.5 px-4">
+                    <span className="text-xs text-[#1b1b1d] font-medium block">
+                      {item.designatedShelterSite}
+                    </span>
+                    <span className="text-[10px] text-[#76777d] font-mono block">
+                      {item.evacuationRoute}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </div>
 
-      {/* SECTION 4: PAIRWISE EXPLAINABILITY COMPARISON TOOL */}
-      <div className="p-5 md:p-6 rounded-2xl bg-slate-900/90 border border-slate-800 space-y-4 shadow-xl">
-        <div className="border-b border-slate-800 pb-3">
-          <span className="text-[10px] font-mono uppercase text-rose-400 font-bold tracking-widest block">
-            Mathematical Decision Transparency
-          </span>
-          <h3 className="text-base font-bold text-white flex items-center gap-2 mt-0.5">
-            <HelpCircle size={18} className="text-rose-400" />
-            <span>
-              {language === 'mr' ? 'तुलनात्मक प्राधान्य स्पष्टीकरण (Pairwise Explainability)' : 'Pairwise Zone Risk & Resource Priority Comparison'}
-            </span>
+      {/* 5. PAIRWISE COMPARISON EXPLAINER (Simple & Clean) */}
+      <div className="bg-white border border-[#76777d]/20 rounded-2xl p-5 shadow-xs space-y-3">
+        <div className="border-b border-[#76777d]/15 pb-2.5">
+          <h3 className="font-bold text-xs uppercase tracking-wider text-[#1b1b1d] flex items-center gap-1.5">
+            <HelpCircle size={15} className="text-[#131b2e]" />
+            <span>Why did Area A get resources before Area B? (Pairwise Explainability)</span>
           </h3>
         </div>
 
-        {/* Dropdowns to select Zone A and Zone B */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+        {/* Dropdowns */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
           <div className="space-y-1">
-            <label className="text-slate-300 font-semibold">Select Primary Zone A:</label>
+            <label className="text-[#76777d] font-semibold">Select Area 1:</label>
             <select
               value={selectedZoneAId}
               onChange={(e) => setSelectedZoneAId(e.target.value)}
-              className="w-full bg-slate-950 text-white p-2.5 rounded-xl border border-slate-700 font-medium"
+              className="w-full bg-[#fcf8fa] text-[#1b1b1d] p-2 rounded-xl border border-[#76777d]/20 font-medium"
             >
               {zoneFloodProfiles.map((z) => (
                 <option key={z.id} value={z.id}>
@@ -547,11 +458,11 @@ export const FloodPriorityPage: React.FC = () => {
           </div>
 
           <div className="space-y-1">
-            <label className="text-slate-300 font-semibold">Select Comparison Zone B:</label>
+            <label className="text-[#76777d] font-semibold">Select Area 2:</label>
             <select
               value={selectedZoneBId}
               onChange={(e) => setSelectedZoneBId(e.target.value)}
-              className="w-full bg-slate-950 text-white p-2.5 rounded-xl border border-slate-700 font-medium"
+              className="w-full bg-[#fcf8fa] text-[#1b1b1d] p-2 rounded-xl border border-[#76777d]/20 font-medium"
             >
               {zoneFloodProfiles.map((z) => (
                 <option key={z.id} value={z.id}>
@@ -562,36 +473,20 @@ export const FloodPriorityPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Comparison Explainability Card */}
+        {/* Result Explanation */}
         {pairwiseComparison && (
-          <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-3 text-xs">
-            <div className="flex items-center justify-between border-b border-slate-900 pb-2">
-              <span className="font-bold text-rose-400">
-                {pairwiseComparison.higherZoneName} ranks HIGHER than {pairwiseComparison.lowerZoneName}
+          <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 text-xs space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="font-bold text-[#ba1a1a]">
+                Decision: {pairwiseComparison.higherZoneName} receives resources FIRST
               </span>
-              <span className="font-mono font-bold px-2 py-0.5 rounded bg-rose-950 text-rose-300 border border-rose-800">
-                +{pairwiseComparison.scoreDifference} pts difference
+              <span className="px-2 py-0.5 rounded bg-red-100 text-red-800 text-[10px] font-mono font-bold">
+                +{pairwiseComparison.scoreDifference} pts higher severity
               </span>
             </div>
-
-            <p className="text-slate-200 leading-relaxed">
+            <p className="text-[#1b1b1d] leading-relaxed">
               {language === 'mr' ? pairwiseComparison.plainExplanationMr : pairwiseComparison.plainExplanation}
             </p>
-
-            {/* Contributing Factor Decomposition */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-2 border-t border-slate-900 text-[11px]">
-              {pairwiseComparison.topContributingFactors.map((f, i) => (
-                <div key={i} className="p-2 rounded bg-slate-900 border border-slate-800/80 space-y-0.5">
-                  <div className="flex justify-between font-semibold">
-                    <span className="text-slate-300">{f.factor}</span>
-                    <span className={f.delta >= 0 ? 'text-rose-400 font-mono' : 'text-emerald-400 font-mono'}>
-                      {f.delta >= 0 ? `+${f.delta.toFixed(1)} pts` : `${f.delta.toFixed(1)} pts`}
-                    </span>
-                  </div>
-                  <span className="text-[10px] text-slate-400 block">{f.detail}</span>
-                </div>
-              ))}
-            </div>
           </div>
         )}
       </div>
