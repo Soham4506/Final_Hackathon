@@ -15,13 +15,10 @@ import {
   Database,
   ChevronDown,
   Smartphone,
-  ShieldAlert,
-  UserCheck,
 } from 'lucide-react';
 import { useCivic } from '../../context/CivicContext';
 import { OperationalStatusModal } from '../modals/OperationalStatusModal';
 import { CitizenSmsInboxModal } from '../common/CitizenSmsInboxModal';
-import { UserRole } from '../../types';
 
 interface HeaderProps {
   sidebarOpen: boolean;
@@ -31,7 +28,6 @@ interface HeaderProps {
 export const Header: React.FC<HeaderProps> = ({ sidebarOpen, setSidebarOpen }) => {
   const {
     userRole,
-    setUserRole,
     currentUser,
     notifications,
     markNotificationAsRead,
@@ -59,15 +55,6 @@ export const Header: React.FC<HeaderProps> = ({ sidebarOpen, setSidebarOpen }) =
 
   const toggleLanguage = () => {
     setLanguage(language === 'en' ? 'mr' : 'en');
-  };
-
-  const handleRoleChange = (newRole: UserRole) => {
-    setUserRole(newRole);
-    if (newRole === 'citizen') {
-      navigate('/citizen-portal');
-    } else {
-      navigate('/');
-    }
   };
 
   const handleSearchSubmit = (e: React.FormEvent) => {
@@ -246,45 +233,6 @@ export const Header: React.FC<HeaderProps> = ({ sidebarOpen, setSidebarOpen }) =
                   {currentUser.phone && (
                     <p className="text-[11px] text-slate-500 mt-0.5 font-mono">{currentUser.phone}</p>
                   )}
-                </div>
-
-                {/* Role Switcher for Hackathon Demonstrations */}
-                <div className="p-3 bg-[#fcf8fa] border-b border-slate-100 space-y-2">
-                  <span className="text-[10px] font-bold uppercase text-[#76777d] block">
-                    Switch Security Role (RLS):
-                  </span>
-                  <div className="grid grid-cols-3 gap-1">
-                    <button
-                      onClick={() => handleRoleChange('citizen')}
-                      className={`px-2 py-1.5 rounded-lg text-[10px] font-bold uppercase transition-all ${
-                        userRole === 'citizen'
-                          ? 'bg-[#131b2e] text-white shadow-xs'
-                          : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-100'
-                      }`}
-                    >
-                      Citizen
-                    </button>
-                    <button
-                      onClick={() => handleRoleChange('officer')}
-                      className={`px-2 py-1.5 rounded-lg text-[10px] font-bold uppercase transition-all ${
-                        userRole === 'officer'
-                          ? 'bg-[#131b2e] text-white shadow-xs'
-                          : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-100'
-                      }`}
-                    >
-                      Officer
-                    </button>
-                    <button
-                      onClick={() => handleRoleChange('admin')}
-                      className={`px-2 py-1.5 rounded-lg text-[10px] font-bold uppercase transition-all ${
-                        userRole === 'admin'
-                          ? 'bg-[#131b2e] text-white shadow-xs'
-                          : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-100'
-                      }`}
-                    >
-                      Admin
-                    </button>
-                  </div>
                 </div>
 
                 <div className="p-2">
