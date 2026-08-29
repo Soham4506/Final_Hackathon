@@ -164,15 +164,25 @@ const KOPARGAON_POIS = [
   { id: 'poi-5', name: 'Godavari Water Pumping Station', type: 'water', coords: [19.8948, 74.4789] as [number, number], emoji: '💧' },
 ];
 
-export const CivicMapPage: React.FC = () => {
-  const { issues, zones } = useCivic();
+// Godavari River High Flood Inundation Buffer Zone
+const GODAVARI_FLOOD_BUFFER_ZONE: [number, number][] = [
+  [19.8995, 74.4720],
+  [19.9020, 74.4780],
+  [19.8960, 74.4830],
+  [19.8900, 74.4810],
+  [19.8870, 74.4760],
+  [19.8910, 74.4710],
+];
 
+export const CivicMapPage: React.FC = () => {
+  const { issues, damTelemetry } = useCivic();
   const [selectedIssue, setSelectedIssue] = useState<CivicIssue | null>(null);
   const [explainIssue, setExplainIssue] = useState<CivicIssue | null>(null);
   const [mapSearch, setMapSearch] = useState('');
 
   // Layer toggles matching KMC Operational Intelligence UI
   const [showIncidents, setShowIncidents] = useState(true);
+  const [showFloodZones, setShowFloodZones] = useState(true);
   const [showWaterSCADA, setShowWaterSCADA] = useState(true);
   const [showWasteHotspots, setShowWasteHotspots] = useState(true);
   const [showLiveFleet, setShowLiveFleet] = useState(true);
@@ -235,6 +245,19 @@ export const CivicMapPage: React.FC = () => {
                 checked={showIncidents}
                 onChange={(e) => setShowIncidents(e.target.checked)}
                 className="w-4 h-4 text-[#131b2e] rounded focus:ring-0"
+              />
+            </label>
+
+            <label className="flex items-center justify-between p-2 rounded-xl bg-rose-50/70 hover:bg-rose-100/70 cursor-pointer transition-colors border border-rose-200">
+              <span className="flex items-center gap-2 font-medium text-rose-900">
+                <span className="w-2.5 h-2.5 rounded-full bg-rose-600 animate-pulse"></span>
+                <span>Godavari Flood Hazard ({damTelemetry.currentDischargeCusecs.toLocaleString()} Cusecs)</span>
+              </span>
+              <input
+                type="checkbox"
+                checked={showFloodZones}
+                onChange={(e) => setShowFloodZones(e.target.checked)}
+                className="w-4 h-4 text-rose-600 rounded focus:ring-0"
               />
             </label>
 
@@ -350,6 +373,26 @@ export const CivicMapPage: React.FC = () => {
                   </LeafletTooltip>
                 </Polygon>
               ))}
+
+              {/* Godavari Flood Inundation Buffer Zone */}
+              {showFloodZones && (
+                <Polygon
+                  positions={GODAVARI_FLOOD_BUFFER_ZONE}
+                  pathOptions={{
+                    color: '#e11d48',
+                    weight: 3,
+                    fillColor: '#f43f5e',
+                    fillOpacity: damTelemetry.currentDischargeCusecs >= 25000 ? 0.35 : 0.15,
+                    dashArray: '6, 6',
+                  }}
+                >
+                  <LeafletTooltip sticky>
+                    <div className="text-xs font-bold font-sans text-rose-700">
+                      🌊 Godavari High Flood Plain (Discharge: {damTelemetry.currentDischargeCusecs.toLocaleString()} Cusecs)
+                    </div>
+                  </LeafletTooltip>
+                </Polygon>
+              )}
 
               {/* POI Markers */}
               {showEmergencyHubs &&

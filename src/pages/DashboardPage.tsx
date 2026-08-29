@@ -20,6 +20,8 @@ import {
   Activity,
   Gavel,
   Sliders,
+  Waves,
+  ShieldAlert,
 } from 'lucide-react';
 import {
   ResponsiveContainer,
@@ -35,7 +37,7 @@ import {
 
 export const DashboardPage: React.FC = () => {
   const navigate = useNavigate();
-  const { issues, resources, departments, zones, activePlans } = useCivic();
+  const { issues, resources, departments, zones, activePlans, damTelemetry, language } = useCivic();
 
   const totalIssues = issues.length;
   const activeIssues = issues.filter((i) => i.status !== 'resolved' && i.status !== 'rejected');
@@ -90,6 +92,13 @@ export const DashboardPage: React.FC = () => {
 
         <div className="flex flex-wrap gap-2.5 shrink-0">
           <button
+            onClick={() => navigate('/flood-priority')}
+            className="flex items-center gap-2 bg-gradient-to-r from-rose-700 to-red-700 hover:from-rose-600 hover:to-red-600 text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow-xs transition-all tracking-wider uppercase border border-rose-500/30"
+          >
+            <Waves size={14} className="animate-pulse" />
+            <span>Flood Alert Dispatch</span>
+          </button>
+          <button
             onClick={() => navigate('/priority-engine')}
             className="flex items-center gap-2 bg-[#131b2e] hover:bg-[#1e2a47] text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow-xs transition-all tracking-wider uppercase"
           >
@@ -103,6 +112,33 @@ export const DashboardPage: React.FC = () => {
             <span>Citizen Portal</span>
           </button>
         </div>
+      </div>
+
+      {/* Flood Early Warning Telemetry Card */}
+      <div className="p-4 rounded-xl bg-gradient-to-r from-rose-950 via-slate-900 to-slate-950 border border-rose-800/60 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-slate-200">
+        <div className="flex items-center gap-3">
+          <div className="p-2.5 rounded-lg bg-rose-600 text-white shadow-md">
+            <Waves size={20} className="animate-pulse" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="font-bold text-white text-sm">Godavari River Flood Inflow & Dam Surge Telemetry</span>
+              <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold uppercase bg-rose-900 text-rose-200 border border-rose-700">
+                {damTelemetry.alertLevel.replace('_', ' ')}
+              </span>
+            </div>
+            <p className="text-[11px] text-slate-400 mt-0.5">
+              Upstream Dam Discharge: <strong className="text-rose-400 font-mono">{damTelemetry.currentDischargeCusecs.toLocaleString()} Cusecs</strong> • Gauge Level: <strong className="text-white font-mono">{damTelemetry.waterLevelMeters} m</strong> (Danger: 498.5 m)
+            </p>
+          </div>
+        </div>
+
+        <button
+          onClick={() => navigate('/flood-priority')}
+          className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs transition-all shrink-0 shadow-sm"
+        >
+          <span>Resource Sequence →</span>
+        </button>
       </div>
 
       {/* Top KPI Strip (6 Cards in KMC Visual Style) */}
