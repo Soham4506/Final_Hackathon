@@ -49,3 +49,5 @@ Thumbs.db
 *.sw?
 kmc-extracted/
 *.zip
+supabase/.temp/
+.temp/
