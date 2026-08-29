@@ -1,7 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { AllocationPlan, Department } from '../../types';
 import { useCivic } from '../../context/CivicContext';
-import { X, Printer, Building2, CheckCircle2, ShieldAlert, QrCode, FileText } from 'lucide-react';
+import { X, Printer, Building2, CheckCircle2, ShieldAlert, QrCode, FileText, Minus, Maximize2 } from 'lucide-react';
 
 interface WorkOrderModalProps {
   plan: AllocationPlan;
@@ -10,6 +10,7 @@ interface WorkOrderModalProps {
 
 export const WorkOrderModal: React.FC<WorkOrderModalProps> = ({ plan, onClose }) => {
   const { departments, zones, currentUser } = useCivic();
+  const [isMinimized, setIsMinimized] = useState<boolean>(false);
   const dept = departments.find((d) => d.id === plan.departmentId);
 
   const approvedItems = plan.items.filter((i) => i.itemStatus === 'approved');
@@ -17,6 +18,42 @@ export const WorkOrderModal: React.FC<WorkOrderModalProps> = ({ plan, onClose })
   const handlePrint = () => {
     window.print();
   };
+
+  if (isMinimized) {
+    return (
+      <div className="fixed bottom-5 right-5 z-50 bg-white border-2 border-emerald-600 shadow-2xl rounded-2xl p-3.5 flex items-center gap-3 animate-in fade-in slide-in-from-bottom-5">
+        <div className="p-2 rounded-xl bg-emerald-100 text-emerald-800">
+          <FileText size={20} />
+        </div>
+        <div className="text-xs">
+          <div className="font-bold text-[#1b1b1d] flex items-center gap-1.5">
+            <span>Shift Work Order:</span>
+            <span className="font-mono text-emerald-800">{plan.planCode}</span>
+          </div>
+          <p className="text-[11px] text-[#57657b]">
+            Dept: <strong>{dept?.name || 'Public Works'}</strong> • Shift: <strong>{plan.shiftNumber}</strong> • Approved: <strong>{approvedItems.length} tasks</strong>
+          </p>
+        </div>
+
+        <div className="flex items-center gap-1.5 pl-2 border-l border-slate-200">
+          <button
+            onClick={() => setIsMinimized(false)}
+            className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-[#1b1b1d] transition-all"
+            title="Expand Work Order"
+          >
+            <Maximize2 size={16} />
+          </button>
+          <button
+            onClick={onClose}
+            className="p-1.5 rounded-lg text-[#76777d] hover:text-[#1b1b1d] hover:bg-slate-100 transition-all"
+            title="Close"
+          >
+            <X size={16} />
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm overflow-y-auto">
@@ -34,6 +71,13 @@ export const WorkOrderModal: React.FC<WorkOrderModalProps> = ({ plan, onClose })
             >
               <Printer size={14} />
               <span>Print / Save PDF</span>
+            </button>
+            <button
+              onClick={() => setIsMinimized(true)}
+              className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+              title="Minimize to bottom bar"
+            >
+              <Minus size={18} />
             </button>
             <button
               onClick={onClose}

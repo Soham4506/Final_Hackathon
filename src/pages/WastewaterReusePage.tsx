@@ -48,6 +48,10 @@ import {
   Apple,
   Wheat,
   XCircle,
+  ChevronDown,
+  ChevronUp,
+  Minus,
+  Maximize2,
 } from 'lucide-react';
 import {
   ResponsiveContainer,
@@ -86,6 +90,7 @@ export const WastewaterReusePage: React.FC = () => {
   const [selectedBatchId, setSelectedBatchId] = useState<string>(
     wastewaterBatches[0]?.id || ''
   );
+  const [isCertifyBoxMinimized, setIsCertifyBoxMinimized] = useState<boolean>(false);
 
   // Modals
   const [selectedSampleForModal, setSelectedSampleForModal] = useState<QualityCheckSample | null>(null);
@@ -267,11 +272,11 @@ export const WastewaterReusePage: React.FC = () => {
 
           <h1 className="text-xl sm:text-2xl font-bold text-[#1b1b1d] tracking-tight flex items-center gap-2">
             <Sprout className="text-emerald-700" size={24} />
-            <span>Circular Wastewater-to-Agriculture Reuse Hub</span>
+            <span>Wastewater-to-Agriculture Reuse Hub</span>
           </h1>
 
-          <p className="text-xs sm:text-sm text-[#57657b] mt-1 max-w-3xl leading-relaxed">
-            Converting municipal waste and urban wastewater into certified, nutrient-rich agricultural irrigation water for Kopargaon sugarcane, onion, and pomegranate farming command belts under strict CPCB quality standards.
+          <p className="text-xs sm:text-sm text-[#57657b] mt-1 max-w-2xl">
+            Treating municipal wastewater into certified irrigation water for Kopargaon sugarcane, crops & agroforestry.
           </p>
         </div>
 
@@ -915,6 +920,7 @@ export const WastewaterReusePage: React.FC = () => {
                         {primaryDestInfo?.suitabilityScore || 0}/100
                       </span>
                     </div>
+
                     <button
                       onClick={handleExecuteQualityCheck}
                       className="flex items-center gap-2 bg-[#131b2e] hover:bg-[#1e2a47] text-white text-xs font-bold uppercase tracking-wider px-4 py-2.5 rounded-xl shadow-xs transition-all shrink-0"
@@ -922,129 +928,151 @@ export const WastewaterReusePage: React.FC = () => {
                       <ShieldCheck size={16} />
                       <span>Certify & Commit Flow</span>
                     </button>
+
+                    <button
+                      onClick={() => setIsCertifyBoxMinimized(!isCertifyBoxMinimized)}
+                      className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-[#1b1b1d] transition-all flex items-center gap-1 text-xs font-semibold"
+                      title={isCertifyBoxMinimized ? 'Expand flow details' : 'Minimize flow details'}
+                    >
+                      {isCertifyBoxMinimized ? (
+                        <>
+                          <ChevronDown size={16} />
+                          <span className="hidden sm:inline">Expand</span>
+                        </>
+                      ) : (
+                        <>
+                          <ChevronUp size={16} />
+                          <span className="hidden sm:inline">Minimize</span>
+                        </>
+                      )}
+                    </button>
                   </div>
                 </div>
 
-                {/* Sluice Gate Flow Split Visualization */}
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between text-xs font-bold text-[#1b1b1d]">
-                    <span className="flex items-center gap-1.5">
-                      <Sliders size={14} className="text-[#131b2e]" />
-                      <span>Automated Sluice Gate & Channel Distribution Splits</span>
-                    </span>
-                    <span className="text-[#76777d] font-mono text-[11px]">
-                      Total Batch: {(selectedBatch?.intakeVolumeKLD || 3500).toLocaleString()} KL
-                    </span>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                    {liveRouting.flowSplits.map((split, idx) => (
-                      <div
-                        key={idx}
-                        className="p-3 bg-[#fcf8fa] rounded-xl border border-[#76777d]/15 space-y-2 text-xs overflow-hidden"
-                      >
-                        <div className="flex items-center justify-between gap-2">
-                          <span className="font-bold text-[#1b1b1d] truncate min-w-0 flex-1" title={split.destinationName}>
-                            {split.destinationName}
-                          </span>
-                          <span className="shrink-0 whitespace-nowrap px-2 py-0.5 rounded bg-emerald-100 text-emerald-900 border border-emerald-300 text-[10px] font-mono font-bold">
-                            {split.percentage}% Flow
-                          </span>
-                        </div>
-
-                        {/* Progress Bar */}
-                        <div className="w-full bg-[#eae7e9] h-2 rounded-full overflow-hidden">
-                          <div
-                            className={`h-full transition-all duration-500 ${
-                              idx === 0
-                                ? 'bg-emerald-600'
-                                : idx === 1
-                                ? 'bg-blue-600'
-                                : 'bg-amber-600'
-                            }`}
-                            style={{ width: `${split.percentage}%` }}
-                          />
-                        </div>
-
-                        <div className="flex justify-between text-[11px] text-[#57657b] pt-0.5">
-                          <span>Volume: <strong className="text-[#1b1b1d] font-mono">{split.volumeKLD.toLocaleString()} KL</strong></span>
-                          <span className="capitalize font-mono text-emerald-800 font-bold">{split.distributionChannel.replace('_', ' ')}</span>
-                        </div>
+                {/* Sluice Gate Flow Split Visualization (Collapsible) */}
+                {!isCertifyBoxMinimized && (
+                  <>
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between text-xs font-bold text-[#1b1b1d]">
+                        <span className="flex items-center gap-1.5">
+                          <Sliders size={14} className="text-[#131b2e]" />
+                          <span>Automated Sluice Gate & Channel Distribution Splits</span>
+                        </span>
+                        <span className="text-[#76777d] font-mono text-[11px]">
+                          Total Batch: {(selectedBatch?.intakeVolumeKLD || 3500).toLocaleString()} KL
+                        </span>
                       </div>
-                    ))}
-                  </div>
-                </div>
 
-                {/* 6 Destination Comparative Suitability Grid */}
-                <div className="space-y-2 pt-2 border-t border-[#76777d]/15">
-                  <span className="text-[11px] font-bold uppercase tracking-wider text-[#76777d] block">
-                    Comparative Destination Eligibility & Safety Criteria
-                  </span>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                        {liveRouting.flowSplits.map((split, idx) => (
+                          <div
+                            key={idx}
+                            className="p-3 bg-[#fcf8fa] rounded-xl border border-[#76777d]/15 space-y-2 text-xs overflow-hidden"
+                          >
+                            <div className="flex items-center justify-between gap-2">
+                              <span className="font-bold text-[#1b1b1d] truncate min-w-0 flex-1" title={split.destinationName}>
+                                {split.destinationName}
+                              </span>
+                              <span className="shrink-0 whitespace-nowrap px-2 py-0.5 rounded bg-emerald-100 text-emerald-900 border border-emerald-300 text-[10px] font-mono font-bold">
+                                {split.percentage}% Flow
+                              </span>
+                            </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
-                    {liveRouting.allDestinations.map((dest) => (
-                      <div
-                        key={dest.destination}
-                        className={`p-3.5 rounded-xl border text-xs space-y-2.5 transition-all overflow-hidden relative ${
-                          dest.isEligible
-                            ? dest.destination === liveRouting.primaryDestination
-                              ? 'bg-emerald-50 border-emerald-400 shadow-xs'
-                              : 'bg-[#fcf8fa] border-[#76777d]/15'
-                            : 'bg-red-50 border-red-200 opacity-90'
-                        }`}
-                      >
-                        <div className="flex items-center justify-between gap-2">
-                          <div className="flex items-center gap-1.5 font-bold text-[#1b1b1d] min-w-0 flex-1">
-                            <span className="shrink-0">
-                              {dest.destination === 'edible_agriculture' && <Apple size={15} className="text-green-600" />}
-                              {dest.destination === 'commercial_agriculture' && <Wheat size={15} className="text-amber-600" />}
-                              {dest.destination === 'big_trees_agroforestry' && <Trees size={15} className="text-teal-600" />}
-                              {dest.destination === 'industrial_construction' && <Hammer size={15} className="text-cyan-700" />}
-                              {dest.destination === 'groundwater_recharge' && <Waves size={15} className="text-blue-600" />}
-                              {dest.destination === 'retreatment_required' && <AlertTriangle size={15} className="text-red-600" />}
-                            </span>
-                            <span className="truncate text-xs" title={dest.title}>{dest.title}</span>
+                            {/* Progress Bar */}
+                            <div className="w-full bg-[#eae7e9] h-2 rounded-full overflow-hidden">
+                              <div
+                                className={`h-full transition-all duration-500 ${
+                                  idx === 0
+                                    ? 'bg-emerald-600'
+                                    : idx === 1
+                                    ? 'bg-blue-600'
+                                    : 'bg-amber-600'
+                                }`}
+                                style={{ width: `${split.percentage}%` }}
+                              />
+                            </div>
+
+                            <div className="flex justify-between text-[11px] text-[#57657b] pt-0.5">
+                              <span>Volume: <strong className="text-[#1b1b1d] font-mono">{split.volumeKLD.toLocaleString()} KL</strong></span>
+                              <span className="capitalize font-mono text-emerald-800 font-bold">{split.distributionChannel.replace('_', ' ')}</span>
+                            </div>
                           </div>
+                        ))}
+                      </div>
+                    </div>
 
-                          <span
-                            className={`shrink-0 whitespace-nowrap px-2 py-0.5 rounded text-[10px] font-bold font-mono border ${
+                    {/* 6 Destination Comparative Suitability Grid */}
+                    <div className="space-y-2 pt-2 border-t border-[#76777d]/15">
+                      <span className="text-[11px] font-bold uppercase tracking-wider text-[#76777d] block">
+                        Comparative Destination Eligibility & Safety Criteria
+                      </span>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
+                        {liveRouting.allDestinations.map((dest) => (
+                          <div
+                            key={dest.destination}
+                            className={`p-3.5 rounded-xl border text-xs space-y-2.5 transition-all overflow-hidden relative ${
                               dest.isEligible
-                                ? 'bg-emerald-100 text-emerald-900 border-emerald-300'
-                                : 'bg-red-100 text-red-900 border-red-300'
+                                ? dest.destination === liveRouting.primaryDestination
+                                  ? 'bg-emerald-50 border-emerald-400 shadow-xs'
+                                  : 'bg-[#fcf8fa] border-[#76777d]/15'
+                                : 'bg-red-50 border-red-200 opacity-90'
                             }`}
                           >
-                            {dest.isEligible ? `${dest.suitabilityScore} pts` : 'INELIGIBLE'}
-                          </span>
-                        </div>
-
-                        {/* Qualifying or Disqualifying Points */}
-                        <div className="space-y-1 text-[11px]">
-                          {dest.isEligible ? (
-                            dest.qualifyingReasons.slice(0, 2).map((r, i) => (
-                              <div key={i} className="text-emerald-900 flex items-start gap-1 font-medium">
-                                <Check size={12} className="shrink-0 mt-0.5 text-emerald-700" />
-                                <span className="line-clamp-1">{r}</span>
+                            <div className="flex items-center justify-between gap-2">
+                              <div className="flex items-center gap-1.5 font-bold text-[#1b1b1d] min-w-0 flex-1">
+                                <span className="shrink-0">
+                                  {dest.destination === 'edible_agriculture' && <Apple size={15} className="text-green-600" />}
+                                  {dest.destination === 'commercial_agriculture' && <Wheat size={15} className="text-amber-600" />}
+                                  {dest.destination === 'big_trees_agroforestry' && <Trees size={15} className="text-teal-600" />}
+                                  {dest.destination === 'industrial_construction' && <Hammer size={15} className="text-cyan-700" />}
+                                  {dest.destination === 'groundwater_recharge' && <Waves size={15} className="text-blue-600" />}
+                                  {dest.destination === 'retreatment_required' && <AlertTriangle size={15} className="text-red-600" />}
+                                </span>
+                                <span className="truncate text-xs" title={dest.title}>{dest.title}</span>
                               </div>
-                            ))
-                          ) : (
-                            dest.disqualifyingViolations.slice(0, 2).map((v, i) => (
-                              <div key={i} className="text-red-900 flex items-start gap-1 font-medium">
-                                <XCircle size={12} className="shrink-0 mt-0.5 text-red-700" />
-                                <span className="line-clamp-1">{v}</span>
-                              </div>
-                            ))
-                          )}
-                        </div>
 
-                        {/* Species / Sites */}
-                        <div className="pt-1 border-t border-[#76777d]/10 text-[10px] text-[#76777d] flex justify-between">
-                          <span className="truncate">Flora: {dest.suitableSpeciesOrUses.slice(0, 2).join(', ')}</span>
-                          <span className="font-bold text-[#1b1b1d] shrink-0">{dest.category}</span>
-                        </div>
+                              <span
+                                className={`shrink-0 whitespace-nowrap px-2 py-0.5 rounded text-[10px] font-bold font-mono border ${
+                                  dest.isEligible
+                                    ? 'bg-emerald-100 text-emerald-900 border-emerald-300'
+                                    : 'bg-red-100 text-red-900 border-red-300'
+                                }`}
+                              >
+                                {dest.isEligible ? `${dest.suitabilityScore} pts` : 'INELIGIBLE'}
+                              </span>
+                            </div>
+
+                            {/* Qualifying or Disqualifying Points */}
+                            <div className="space-y-1 text-[11px]">
+                              {dest.isEligible ? (
+                                dest.qualifyingReasons.slice(0, 2).map((r, i) => (
+                                  <div key={i} className="text-emerald-900 flex items-start gap-1 font-medium">
+                                    <Check size={12} className="shrink-0 mt-0.5 text-emerald-700" />
+                                    <span className="line-clamp-1">{r}</span>
+                                  </div>
+                                ))
+                              ) : (
+                                dest.disqualifyingViolations.slice(0, 2).map((v, i) => (
+                                  <div key={i} className="text-red-900 flex items-start gap-1 font-medium">
+                                    <XCircle size={12} className="shrink-0 mt-0.5 text-red-700" />
+                                    <span className="line-clamp-1">{v}</span>
+                                  </div>
+                                ))
+                              )}
+                            </div>
+
+                            {/* Species / Sites */}
+                            <div className="pt-1 border-t border-[#76777d]/10 text-[10px] text-[#76777d] flex justify-between">
+                              <span className="truncate">Flora: {dest.suitableSpeciesOrUses.slice(0, 2).join(', ')}</span>
+                              <span className="font-bold text-[#1b1b1d] shrink-0">{dest.category}</span>
+                            </div>
+                          </div>
+                        ))}
                       </div>
-                    ))}
-                  </div>
-                </div>
+                    </div>
+                  </>
+                )}
               </div>
 
               {/* Verified Lab Certificates Table */}

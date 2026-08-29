@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   X,
   Printer,
@@ -12,6 +12,8 @@ import {
   QrCode,
   CheckCircle2,
   AlertTriangle,
+  Minus,
+  Maximize2,
 } from 'lucide-react';
 import { FloodDispatchOrder } from '../../types/floodAlert';
 import { useCivic } from '../../context/CivicContext';
@@ -28,10 +30,47 @@ export const FloodDispatchOrderModal: React.FC<FloodDispatchOrderModalProps> = (
   onApprove,
 }) => {
   const { language } = useCivic();
+  const [isMinimized, setIsMinimized] = useState<boolean>(false);
 
   const handlePrint = () => {
     window.print();
   };
+
+  if (isMinimized) {
+    return (
+      <div className="fixed bottom-5 right-5 z-50 bg-white border-2 border-[#ba1a1a] shadow-2xl rounded-2xl p-3.5 flex items-center gap-3 animate-in fade-in slide-in-from-bottom-5">
+        <div className="p-2 rounded-xl bg-red-100 text-[#ba1a1a]">
+          <Waves size={20} className="animate-pulse" />
+        </div>
+        <div className="text-xs">
+          <div className="font-bold text-[#1b1b1d] flex items-center gap-1.5">
+            <span>Flood Work Order:</span>
+            <span className="font-mono text-[#ba1a1a]">{order.orderNumber}</span>
+          </div>
+          <p className="text-[11px] text-[#57657b] font-mono">
+            Discharge: <strong>{order.damDischargeCusecs.toLocaleString()} Cusecs</strong> • Status: <strong className="uppercase">{order.alertLevel.replace('_', ' ')}</strong>
+          </p>
+        </div>
+
+        <div className="flex items-center gap-1.5 pl-2 border-l border-slate-200">
+          <button
+            onClick={() => setIsMinimized(false)}
+            className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-[#1b1b1d] transition-all"
+            title="Expand Work Order"
+          >
+            <Maximize2 size={16} />
+          </button>
+          <button
+            onClick={onClose}
+            className="p-1.5 rounded-lg text-[#76777d] hover:text-[#1b1b1d] hover:bg-slate-100 transition-all"
+            title="Close"
+          >
+            <X size={16} />
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs overflow-y-auto">
@@ -44,13 +83,13 @@ export const FloodDispatchOrderModal: React.FC<FloodDispatchOrderModalProps> = (
               {language === 'mr' ? 'आपत्कालीन पूर नियंत्रण कार्य आदेश' : 'Official Flood Emergency Dispatch Order'}
             </span>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             <button
               onClick={handlePrint}
               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white border border-[#76777d]/30 hover:bg-slate-50 text-[#1b1b1d] text-xs font-semibold transition-all shadow-xs"
             >
               <Printer size={14} />
-              <span>{language === 'mr' ? 'प्रत मुद्रित करा (Print)' : 'Print Official Order'}</span>
+              <span>{language === 'mr' ? 'प्रत मुद्रित करा (Print)' : 'Print'}</span>
             </button>
             {!order.isApproved && onApprove && (
               <button
@@ -58,12 +97,20 @@ export const FloodDispatchOrderModal: React.FC<FloodDispatchOrderModalProps> = (
                 className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-[#ba1a1a] hover:bg-[#93000a] text-white text-xs font-bold transition-all shadow-xs"
               >
                 <CheckCircle2 size={14} />
-                <span>{language === 'mr' ? 'आदेश मंजूर करा (Authorize)' : 'Authorize & Dispatch'}</span>
+                <span>{language === 'mr' ? 'मंजूर करा (Authorize)' : 'Authorize'}</span>
               </button>
             )}
             <button
+              onClick={() => setIsMinimized(true)}
+              className="p-1.5 rounded-lg text-[#76777d] hover:text-[#1b1b1d] hover:bg-slate-100 transition-all"
+              title="Minimize to bottom bar"
+            >
+              <Minus size={18} />
+            </button>
+            <button
               onClick={onClose}
               className="p-1.5 rounded-lg text-[#76777d] hover:text-[#1b1b1d] hover:bg-slate-100 transition-all"
+              title="Close"
             >
               <X size={18} />
             </button>
