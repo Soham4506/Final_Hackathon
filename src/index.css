@@ -1,4 +1,4 @@
-﻿@tailwind base;
+@tailwind base;
 @tailwind components;
 @tailwind utilities;
 
@@ -13,10 +13,10 @@
     --popover: 0 0% 100%;
     --popover-foreground: 222 47% 11%;
 
-    /* Primary: Tech Cobalt (#2563EB) */
-    --primary: 221 83% 53%;
+    /* Primary: Civic Navy (#131B2E) */
+    --primary: 222 47% 13%;
     --primary-foreground: 0 0% 100%;
-    --primary-mid: 224 76% 48%;
+    --primary-mid: 222 40% 22%;
     --primary-dark: 222 47% 11%;
 
     /* Secondary: Emerald (#10B981) for Approved / Verified */
@@ -46,7 +46,7 @@
 
     --border: 214 32% 91%;
     --input: 214 32% 91%;
-    --ring: 221 83% 53%;
+    --ring: 222 47% 13%;
 
     --radius: 0.75rem;
   }

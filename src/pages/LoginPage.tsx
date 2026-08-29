@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCivic } from '../context/CivicContext';
 import { UserRole, UserProfile } from '../types';
@@ -14,6 +14,7 @@ import {
   KeyRound,
   Activity,
   Smartphone,
+  CheckCircle2,
 } from 'lucide-react';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { TwoFactorVerifyModal } from '../components/auth/TwoFactorVerifyModal';
@@ -106,15 +107,8 @@ export const LoginPage: React.FC = () => {
         });
 
         if (error) {
-          // If Supabase credentials fail for Super Admin demo password, allow local session fallback
-          if (isSuperAdminEmail && (password === 'Admin@KoparNiti2026' || password === 'Admin@123')) {
-            proceedWithLocalAuth('admin');
-            setIsLoading(false);
-            return;
-          }
-
-          if (error.message.toLowerCase().includes('api key')) {
-            setAuthError('Invalid Supabase Anon Key in .env. Please copy your anon public key from Supabase Dashboard -> Project Settings -> API.');
+          if (error.message.toLowerCase().includes('invalid login credentials')) {
+            setAuthError('Invalid credentials. If using local demo mode, check password or continue with local session below.');
           } else {
             setAuthError(error.message);
           }
@@ -123,71 +117,64 @@ export const LoginPage: React.FC = () => {
         }
 
         if (data.user) {
-          // Fetch the user's profile from the database safely with maybeSingle (avoids 406 error)
-          let profile: any = null;
-          const { data: profileData, error: profileErr } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', data.user.id)
-            .maybeSingle();
+          let roleToAssign: UserRole = isSuperAdminEmail ? 'admin' : selectedRole;
+          let fullNameToAssign = (data.user.user_metadata?.full_name as string) || (data.user.email?.split('@')[0]) || 'Citizen User';
+          let phoneToAssign = (data.user.user_metadata?.phone as string) || '';
+          let wardIdToAssign = data.user.user_metadata?.ward_id as string | undefined;
+          let departmentIdToAssign = data.user.user_metadata?.department_id as string | undefined;
+          let employeeIdToAssign = data.user.user_metadata?.employee_id as string | undefined;
 
-          if (!profileErr && profileData) {
-            profile = profileData;
-          } else {
-            // Profile may not exist yet or trigger in progress — retry once after a short delay
-            await new Promise((res) => setTimeout(res, 400));
-            const { data: retryData } = await supabase
+          try {
+            const { data: profile } = await supabase
               .from('profiles')
               .select('*')
               .eq('id', data.user.id)
               .maybeSingle();
-            profile = retryData;
+
+            if (profile) {
+              roleToAssign = profile.role as UserRole;
+              fullNameToAssign = profile.full_name || fullNameToAssign;
+              phoneToAssign = profile.phone || phoneToAssign;
+              wardIdToAssign = profile.ward_id || wardIdToAssign;
+              departmentIdToAssign = profile.department_id || departmentIdToAssign;
+              employeeIdToAssign = profile.employee_id || employeeIdToAssign;
+            }
+          } catch (profileErr) {
+            console.warn('Profile fetch note:', profileErr);
           }
 
-          // Prioritize: 1. DB profile role -> 2. Auth user_metadata role -> 3. Super Admin email match -> 4. Citizen fallback
-          let rawRole = profile?.role || data.user.user_metadata?.role;
-          if (!rawRole && isSuperAdminEmail) {
-            rawRole = 'admin';
+          if (isSuperAdminEmail) {
+            roleToAssign = 'admin';
           }
-          const role: UserRole = (rawRole as UserRole) || 'citizen';
 
           const userObj: UserProfile = {
             id: data.user.id,
-            role,
-            fullName: profile?.full_name || data.user.user_metadata?.full_name || (role === 'admin' ? 'Chief Municipal Officer (मुख्‍याधिकारी)' : data.user.email?.split('@')[0] || 'Municipal User'),
-            email: data.user.email,
-            phone: profile?.phone || data.user.user_metadata?.phone || '',
-            address: profile?.address || 'Kopargaon',
-            wardId: profile?.ward_id || data.user.user_metadata?.ward_id,
-            departmentId: profile?.department_id || data.user.user_metadata?.department_id,
-            employeeId: profile?.employee_id || data.user.user_metadata?.employee_id || (role === 'admin' ? 'KMC-ADMIN-01' : undefined),
-            designation: profile?.designation || (role === 'admin' ? 'Chief Officer / Super Admin' : undefined),
-            status: profile?.status || 'active',
-            isVerified: profile?.is_verified ?? true,
+            role: roleToAssign,
+            fullName: fullNameToAssign,
+            email: data.user.email || email.trim(),
+            phone: phoneToAssign,
+            wardId: wardIdToAssign,
+            departmentId: departmentIdToAssign,
+            employeeId: employeeIdToAssign,
+            designation: roleToAssign === 'admin' ? 'Chief Officer / Super Admin' : (roleToAssign === 'officer' ? 'Municipal Officer' : 'Citizen'),
+            status: 'active',
+            isVerified: true,
           };
 
-          finalizeLoginWith2FA(role, userObj);
+          finalizeLoginWith2FA(roleToAssign, userObj);
           return;
         }
       } catch (err: any) {
-        console.warn('Supabase auth attempt failed:', err);
+        console.warn('Supabase auth attempt notice:', err);
       }
     }
 
-    // Direct local authentication fallback
+    // Direct local session login fallback
     setTimeout(() => {
-      let resolvedRole: UserRole = selectedRole;
-      if (isSuperAdminEmail || lowerEmail.includes('admin') || lowerEmail.includes('chief')) {
-        resolvedRole = 'admin';
-      } else if (lowerEmail.includes('citizen') || lowerEmail.includes('pawar')) {
-        resolvedRole = 'citizen';
-      } else if (lowerEmail.includes('officer') || lowerEmail.includes('deshmukh')) {
-        resolvedRole = 'officer';
-      }
-
-      proceedWithLocalAuth(resolvedRole);
+      const derivedRole: UserRole = isSuperAdminEmail ? 'admin' : selectedRole;
+      proceedWithLocalAuth(derivedRole);
       setIsLoading(false);
-    }, 300);
+    }, 400);
   };
 
   const handleSignUp = async (e: React.FormEvent) => {
@@ -195,18 +182,16 @@ export const LoginPage: React.FC = () => {
     setAuthError('');
     setIsLoading(true);
 
-    if (!fullName.trim() || !email.trim() || !password.trim()) {
-      setAuthError('Please fill in all required fields.');
+    if (!fullName.trim() || !email.trim() || !password) {
+      setAuthError('Please fill in all required registration fields.');
       setIsLoading(false);
       return;
     }
 
-    // Enforce that signup only allows citizen or officer (never admin)
     const targetRole: UserRole = selectedRole === 'officer' ? 'officer' : 'citizen';
 
     if (isSupabaseConfigured) {
       try {
-        // Pass metadata to signUp so handle_new_user() trigger receives user role and details
         const { data, error } = await supabase.auth.signUp({
           email: email.trim(),
           password,
@@ -223,17 +208,12 @@ export const LoginPage: React.FC = () => {
         });
 
         if (error) {
-          if (error.message.toLowerCase().includes('api key')) {
-            setAuthError('Invalid Supabase Anon Key in .env. Copy anon public key from Supabase Dashboard -> Project Settings -> API.');
-          } else {
-            setAuthError(error.message);
-          }
+          setAuthError(error.message);
           setIsLoading(false);
           return;
         }
 
         if (data.user) {
-          // Wait briefly for trigger, then ensure profile has latest fields
           await new Promise((res) => setTimeout(res, 400));
 
           try {
@@ -270,7 +250,6 @@ export const LoginPage: React.FC = () => {
       }
     }
 
-    // Direct local registration fallback
     setTimeout(() => {
       proceedWithLocalAuth(selectedRole, fullName.trim());
       setIsLoading(false);
@@ -300,7 +279,6 @@ export const LoginPage: React.FC = () => {
       }
     }
 
-    // Direct local fallback for Google OAuth
     setTimeout(() => {
       const googleUser: UserProfile = {
         id: `usr-google-${Date.now()}`,
@@ -324,45 +302,51 @@ export const LoginPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-primary flex flex-col justify-between text-slate-100 font-sans p-4 sm:p-6 lg:p-8 relative overflow-hidden">
-      {/* Top Municipal Crest */}
+    <div className="min-h-screen bg-gradient-to-br from-[#0a0f1d] via-[#111927] to-[#070b14] flex flex-col justify-between text-slate-100 font-sans p-4 sm:p-6 lg:p-8 relative overflow-hidden">
+      {/* Subtle ambient lighting & pattern background */}
+      <div className="absolute inset-0 bg-[radial-gradient(#1e293b_1px,transparent_1px)] [background-size:28px_28px] opacity-40 pointer-events-none" />
+      <div className="absolute -top-32 -left-32 w-96 h-96 bg-emerald-600/10 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute -bottom-32 -right-32 w-96 h-96 bg-blue-600/10 rounded-full blur-3xl pointer-events-none" />
+
+      {/* Top Municipal Crest Header */}
       <div className="max-w-5xl w-full mx-auto flex items-center justify-between z-10">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg bg-card flex items-center justify-center border border-white/20 shadow-md shrink-0 p-1">
-            <Building2 className="w-6 h-6 text-[#131b2e]" />
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#1e293b] to-[#0f172a] flex items-center justify-center border border-slate-700/60 shadow-lg shrink-0 p-1">
+            <Building2 className="w-6 h-6 text-emerald-400" />
           </div>
           <div>
             <div className="flex items-center gap-2">
               <span className="font-extrabold text-lg text-white tracking-tight">KoparNiti</span>
-              <span className="bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded">
+              <span className="bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-md">
                 कोपरनीती • KMC
               </span>
             </div>
-            <p className="text-xs text-[#7c839b]">Kopargaon Municipal Decision Support & Civic Engine</p>
+            <p className="text-xs text-slate-400">Kopargaon Municipal Decision Support & Civic Engine</p>
           </div>
         </div>
 
         <button
+          type="button"
           onClick={toggleLanguage}
-          className="flex items-center gap-1 bg-[#1e2a47] hover:bg-[#2a3a5e] text-white border border-white/15 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors"
+          className="flex items-center gap-1.5 bg-[#131b2e] hover:bg-[#1e2a47] text-white border border-slate-700/80 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all shadow-xs cursor-pointer"
         >
-          <Languages size={13} />
+          <Languages size={14} className="text-emerald-400" />
           <span>{language === 'en' ? 'मराठी' : 'English'}</span>
         </button>
       </div>
 
-      {/* Main Login Card with KMC Clean White Aesthetic */}
-      <div className="max-w-md w-full mx-auto my-8 bg-card border border-border rounded-3xl p-6 sm:p-8 shadow-2xl z-10 space-y-5 text-foreground">
+      {/* Main Login Card with KMC Clean Slate Aesthetic */}
+      <div className="max-w-md w-full mx-auto my-8 bg-white border border-slate-200/80 rounded-3xl p-6 sm:p-8 shadow-2xl z-10 space-y-5 text-slate-800 relative">
         {/* Banner Title */}
         <div className="text-center space-y-1.5">
-          <div className="inline-flex items-center gap-1.5 bg-slate-100 text-[#131b2e] border border-slate-300 text-[11px] font-mono font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider">
+          <div className="inline-flex items-center gap-1.5 bg-slate-100 text-[#131b2e] border border-slate-200 text-[11px] font-mono font-bold px-3 py-1 rounded-full uppercase tracking-wider">
             <Activity size={12} className="text-emerald-600" />
             <span>कोपरगाव नगरपरिषद • KoparNiti</span>
           </div>
-          <h1 className="text-xl sm:text-2xl font-bold text-foreground tracking-tight">
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
             {mode === 'signin' ? 'Sign In to Your Account' : 'Register New Account'}
           </h1>
-          <p className="text-xs text-muted-foreground">
+          <p className="text-xs text-slate-500">
             {mode === 'signin'
               ? 'Enter your municipal or citizen credentials to continue.'
               : 'Create an account to report civic issues and track municipal dispatches.'}
@@ -370,17 +354,17 @@ export const LoginPage: React.FC = () => {
         </div>
 
         {/* Mode Switcher Tabs */}
-        <div className="bg-muted/80 dark:bg-slate-900 p-1 rounded-xl border border-border flex text-xs">
+        <div className="bg-slate-100 p-1 rounded-xl border border-slate-200 flex text-xs">
           <button
             type="button"
             onClick={() => {
               setMode('signin');
               setAuthError('');
             }}
-            className={`flex-1 py-2 font-bold rounded-lg transition-all ${
+            className={`flex-1 py-2 font-bold rounded-lg transition-all cursor-pointer ${
               mode === 'signin'
-                ? 'bg-primary text-white shadow-xs'
-                : 'text-muted-foreground hover:text-foreground'
+                ? 'bg-[#131b2e] text-white shadow-xs'
+                : 'text-slate-600 hover:text-slate-900'
             }`}
           >
             Sign In
@@ -391,29 +375,29 @@ export const LoginPage: React.FC = () => {
               setMode('signup');
               setAuthError('');
             }}
-            className={`flex-1 py-2 font-bold rounded-lg transition-all ${
+            className={`flex-1 py-2 font-bold rounded-lg transition-all cursor-pointer ${
               mode === 'signup'
-                ? 'bg-primary text-white shadow-xs'
-                : 'text-muted-foreground hover:text-foreground'
+                ? 'bg-[#131b2e] text-white shadow-xs'
+                : 'text-slate-600 hover:text-slate-900'
             }`}
           >
             Register
           </button>
         </div>
 
-        {/* Role Selector Pill (Citizen & Officer only - Admin registration removed) */}
+        {/* Role Selector Pill */}
         <div className="space-y-1.5">
-          <label className="block text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
+          <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider">
             {mode === 'signup' ? 'Account Type' : 'Select Portal'}
           </label>
           <div className="grid grid-cols-2 gap-2 text-xs">
             <button
               type="button"
               onClick={() => setSelectedRole('citizen')}
-              className={`py-2 px-2 rounded-xl font-bold border transition-all text-center ${
+              className={`py-2 px-2 rounded-xl font-bold border transition-all text-center cursor-pointer ${
                 selectedRole === 'citizen'
-                  ? 'bg-primary text-white border-primary shadow-xs'
-                  : 'bg-muted/60 dark:bg-slate-900 text-muted-foreground border-border hover:border-primary'
+                  ? 'bg-[#131b2e] text-white border-[#131b2e] shadow-xs'
+                  : 'bg-slate-50 text-slate-700 border-slate-200 hover:border-slate-300 hover:bg-slate-100'
               }`}
             >
               Citizen (नागरिक)
@@ -421,10 +405,10 @@ export const LoginPage: React.FC = () => {
             <button
               type="button"
               onClick={() => setSelectedRole('officer')}
-              className={`py-2 px-2 rounded-xl font-bold border transition-all text-center ${
+              className={`py-2 px-2 rounded-xl font-bold border transition-all text-center cursor-pointer ${
                 selectedRole === 'officer'
-                  ? 'bg-primary text-white border-primary shadow-xs'
-                  : 'bg-muted/60 dark:bg-slate-900 text-muted-foreground border-border hover:border-primary'
+                  ? 'bg-[#131b2e] text-white border-[#131b2e] shadow-xs'
+                  : 'bg-slate-50 text-slate-700 border-slate-200 hover:border-slate-300 hover:bg-slate-100'
               }`}
             >
               Municipal Officer (अधिकारी)
@@ -436,31 +420,31 @@ export const LoginPage: React.FC = () => {
         {mode === 'signin' && (
           <form onSubmit={handleSignIn} className="space-y-4 text-xs">
             <div>
-              <label className="block text-foreground font-semibold mb-1">Email Address</label>
+              <label className="block text-slate-700 font-semibold mb-1">Email Address</label>
               <div className="relative">
-                <Mail size={15} className="absolute left-3.5 top-3 text-muted-foreground" />
+                <Mail size={15} className="absolute left-3.5 top-3 text-slate-400" />
                 <input
                   type="email"
                   required
                   placeholder="name@kopargaon.gov.in"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full bg-muted/60 dark:bg-slate-900 border border-border rounded-xl pl-10 pr-3 py-2.5 text-foreground placeholder:text-muted-foreground/70 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary font-medium"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-10 pr-3 py-2.5 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-[#131b2e] focus:bg-white font-medium transition-colors"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-foreground font-semibold mb-1">Password</label>
+              <label className="block text-slate-700 font-semibold mb-1">Password</label>
               <div className="relative">
-                <Lock size={15} className="absolute left-3.5 top-3 text-muted-foreground" />
+                <Lock size={15} className="absolute left-3.5 top-3 text-slate-400" />
                 <input
                   type="password"
                   required
                   placeholder="••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full bg-muted/60 dark:bg-slate-900 border border-border rounded-xl pl-10 pr-3 py-2.5 text-foreground placeholder:text-muted-foreground/70 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary font-medium"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-10 pr-3 py-2.5 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-[#131b2e] focus:bg-white font-medium transition-colors"
                 />
               </div>
             </div>
@@ -475,7 +459,7 @@ export const LoginPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => proceedWithLocalAuth(selectedRole)}
-                  className="mt-1 px-3 py-1.5 bg-primary hover:bg-primary/90 text-white rounded-lg font-bold text-[11px] flex items-center gap-1.5 transition-colors"
+                  className="mt-1 px-3 py-1.5 bg-[#131b2e] hover:bg-[#1e2a47] text-white rounded-lg font-bold text-[11px] flex items-center gap-1.5 transition-colors cursor-pointer"
                 >
                   <KeyRound size={13} className="text-emerald-400" />
                   <span>Continue in Local Session Mode →</span>
@@ -484,26 +468,26 @@ export const LoginPage: React.FC = () => {
             )}
 
             {/* 2FA Quick Enforce Checkbox */}
-            <div className="flex items-center justify-between p-2.5 bg-muted/40 border border-border rounded-xl text-xs">
-              <label className="flex items-center gap-2 text-foreground font-medium cursor-pointer">
+            <div className="flex items-center justify-between p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs">
+              <label className="flex items-center gap-2 text-slate-700 font-medium cursor-pointer">
                 <input
                   type="checkbox"
                   checked={enforce2faDemo}
                   onChange={(e) => setEnforce2faDemo(e.target.checked)}
-                  className="rounded text-primary focus:ring-primary"
+                  className="rounded text-[#131b2e] focus:ring-[#131b2e]"
                 />
                 <span className="flex items-center gap-1">
                   <ShieldCheck size={14} className="text-amber-500" />
                   <span>Enforce Two-Factor Authentication (2FA)</span>
                 </span>
               </label>
-              <span className="text-[10px] font-mono text-muted-foreground">TOTP / SMS</span>
+              <span className="text-[10px] font-mono text-slate-400 font-semibold">TOTP / SMS</span>
             </div>
 
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full py-3 bg-primary hover:bg-primary/90 text-white rounded-xl font-bold text-xs shadow-md flex items-center justify-center gap-2 transition-all"
+              className="w-full py-3 bg-[#131b2e] hover:bg-[#1e2a47] text-white rounded-xl font-bold text-xs shadow-md flex items-center justify-center gap-2 transition-all active:scale-[0.99] cursor-pointer"
             >
               <Lock size={14} />
               <span>{isLoading ? 'Authenticating...' : 'Sign In to Command'}</span>
@@ -515,43 +499,43 @@ export const LoginPage: React.FC = () => {
         {mode === 'signup' && (
           <form onSubmit={handleSignUp} className="space-y-3.5 text-xs">
             <div>
-              <label className="block text-foreground font-semibold mb-1">Full Name</label>
+              <label className="block text-slate-700 font-semibold mb-1">Full Name</label>
               <div className="relative">
-                <User size={15} className="absolute left-3.5 top-3 text-muted-foreground" />
+                <User size={15} className="absolute left-3.5 top-3 text-slate-400" />
                 <input
                   type="text"
                   required
                   placeholder="Your Full Name"
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
-                  className="w-full bg-muted/60 dark:bg-slate-900 border border-border rounded-xl pl-10 pr-3 py-2.5 text-foreground placeholder:text-muted-foreground/70 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary font-medium"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-10 pr-3 py-2.5 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-[#131b2e] focus:bg-white font-medium"
                 />
               </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="block text-foreground font-semibold mb-1">Mobile Phone</label>
+                <label className="block text-slate-700 font-semibold mb-1">Mobile Phone</label>
                 <div className="relative">
-                  <Phone size={15} className="absolute left-3 top-3 text-muted-foreground" />
+                  <Phone size={15} className="absolute left-3.5 top-3 text-slate-400" />
                   <input
                     type="tel"
                     required
                     placeholder="9822000000"
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
-                    className="w-full bg-muted/60 dark:bg-slate-900 border border-border rounded-xl pl-9 pr-3 py-2.5 text-foreground placeholder:text-muted-foreground/70 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary font-medium"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-3 py-2.5 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-[#131b2e] focus:bg-white font-medium"
                   />
                 </div>
               </div>
 
               {selectedRole === 'citizen' ? (
                 <div>
-                  <label className="block text-foreground font-semibold mb-1">Ward / Zone</label>
+                  <label className="block text-slate-700 font-semibold mb-1">Ward / Zone</label>
                   <select
                     value={wardId}
                     onChange={(e) => setWardId(e.target.value)}
-                    className="w-full bg-muted/60 dark:bg-slate-900 border border-border rounded-xl px-3 py-2.5 text-foreground focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary font-medium"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-slate-900 focus:outline-none focus:border-[#131b2e] focus:bg-white font-medium"
                   >
                     {zones.map((z) => (
                       <option key={z.id} value={z.id}>
@@ -562,11 +546,11 @@ export const LoginPage: React.FC = () => {
                 </div>
               ) : (
                 <div>
-                  <label className="block text-foreground font-semibold mb-1">Department</label>
+                  <label className="block text-slate-700 font-semibold mb-1">Department</label>
                   <select
                     value={departmentId}
                     onChange={(e) => setDepartmentId(e.target.value)}
-                    className="w-full bg-muted/60 dark:bg-slate-900 border border-border rounded-xl px-3 py-2.5 text-foreground focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary font-medium"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-slate-900 focus:outline-none focus:border-[#131b2e] focus:bg-white font-medium"
                   >
                     {departments.map((d) => (
                       <option key={d.id} value={d.id}>
@@ -579,31 +563,31 @@ export const LoginPage: React.FC = () => {
             </div>
 
             <div>
-              <label className="block text-foreground font-semibold mb-1">Email Address</label>
+              <label className="block text-slate-700 font-semibold mb-1">Email Address</label>
               <div className="relative">
-                <Mail size={15} className="absolute left-3.5 top-3 text-muted-foreground" />
+                <Mail size={15} className="absolute left-3.5 top-3 text-slate-400" />
                 <input
                   type="email"
                   required
                   placeholder="name@example.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full bg-muted/60 dark:bg-slate-900 border border-border rounded-xl pl-10 pr-3 py-2.5 text-foreground placeholder:text-muted-foreground/70 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary font-medium"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-10 pr-3 py-2.5 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-[#131b2e] focus:bg-white font-medium"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-foreground font-semibold mb-1">Password</label>
+              <label className="block text-slate-700 font-semibold mb-1">Password</label>
               <div className="relative">
-                <Lock size={15} className="absolute left-3.5 top-3 text-muted-foreground" />
+                <Lock size={15} className="absolute left-3.5 top-3 text-slate-400" />
                 <input
                   type="password"
                   required
                   placeholder="••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full bg-muted/60 dark:bg-slate-900 border border-border rounded-xl pl-10 pr-3 py-2.5 text-foreground placeholder:text-muted-foreground/70 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary font-medium"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-10 pr-3 py-2.5 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-[#131b2e] focus:bg-white font-medium"
                 />
               </div>
             </div>
@@ -618,7 +602,7 @@ export const LoginPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => proceedWithLocalAuth(selectedRole, fullName.trim())}
-                  className="mt-1 px-3 py-1.5 bg-primary hover:bg-primary/90 text-white rounded-lg font-bold text-[11px] flex items-center gap-1.5 transition-colors"
+                  className="mt-1 px-3 py-1.5 bg-[#131b2e] hover:bg-[#1e2a47] text-white rounded-lg font-bold text-[11px] flex items-center gap-1.5 transition-colors cursor-pointer"
                 >
                   <KeyRound size={13} className="text-emerald-400" />
                   <span>Continue with Local Account →</span>
@@ -629,7 +613,7 @@ export const LoginPage: React.FC = () => {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full py-3 bg-primary hover:bg-primary/90 text-white rounded-xl font-bold text-xs shadow-md flex items-center justify-center gap-2 transition-all"
+              className="w-full py-3 bg-[#131b2e] hover:bg-[#1e2a47] text-white rounded-xl font-bold text-xs shadow-md flex items-center justify-center gap-2 transition-all active:scale-[0.99] cursor-pointer"
             >
               <ShieldCheck size={14} />
               <span>{isLoading ? 'Creating Account...' : 'Register & Enter Command'}</span>
@@ -639,11 +623,11 @@ export const LoginPage: React.FC = () => {
 
         {/* Divider */}
         <div className="relative flex py-1 items-center">
-          <div className="flex-grow border-t border-border"></div>
-          <span className="flex-shrink mx-3 text-[10px] uppercase font-bold text-muted-foreground tracking-wider">
+          <div className="flex-grow border-t border-slate-200"></div>
+          <span className="flex-shrink mx-3 text-[10px] uppercase font-bold text-slate-400 tracking-wider">
             Or continue with
           </span>
-          <div className="flex-grow border-t border-border"></div>
+          <div className="flex-grow border-t border-slate-200"></div>
         </div>
 
         {/* Google OAuth Button */}
@@ -651,7 +635,7 @@ export const LoginPage: React.FC = () => {
           type="button"
           onClick={handleGoogleSignIn}
           disabled={isLoading}
-          className="w-full py-2.5 bg-card hover:bg-slate-50 text-foreground border border-slate-300 rounded-xl font-bold text-xs shadow-2xs flex items-center justify-center gap-2.5 transition-all hover:border-slate-400"
+          className="w-full py-2.5 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-xl font-bold text-xs shadow-2xs flex items-center justify-center gap-2.5 transition-all hover:border-slate-300 cursor-pointer"
         >
           <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
             <path
@@ -675,21 +659,21 @@ export const LoginPage: React.FC = () => {
         </button>
 
         {/* Footer Status */}
-        <div className="pt-3 border-t border-border flex items-center justify-between text-[11px] text-muted-foreground">
+        <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-400">
           <div className="flex items-center gap-1.5">
             <span
               className={`w-2 h-2 rounded-full ${
                 isSupabaseLive ? 'bg-emerald-500 animate-pulse' : 'bg-emerald-500'
               }`}
             />
-            <span>{isSupabaseLive ? 'Supabase Live' : 'Active Local Session'}</span>
+            <span className="font-medium text-slate-500">{isSupabaseLive ? 'Supabase Live' : 'Active Local Session'}</span>
           </div>
-          <span className="font-mono text-[10px]">Track 2 Node</span>
+          <span className="font-mono text-[10px] text-slate-400">Track 2 Node</span>
         </div>
       </div>
 
       {/* Footer */}
-      <div className="max-w-5xl w-full mx-auto text-center text-xs text-[#7c839b]">
+      <div className="max-w-5xl w-full mx-auto text-center text-xs text-slate-500">
         © 2026 Kopargaon Municipal Council (कोपरगाव नगरपरिषद). All rights reserved.
       </div>
 
@@ -713,4 +697,3 @@ export const LoginPage: React.FC = () => {
     </div>
   );
 };
-
