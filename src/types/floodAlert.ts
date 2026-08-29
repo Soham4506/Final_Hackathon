@@ -5,7 +5,41 @@
 
 export type FloodRiskTier = 'p0_critical' | 'p1_high' | 'p2_moderate' | 'p3_safe';
 
+export type AreaSeverityLevel = 'extreme' | 'critical' | 'high' | 'moderate' | 'low';
+
 export type DamDischargeAlertLevel = 'normal' | 'advisory_green' | 'alert_orange' | 'danger_red' | 'catastrophic';
+
+export type EmergencyTeamType =
+  | 'sdrf_boat_rescue_team'
+  | 'heavy_pumping_squad'
+  | 'embankment_sandbag_team'
+  | 'rapid_evacuation_bus_fleet'
+  | 'trauma_medical_team';
+
+export interface AreaSeverityAssessment {
+  severityLevel: AreaSeverityLevel;
+  severityScore: number; // 0 to 100
+  severityRank: number; // #1 = highest severity across all municipal zones
+  lifeThreatSeverity: number; // 0 to 100 (vulnerable residents, kutcha dwellings)
+  submergenceDepthSeverity: number; // 0 to 100 (river level vs ground elevation)
+  criticalInfrastructureSeverity: number; // 0 to 100 (hospitals, transformers, intake wells)
+  isolationBlockageSeverity: number; // 0 to 100 (culverts blocked, evacuation routes cut)
+  urgencyWindowMinutes: number; // e.g. 25 mins for extreme severity
+  severityRationale: string;
+  severityRationaleMr: string;
+}
+
+export interface EmergencyTeamDeployment {
+  teamId: string;
+  teamType: EmergencyTeamType;
+  teamName: string;
+  allocatedZoneId: string;
+  allocatedZoneName: string;
+  severityRank: number;
+  severityScore: number;
+  deploymentPriorityReason: string;
+  deploymentStatus: 'deployed' | 'in_transit' | 'standby' | 'deferred_capacity';
+}
 
 export interface UpstreamDamTelemetry {
   damName: string;
@@ -77,13 +111,16 @@ export interface ZoneDispatchPlanItem {
   wardNumber: number;
   riskScore: number;
   riskTier: FloodRiskTier;
+  severityAssessment: AreaSeverityAssessment;
   timeToInundationHours: number;
   allocatedResources: AllocatedEmergencyPackage;
+  assignedTeams: EmergencyTeamDeployment[];
   dispatchStatus: 'immediate_dispatch' | 'standby_precaution' | 'monitoring_safe';
   dispatchEtaMinutes: number;
   evacuationRoute: string;
   designatedShelterSite: string;
   rationale: string;
+  severityConflictResolutionNote: string;
 }
 
 export interface FloodDispatchOrder {

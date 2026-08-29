@@ -2,6 +2,9 @@ import {
   ZoneFloodProfile,
   FloodRiskScoreDecomposition,
   FloodRiskTier,
+  AreaSeverityAssessment,
+  AreaSeverityLevel,
+  EmergencyTeamDeployment,
   UpstreamDamTelemetry,
   EmergencyResourceInventory,
   ZoneDispatchPlanItem,
@@ -15,6 +18,102 @@ import {
 // ==============================================================================
 
 export class FloodPriorityEngine {
+  /**
+   * Deterministically calculates the multi-factor Area Severity Assessment.
+   * When multiple areas are at risk, this severity score governs which area receives
+   * limited emergency rescue teams and pumps first.
+   */
+  public static calculateAreaSeverity(
+    zone: ZoneFloodProfile,
+    damTelemetry: UpstreamDamTelemetry
+  ): AreaSeverityAssessment {
+    // 1. Life Threat Severity (40% Weight): Vulnerable population in riverbank kutcha settlements
+    // Higher vulnerable population + closer river proximity = extreme human life hazard
+    const proximityMultiplier = Math.max(0.2, (2000 - zone.distanceToGodavariRiverMeters) / 1950);
+    const rawLifeThreat = Math.min(
+      100,
+      Math.round((zone.vulnerablePopulation / 3200) * 100 * proximityMultiplier)
+    );
+
+    // 2. Submergence Depth Severity (30% Weight):
+    // Physical head difference between Godavari River gauge level and ground elevation
+    // Ground: 492.2m vs River: 496.2m => water is +4.0m above local ground datum!
+    const submergenceHeadMeters = Math.max(0, damTelemetry.waterLevelMeters - zone.elevationAboveDatumMeters + 1.5);
+    const rawSubmergence = Math.min(
+      100,
+      Math.round((submergenceHeadMeters / 6.0) * 100)
+    );
+
+    // 3. Critical Infrastructure Severity (20% Weight):
+    // Intake pumping stations, hospitals, power transformers, oxygen plants
+    const rawInfra = Math.min(100, zone.criticalInfrastructureCount * 28);
+
+    // 4. Drainage Congestion & Evacuation Route Blockage (10% Weight):
+    const rawIsolation = Math.min(100, zone.drainageCongestionIndex * 20);
+
+    // Deterministic Multi-Factor Severity Formula:
+    // S_sev = 0.40 * Life + 0.30 * Submergence + 0.20 * Infra + 0.10 * Isolation
+    const severityScore = Number(
+      (
+        rawLifeThreat * 0.40 +
+        rawSubmergence * 0.30 +
+        rawInfra * 0.20 +
+        rawIsolation * 0.10
+      ).toFixed(1)
+    );
+
+    // Severity Level Classification
+    let severityLevel: AreaSeverityAssessment['severityLevel'] = 'low';
+    let urgencyWindowMinutes = 180;
+
+    if (severityScore >= 80) {
+      severityLevel = 'extreme';
+      urgencyWindowMinutes = 20; // Immediate 20-minute emergency team response required
+    } else if (severityScore >= 65) {
+      severityLevel = 'critical';
+      urgencyWindowMinutes = 45;
+    } else if (severityScore >= 45) {
+      severityLevel = 'high';
+      urgencyWindowMinutes = 90;
+    } else if (severityScore >= 25) {
+      severityLevel = 'moderate';
+      urgencyWindowMinutes = 180;
+    } else {
+      severityLevel = 'low';
+      urgencyWindowMinutes = 360;
+    }
+
+    let severityRationale = '';
+    let severityRationaleMr = '';
+
+    if (severityLevel === 'extreme') {
+      severityRationale = `EXTREME SEVERITY: Direct riverfront submergence head (+${submergenceHeadMeters.toFixed(1)}m) combined with ${zone.vulnerablePopulation.toLocaleString()} residents in low-lying kutcha settlements requires Priority #1 emergency rescue boat and heavy pump deployment.`;
+      severityRationaleMr = `अति-गंभीर धोका: गोदावरी पात्राजवळ थेट जलमग्नता (+${submergenceHeadMeters.toFixed(1)} मी) आणि ${zone.vulnerablePopulation.toLocaleString()} नागरिकांच्या जीविताचा धोका असल्याने प्रथम प्राधान्याने बचाव पथके व पंप वाटप मंजूर.`;
+    } else if (severityLevel === 'critical') {
+      severityRationale = `CRITICAL SEVERITY: Severe waterlogging and critical infrastructure at risk (${zone.criticalInfrastructureNames.join(', ') || 'Local grid'}). Dispatch emergency teams before flood peak arrival.`;
+      severityRationaleMr = `गंभीर धोका: महत्त्वाच्या पायाभूत सुविधांवर पाणी साचण्याचा धोका (${zone.criticalInfrastructureNames.join(', ') || 'स्थानिक यंत्रणा'}). तातडीने आपत्कालीन पथके तैनात करणे आवश्यक.`;
+    } else if (severityLevel === 'high') {
+      severityRationale = `HIGH SEVERITY: Runoff accumulation with moderate evacuation buffer. Precautionary de-watering pump and sandbag staging deployed.`;
+      severityRationaleMr = `मध्यम-उच्च धोका: पाण्याचा साचणारा प्रवाह. प्रतिबंधात्मक उपसा पंप व वाळू पोती पथके तैनात.`;
+    } else {
+      severityRationale = `LOW SEVERITY: Naturally elevated terrain (${zone.elevationAboveDatumMeters}m datum). Serves as safe staging and recipient shelter area.`;
+      severityRationaleMr = `कमी धोका: नैसर्गिक उंचावरील सुरक्षित भाग (${zone.elevationAboveDatumMeters} मी). आपत्कालीन स्थलांतर केंद्र म्हणून कार्यरत.`;
+    }
+
+    return {
+      severityLevel,
+      severityScore,
+      severityRank: 1, // calculated dynamically when ranking
+      lifeThreatSeverity: rawLifeThreat,
+      submergenceDepthSeverity: rawSubmergence,
+      criticalInfrastructureSeverity: rawInfra,
+      isolationBlockageSeverity: rawIsolation,
+      urgencyWindowMinutes,
+      severityRationale,
+      severityRationaleMr,
+    };
+  }
+
   /**
    * Deterministically calculates the flood risk score and parameter decomposition
    * for a specific zone based on physical geography and live dam telemetry.
@@ -120,7 +219,8 @@ export class FloodPriorityEngine {
 
   /**
    * Generates a resource-constrained emergency dispatch plan
-   * ranking all zones from Rank #1 to #8 and distributing limited municipal assets.
+   * ranking all zones strictly by Area Severity Score (#1 to #8)
+   * and distributing limited emergency teams and fleet.
    */
   public static generateEmergencyDispatchPlan(
     zones: ZoneFloodProfile[],
@@ -128,14 +228,20 @@ export class FloodPriorityEngine {
     inventory: EmergencyResourceInventory,
     disasterOfficerName: string = 'Er. S. B. Patil (Disaster Response Head)'
   ): FloodDispatchOrder {
-    // 1. Evaluate all zones and compute risk scores
+    // 1. Evaluate all zones: compute Risk Decomposition & Area Severity Assessment
     const evaluatedZones = zones.map((zone) => {
       const risk = this.calculateZoneRisk(zone, damTelemetry);
-      return { zone, risk };
+      const severity = this.calculateAreaSeverity(zone, damTelemetry);
+      return { zone, risk, severity };
     });
 
-    // 2. Sort strictly by final risk score descending (Rank #1 gets resources first)
-    evaluatedZones.sort((a, b) => b.risk.finalRiskScore - a.risk.finalRiskScore);
+    // 2. Sort strictly by SEVERITY SCORE descending (High Severity receives emergency resources FIRST)
+    evaluatedZones.sort((a, b) => b.severity.severityScore - a.severity.severityScore);
+
+    // Assign severityRank to each
+    evaluatedZones.forEach((item, index) => {
+      item.severity.severityRank = index + 1;
+    });
 
     // 3. Track remaining emergency inventory for greedy knapsack allocation
     let remainingPumps = inventory.dewateringPumps.available;
@@ -157,37 +263,41 @@ export class FloodPriorityEngine {
 
     evaluatedZones.forEach((item, index) => {
       const rank = index + 1;
-      const { zone, risk } = item;
+      const { zone, risk, severity } = item;
 
-      if (risk.riskTier === 'p0_critical' || risk.riskTier === 'p1_high') {
+      if (severity.severityLevel === 'extreme' || severity.severityLevel === 'critical' || severity.severityLevel === 'high') {
         totalZonesAtRisk++;
       }
 
-      // Determine required resource package based on tier
+      // Determine required resource package based on SEVERITY LEVEL
       let reqPumps = 0;
       let reqBoats = 0;
       let reqSandbags = 0;
       let reqBuses = 0;
       let reqMedical = 0;
 
-      if (risk.riskTier === 'p0_critical') {
+      if (severity.severityLevel === 'extreme') {
         reqBoats = zone.distanceToGodavariRiverMeters <= 200 ? 2 : 1;
         reqPumps = 2;
         reqSandbags = 3;
         reqBuses = 2;
         reqMedical = 1;
-      } else if (risk.riskTier === 'p1_high') {
+      } else if (severity.severityLevel === 'critical') {
         reqBoats = zone.distanceToGodavariRiverMeters <= 300 ? 1 : 0;
-        reqPumps = 1;
+        reqPumps = 2;
         reqSandbags = 2;
         reqBuses = 1;
         reqMedical = 1;
-      } else if (risk.riskTier === 'p2_moderate') {
+      } else if (severity.severityLevel === 'high') {
+        reqPumps = 1;
+        reqSandbags = 2;
+        reqBuses = 1;
+      } else if (severity.severityLevel === 'moderate') {
         reqPumps = 1;
         reqSandbags = 1;
       }
 
-      // Allocate from available inventory greedily
+      // Allocate from available inventory greedily based on severity rank
       const allocPumps = Math.min(reqPumps, remainingPumps);
       const allocBoats = Math.min(reqBoats, remainingBoats);
       const allocSandbags = Math.min(reqSandbags, remainingSandbags);
@@ -204,13 +314,71 @@ export class FloodPriorityEngine {
         totalVulnerableCitizensCovered += zone.vulnerablePopulation;
       }
 
+      // Build structured Emergency Team Deployments
+      const assignedTeams: EmergencyTeamDeployment[] = [];
+      if (allocBoats > 0) {
+        assignedTeams.push({
+          teamId: `team-boat-${rank}`,
+          teamType: 'sdrf_boat_rescue_team',
+          teamName: `SDRF Motorized Boat Rescue Squad #${rank}`,
+          allocatedZoneId: zone.id,
+          allocatedZoneName: zone.zoneName,
+          severityRank: rank,
+          severityScore: severity.severityScore,
+          deploymentPriorityReason: `Deployed on Priority #${rank} due to ${severity.severityLevel.toUpperCase()} severity (${severity.severityScore} pts).`,
+          deploymentStatus: 'deployed',
+        });
+      }
+
+      if (allocPumps > 0) {
+        assignedTeams.push({
+          teamId: `team-pump-${rank}`,
+          teamType: 'heavy_pumping_squad',
+          teamName: `High-Capacity De-watering Squad #${rank}`,
+          allocatedZoneId: zone.id,
+          allocatedZoneName: zone.zoneName,
+          severityRank: rank,
+          severityScore: severity.severityScore,
+          deploymentPriorityReason: `Pumping squad allocated to relieve submergence head in ${zone.zoneName}.`,
+          deploymentStatus: 'deployed',
+        });
+      }
+
+      if (allocBuses > 0) {
+        assignedTeams.push({
+          teamId: `team-bus-${rank}`,
+          teamType: 'rapid_evacuation_bus_fleet',
+          teamName: `Rapid Evacuation Transit Unit #${rank}`,
+          allocatedZoneId: zone.id,
+          allocatedZoneName: zone.zoneName,
+          severityRank: rank,
+          severityScore: severity.severityScore,
+          deploymentPriorityReason: `Evacuation fleet assigned to transport ${zone.vulnerablePopulation.toLocaleString()} residents to ${zone.designatedShelterSite}.`,
+          deploymentStatus: 'deployed',
+        });
+      }
+
+      if (allocSandbags > 0) {
+        assignedTeams.push({
+          teamId: `team-sandbag-${rank}`,
+          teamType: 'embankment_sandbag_team',
+          teamName: `Embankment Bunding Crew #${rank}`,
+          allocatedZoneId: zone.id,
+          allocatedZoneName: zone.zoneName,
+          severityRank: rank,
+          severityScore: severity.severityScore,
+          deploymentPriorityReason: `Bunding crew assigned to prevent storm canal breach.`,
+          deploymentStatus: 'deployed',
+        });
+      }
+
       // Check for unmet bottleneck
       if (reqBoats > allocBoats) {
         unmetDeficits.push({
           resourceType: 'Inflatable Rescue Boats',
           deficitCount: reqBoats - allocBoats,
           affectedZones: [zone.zoneName],
-          recommendation: `Request ${reqBoats - allocBoats} additional SDRF rescue boats from Ahilyanagar Collectorate for ${zone.zoneName}`,
+          recommendation: `Request ${reqBoats - allocBoats} additional SDRF rescue boats from Ahilyanagar Collectorate for ${zone.zoneName} (Severity: ${severity.severityScore})`,
         });
       }
 
@@ -224,15 +392,27 @@ export class FloodPriorityEngine {
       }
 
       const dispatchStatus =
-        risk.riskTier === 'p0_critical'
+        severity.severityLevel === 'extreme'
           ? 'immediate_dispatch'
-          : risk.riskTier === 'p1_high'
+          : severity.severityLevel === 'critical'
           ? 'immediate_dispatch'
-          : risk.riskTier === 'p2_moderate'
+          : severity.severityLevel === 'high'
           ? 'standby_precaution'
           : 'monitoring_safe';
 
-      const etaMinutes = rank * 8; // e.g. Rank 1 = 8 mins, Rank 2 = 16 mins
+      const etaMinutes = rank * 6; // e.g. Rank 1 = 6 mins, Rank 2 = 12 mins
+
+      // Severity Conflict Resolution Plain-Language Note
+      let conflictNote = '';
+      if (rank === 1) {
+        conflictNote = `HIGHEST SEVERITY IN MUNICIPALITY: Receives first call on all rescue boats and pumping squads due to peak life hazard score (${severity.lifeThreatSeverity}/100) and lowest topographic elevation (${zone.elevationAboveDatumMeters}m).`;
+      } else if (rank === 2) {
+        conflictNote = `RANK #2 SEVERITY: Receives secondary rescue fleet immediately following Rank #1 deployment.`;
+      } else if (allocBoats === 0 && reqBoats > 0) {
+        conflictNote = `RESOURCE CONFLICT: Rescue boats exhausted by higher severity zones (Rank #1 & #2). Queued for standby de-watering pumps and secondary SDRF detachment.`;
+      } else {
+        conflictNote = `Precautionary deployment allocated in accordance with severity rank #${rank}.`;
+      }
 
       dispatchItems.push({
         rank,
@@ -242,6 +422,7 @@ export class FloodPriorityEngine {
         wardNumber: zone.wardNumber,
         riskScore: risk.finalRiskScore,
         riskTier: risk.riskTier,
+        severityAssessment: severity,
         timeToInundationHours: risk.estimatedTimeToInundationHours,
         allocatedResources: {
           dewateringPumps: allocPumps,
@@ -250,11 +431,13 @@ export class FloodPriorityEngine {
           evacuationBuses: allocBuses,
           medicalReliefVans: allocMedical,
         },
+        assignedTeams,
         dispatchStatus,
         dispatchEtaMinutes: etaMinutes,
         evacuationRoute: `Via Shivaji Road ➔ Arterial Link to ${zone.designatedShelterSite}`,
         designatedShelterSite: zone.designatedShelterSite,
-        rationale: risk.primaryRiskReason,
+        rationale: severity.severityRationale,
+        severityConflictResolutionNote: conflictNote,
       });
     });
 
@@ -279,42 +462,43 @@ export class FloodPriorityEngine {
 
   /**
    * Pairwise Comparison Explainer: Explains why Zone A was dispatched before Zone B
+   * based on specific severity factors.
    */
   public static compareTwoZones(
     zoneA: ZoneFloodProfile,
     zoneB: ZoneFloodProfile,
     damTelemetry: UpstreamDamTelemetry
   ) {
-    const riskA = this.calculateZoneRisk(zoneA, damTelemetry);
-    const riskB = this.calculateZoneRisk(zoneB, damTelemetry);
+    const sevA = this.calculateAreaSeverity(zoneA, damTelemetry);
+    const sevB = this.calculateAreaSeverity(zoneB, damTelemetry);
 
-    const higherZone = riskA.finalRiskScore >= riskB.finalRiskScore ? zoneA : zoneB;
-    const lowerZone = riskA.finalRiskScore >= riskB.finalRiskScore ? zoneB : zoneA;
-    const higherRisk = riskA.finalRiskScore >= riskB.finalRiskScore ? riskA : riskB;
-    const lowerRisk = riskA.finalRiskScore >= riskB.finalRiskScore ? riskB : riskA;
+    const higherZone = sevA.severityScore >= sevB.severityScore ? zoneA : zoneB;
+    const lowerZone = sevA.severityScore >= sevB.severityScore ? zoneB : zoneA;
+    const higherSev = sevA.severityScore >= sevB.severityScore ? sevA : sevB;
+    const lowerSev = sevA.severityScore >= sevB.severityScore ? sevB : sevA;
 
-    const diff = Number((higherRisk.finalRiskScore - lowerRisk.finalRiskScore).toFixed(1));
+    const diff = Number((higherSev.severityScore - lowerSev.severityScore).toFixed(1));
 
     const factorDiffs = [
       {
-        factor: 'River Proximity',
-        delta: higherRisk.riverProximityScore - lowerRisk.riverProximityScore,
-        detail: `${higherZone.zoneName} is ${higherZone.distanceToGodavariRiverMeters}m from Godavari vs ${lowerZone.distanceToGodavariRiverMeters}m for ${lowerZone.zoneName}`,
-      },
-      {
-        factor: 'Elevation Deficit',
-        delta: higherRisk.elevationScore - lowerRisk.elevationScore,
-        detail: `${higherZone.zoneName} elevation is ${higherZone.elevationAboveDatumMeters}m (${lowerZone.elevationAboveDatumMeters - higherZone.elevationAboveDatumMeters}m lower than ${lowerZone.zoneName})`,
-      },
-      {
-        factor: 'Vulnerable Population',
-        delta: higherRisk.vulnerablePopulationScore - lowerRisk.vulnerablePopulationScore,
+        factor: 'Life Safety & Trapped Population Threat',
+        delta: higherSev.lifeThreatSeverity - lowerSev.lifeThreatSeverity,
         detail: `${higherZone.vulnerablePopulation.toLocaleString()} vulnerable residents in ${higherZone.zoneName} vs ${lowerZone.vulnerablePopulation.toLocaleString()} in ${lowerZone.zoneName}`,
       },
       {
-        factor: 'Critical Infrastructure',
-        delta: higherRisk.criticalInfrastructureScore - lowerRisk.criticalInfrastructureScore,
-        detail: `${higherZone.criticalInfrastructureCount} critical facilities (${higherZone.criticalInfrastructureNames.join(', ') || 'None'})`,
+        factor: 'Submergence Head & Riverhead Surge',
+        delta: higherSev.submergenceDepthSeverity - lowerSev.submergenceDepthSeverity,
+        detail: `${higherZone.zoneName} is at ${higherZone.elevationAboveDatumMeters}m datum (${lowerZone.elevationAboveDatumMeters - higherZone.elevationAboveDatumMeters}m lower than ${lowerZone.zoneName}), closer to river (${higherZone.distanceToGodavariRiverMeters}m vs ${lowerZone.distanceToGodavariRiverMeters}m)`,
+      },
+      {
+        factor: 'Critical Infrastructure Hazard',
+        delta: higherSev.criticalInfrastructureSeverity - lowerSev.criticalInfrastructureSeverity,
+        detail: `${higherZone.criticalInfrastructureCount} critical facilities at risk in ${higherZone.zoneName} (${higherZone.criticalInfrastructureNames.join(', ') || 'Local grid'})`,
+      },
+      {
+        factor: 'Drainage & Evacuation Blockage',
+        delta: higherSev.isolationBlockageSeverity - lowerSev.isolationBlockageSeverity,
+        detail: `Drainage congestion index: ${higherZone.drainageCongestionIndex}/5 vs ${lowerZone.drainageCongestionIndex}/5`,
       },
     ];
 
@@ -325,8 +509,8 @@ export class FloodPriorityEngine {
       lowerZoneName: lowerZone.zoneName,
       scoreDifference: diff,
       topContributingFactors: factorDiffs,
-      plainExplanation: `${higherZone.zoneName} ranks +${diff} points higher than ${lowerZone.zoneName} primarily due to closer riverbank proximity (${higherZone.distanceToGodavariRiverMeters}m vs ${lowerZone.distanceToGodavariRiverMeters}m) and lower topographic elevation (${higherZone.elevationAboveDatumMeters}m vs ${lowerZone.elevationAboveDatumMeters}m), warranting first-priority boat and dewatering pump dispatch.`,
-      plainExplanationMr: `${higherZone.zoneName} चा पूर धोका ${lowerZone.zoneName} पेक्षा +${diff} गुणांनी जास्त आहे. याचे मुख्य कारण म्हणजे गोदावरी पात्रापासूनचे कमी अंतर (${higherZone.distanceToGodavariRiverMeters} मी) आणि सखल भाग (${higherZone.elevationAboveDatumMeters} मी) यामुळे प्रथम प्राधान्याने बचाव नौका व पंप वाटप मंजूर करण्यात आले आहे.`,
+      plainExplanation: `SEVERITY CONFLICT RESOLUTION: When both areas are at risk, ${higherZone.zoneName} receives limited emergency teams/resources first because its Severity Score (${higherSev.severityScore}/100, ${higherSev.severityLevel.toUpperCase()}) is +${diff} points higher than ${lowerZone.zoneName} (${lowerSev.severityScore}/100, ${lowerSev.severityLevel.toUpperCase()}). The primary driver is higher life threat to ${higherZone.vulnerablePopulation.toLocaleString()} riverbank residents and acute submergence depth.`,
+      plainExplanationMr: `तीव्रता प्राधान्य निर्णय: जेव्हा दोन्ही भागांना पूर धोका असतो, तेव्हा ${higherZone.zoneName} ला प्रथम आपत्कालीन पथके व संसाधने दिली जातात, कारण त्याचा तीव्रता गुण (${higherSev.severityScore}/100, ${higherSev.severityLevel.toUpperCase()}) हा ${lowerZone.zoneName} पेक्षा +${diff} ने जास्त आहे. ${higherZone.vulnerablePopulation.toLocaleString()} नागरिकांच्या जीविताचा थेट धोका असल्याने प्रथम बचाव नौका वाटप मंजूर करण्यात आले आहे.`,
     };
   }
 }

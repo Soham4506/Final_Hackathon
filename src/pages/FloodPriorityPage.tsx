@@ -331,57 +331,66 @@ export const FloodPriorityPage: React.FC = () => {
         </div>
       </div>
 
-      {/* SECTION 3: DETERMINISTIC ZONE DISPATCH SEQUENCE LEADERBOARD */}
+      {/* SECTION 3: DETERMINISTIC SEVERITY-DRIVEN EMERGENCY RESOURCE DISPATCH */}
       <div className="p-5 md:p-6 rounded-2xl bg-slate-900/90 border border-slate-800 space-y-4 shadow-xl">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800 pb-3">
           <div>
             <span className="text-[10px] font-mono uppercase text-rose-400 font-bold tracking-widest block">
-              Multi-Factor Resource Allocation Knapsack
+              Multi-Area High Severity Conflict Resolution Matrix
             </span>
             <h3 className="text-base font-bold text-white flex items-center gap-2 mt-0.5">
               <Navigation size={18} className="text-rose-400" />
               <span>
-                {language === 'mr' ? 'प्रभाग आपत्कालीन साधन वाटप क्रमवारी' : 'Zone Dispatch Priority Sequence (Rank #1 to #8)'}
+                {language === 'mr'
+                  ? 'तीव्रता-आधारित आपत्कालीन पथके वाटप क्रमवारी'
+                  : 'Severity-First Emergency Team & Resource Dispatch Sequence (Rank #1 to #8)'}
               </span>
             </h3>
+            <p className="text-xs text-slate-300 mt-1">
+              {language === 'mr'
+                ? 'जेव्हा एकाच वेळी अनेक भागांना पूर धोका असतो, तेव्हा ज्या भागात जीविताचा व जलमग्नतेचा तीव्रता गुण (Severity) सर्वाधिक असतो, त्या भागाला मर्यादित बचाव नौका व पंप प्रथम दिले जातात.'
+                : 'When multiple areas are simultaneously at risk, the area with highest Severity Score (Life Threat + Submergence Head + Infrastructure) receives limited emergency rescue teams and pumps first.'}
+            </p>
           </div>
 
-          <div className="text-xs text-slate-400 font-mono">
-            Zones at Risk: <strong className="text-rose-400">{currentPlan.totalZonesAtRisk}</strong> • Covered Citizens:{' '}
-            <strong className="text-white">{currentPlan.totalVulnerableCitizensCovered.toLocaleString()}</strong>
+          <div className="text-xs text-slate-400 font-mono text-right shrink-0">
+            <div>Zones at Risk: <strong className="text-rose-400">{currentPlan.totalZonesAtRisk}</strong></div>
+            <div>Covered Citizens: <strong className="text-white">{currentPlan.totalVulnerableCitizensCovered.toLocaleString()}</strong></div>
           </div>
         </div>
 
-        {/* Ranked Zone Cards */}
-        <div className="space-y-3">
+        {/* Ranked Zone Cards with Severity Breakdown */}
+        <div className="space-y-3.5">
           {currentPlan.items.map((item) => (
             <div
               key={item.zoneId}
-              className={`p-4 rounded-xl border transition-all ${
-                item.rank === 1
-                  ? 'bg-rose-950/30 border-rose-600/70 shadow-lg shadow-rose-950/40'
-                  : item.rank === 2
-                  ? 'bg-rose-950/20 border-rose-800/50'
-                  : item.riskScore >= 55
+              className={`p-4.5 rounded-xl border transition-all space-y-3 ${
+                item.severityAssessment.severityLevel === 'extreme'
+                  ? 'bg-rose-950/35 border-rose-600 shadow-lg shadow-rose-950/50'
+                  : item.severityAssessment.severityLevel === 'critical'
+                  ? 'bg-rose-950/20 border-rose-800/60'
+                  : item.severityAssessment.severityLevel === 'high'
                   ? 'bg-amber-950/20 border-amber-800/40'
                   : 'bg-slate-950/60 border-slate-800'
               }`}
             >
+              {/* Top Row: Rank, Zone Name, Severity Badge, Fleet */}
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
-                {/* Left: Rank & Zone Meta */}
+                {/* Left: Severity Rank & Zone Title */}
                 <div className="flex items-start gap-3 min-w-0 flex-1">
                   <div
-                    className={`shrink-0 w-10 h-10 rounded-xl flex items-center justify-center font-mono font-black text-sm border ${
+                    className={`shrink-0 w-11 h-11 rounded-xl flex flex-col items-center justify-center font-mono font-black border ${
                       item.rank === 1
                         ? 'bg-rose-600 text-white border-rose-400 shadow-md shadow-rose-900'
                         : item.rank === 2
                         ? 'bg-rose-900 text-rose-200 border-rose-700'
-                        : item.riskTier === 'p1_high'
+                        : item.severityAssessment.severityLevel === 'critical'
                         ? 'bg-amber-900 text-amber-200 border-amber-700'
                         : 'bg-slate-800 text-slate-300 border-slate-700'
                     }`}
                   >
-                    #{item.rank}
+                    <span className="text-[9px] uppercase font-bold tracking-tight opacity-75">RANK</span>
+                    <span className="text-sm leading-none">#{item.rank}</span>
                   </div>
 
                   <div className="space-y-1 min-w-0 flex-1">
@@ -394,58 +403,111 @@ export const FloodPriorityPage: React.FC = () => {
                       </span>
                       <span
                         className={`text-[10px] font-mono font-bold uppercase px-2 py-0.5 rounded border ${
-                          item.riskTier === 'p0_critical'
-                            ? 'bg-rose-950 text-rose-300 border-rose-800 animate-pulse'
-                            : item.riskTier === 'p1_high'
-                            ? 'bg-amber-950 text-amber-300 border-amber-800'
-                            : item.riskTier === 'p2_moderate'
-                            ? 'bg-yellow-950 text-yellow-300 border-yellow-800'
-                            : 'bg-emerald-950 text-emerald-300 border-emerald-800'
+                          item.severityAssessment.severityLevel === 'extreme'
+                            ? 'bg-rose-950 text-rose-300 border-rose-700 animate-pulse'
+                            : item.severityAssessment.severityLevel === 'critical'
+                            ? 'bg-amber-950 text-amber-300 border-amber-700'
+                            : item.severityAssessment.severityLevel === 'high'
+                            ? 'bg-yellow-950 text-yellow-300 border-yellow-700'
+                            : 'bg-slate-800 text-slate-300 border-slate-700'
                         }`}
                       >
-                        {item.riskTier.replace('_', ' ')} • {item.riskScore} pts
+                        {item.severityAssessment.severityLevel.toUpperCase()} SEVERITY • {item.severityAssessment.severityScore} pts
                       </span>
                     </div>
 
-                    <p className="text-xs text-slate-300 line-clamp-1">{item.rationale}</p>
+                    <p className="text-xs text-slate-300">
+                      {item.severityAssessment.severityRationale}
+                    </p>
                   </div>
                 </div>
 
-                {/* Right: Allocated Emergency Assets & ETA */}
-                <div className="flex flex-wrap md:flex-col lg:flex-row items-start md:items-end lg:items-center gap-3 text-xs">
-                  {/* Assigned Assets Badges */}
-                  <div className="flex flex-wrap gap-1.5 font-mono text-[11px]">
-                    {item.allocatedResources.rescueBoats > 0 && (
-                      <span className="px-2 py-0.5 rounded-lg bg-blue-950 text-blue-300 border border-blue-800 font-bold">
-                        🚤 {item.allocatedResources.rescueBoats} Boats
-                      </span>
-                    )}
-                    {item.allocatedResources.dewateringPumps > 0 && (
-                      <span className="px-2 py-0.5 rounded-lg bg-emerald-950 text-emerald-300 border border-emerald-800 font-bold">
-                        ⚙️ {item.allocatedResources.dewateringPumps} Pumps
-                      </span>
-                    )}
-                    {item.allocatedResources.sandbagTrucks > 0 && (
-                      <span className="px-2 py-0.5 rounded-lg bg-amber-950 text-amber-300 border border-amber-800 font-bold">
-                        🧱 {item.allocatedResources.sandbagTrucks} Sandbag Trks
-                      </span>
-                    )}
-                    {item.allocatedResources.evacuationBuses > 0 && (
-                      <span className="px-2 py-0.5 rounded-lg bg-purple-950 text-purple-300 border border-purple-800 font-bold">
-                        🚌 {item.allocatedResources.evacuationBuses} Buses
-                      </span>
-                    )}
+                {/* Right: ETA & Shelter */}
+                <div className="text-right text-xs space-y-1 shrink-0">
+                  <div className="font-mono text-slate-300">
+                    Response Window: <strong className="text-rose-400">{item.severityAssessment.urgencyWindowMinutes} mins</strong> (ETA: {item.dispatchEtaMinutes}m)
                   </div>
+                  <div className="text-emerald-400 font-medium truncate max-w-[240px]" title={item.designatedShelterSite}>
+                    🏥 Shelter: {item.designatedShelterSite}
+                  </div>
+                </div>
+              </div>
 
-                  {/* ETA & Shelter */}
-                  <div className="text-right text-[11px] space-y-0.5">
-                    <span className="text-slate-400 block">
-                      Dispatch ETA: <strong className="text-white font-mono">{item.dispatchEtaMinutes} mins</strong>
-                    </span>
-                    <span className="text-emerald-400 font-medium block truncate max-w-[220px]" title={item.designatedShelterSite}>
-                      🏥 {item.designatedShelterSite}
-                    </span>
+              {/* Middle Row: Severity Score Factor Bars */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2 border-t border-slate-800/80 text-[11px]">
+                <div className="p-2 rounded-lg bg-slate-900 border border-slate-800 space-y-1">
+                  <div className="flex justify-between text-slate-400">
+                    <span>Life Threat (40%)</span>
+                    <strong className="text-rose-400 font-mono">{item.severityAssessment.lifeThreatSeverity}/100</strong>
                   </div>
+                  <div className="w-full bg-slate-950 h-1.5 rounded-full overflow-hidden">
+                    <div
+                      className="bg-rose-500 h-full"
+                      style={{ width: `${item.severityAssessment.lifeThreatSeverity}%` }}
+                    />
+                  </div>
+                </div>
+
+                <div className="p-2 rounded-lg bg-slate-900 border border-slate-800 space-y-1">
+                  <div className="flex justify-between text-slate-400">
+                    <span>Submergence Head (30%)</span>
+                    <strong className="text-blue-400 font-mono">{item.severityAssessment.submergenceDepthSeverity}/100</strong>
+                  </div>
+                  <div className="w-full bg-slate-950 h-1.5 rounded-full overflow-hidden">
+                    <div
+                      className="bg-blue-500 h-full"
+                      style={{ width: `${item.severityAssessment.submergenceDepthSeverity}%` }}
+                    />
+                  </div>
+                </div>
+
+                <div className="p-2 rounded-lg bg-slate-900 border border-slate-800 space-y-1">
+                  <div className="flex justify-between text-slate-400">
+                    <span>Critical Infra (20%)</span>
+                    <strong className="text-amber-400 font-mono">{item.severityAssessment.criticalInfrastructureSeverity}/100</strong>
+                  </div>
+                  <div className="w-full bg-slate-950 h-1.5 rounded-full overflow-hidden">
+                    <div
+                      className="bg-amber-500 h-full"
+                      style={{ width: `${item.severityAssessment.criticalInfrastructureSeverity}%` }}
+                    />
+                  </div>
+                </div>
+
+                <div className="p-2 rounded-lg bg-slate-900 border border-slate-800 space-y-1">
+                  <div className="flex justify-between text-slate-400">
+                    <span>Drainage Blockage (10%)</span>
+                    <strong className="text-teal-400 font-mono">{item.severityAssessment.isolationBlockageSeverity}/100</strong>
+                  </div>
+                  <div className="w-full bg-slate-950 h-1.5 rounded-full overflow-hidden">
+                    <div
+                      className="bg-teal-500 h-full"
+                      style={{ width: `${item.severityAssessment.isolationBlockageSeverity}%` }}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Bottom Row: Deployed Emergency Teams & Conflict Rationale */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-2 border-t border-slate-800/80 text-xs">
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <span className="text-[10px] uppercase font-bold text-slate-400 mr-1">Emergency Teams:</span>
+                  {item.assignedTeams.length > 0 ? (
+                    item.assignedTeams.map((team) => (
+                      <span
+                        key={team.teamId}
+                        className="px-2 py-0.5 rounded-lg bg-slate-900 text-slate-200 border border-slate-700 text-[11px] font-mono font-medium"
+                      >
+                        🚨 {team.teamName}
+                      </span>
+                    ))
+                  ) : (
+                    <span className="text-slate-500 italic text-[11px]">No active teams required (Precautionary monitoring)</span>
+                  )}
+                </div>
+
+                <div className="text-[11px] text-slate-400 italic">
+                  💡 {item.severityConflictResolutionNote}
                 </div>
               </div>
             </div>

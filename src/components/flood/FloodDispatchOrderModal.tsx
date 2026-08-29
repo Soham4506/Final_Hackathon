@@ -127,10 +127,10 @@ export const FloodDispatchOrderModal: React.FC<FloodDispatchOrderModalProps> = (
               <table className="w-full text-left text-xs border-collapse">
                 <thead>
                   <tr className="bg-slate-950 text-slate-400 print:bg-gray-200 print:text-black border-b border-slate-800 print:border-black text-[11px]">
-                    <th className="p-2.5 font-bold">Seq</th>
+                    <th className="p-2.5 font-bold">Severity Rank</th>
                     <th className="p-2.5 font-bold">Zone / Ward</th>
-                    <th className="p-2.5 font-bold">Risk Score</th>
-                    <th className="p-2.5 font-bold">Assigned Emergency Fleet</th>
+                    <th className="p-2.5 font-bold">Severity Level & Score</th>
+                    <th className="p-2.5 font-bold">Assigned Emergency Teams & Fleet</th>
                     <th className="p-2.5 font-bold">ETA</th>
                     <th className="p-2.5 font-bold">Designated Shelter</th>
                   </tr>
@@ -140,8 +140,10 @@ export const FloodDispatchOrderModal: React.FC<FloodDispatchOrderModalProps> = (
                     <tr
                       key={item.zoneId}
                       className={
-                        item.rank <= 2
-                          ? 'bg-rose-950/20 font-medium print:bg-gray-50'
+                        item.severityAssessment.severityLevel === 'extreme'
+                          ? 'bg-rose-950/30 font-medium print:bg-red-50'
+                          : item.severityAssessment.severityLevel === 'critical'
+                          ? 'bg-rose-950/20 font-medium print:bg-amber-50'
                           : 'bg-slate-900/40 print:bg-white'
                       }
                     >
@@ -154,43 +156,32 @@ export const FloodDispatchOrderModal: React.FC<FloodDispatchOrderModalProps> = (
                       </td>
                       <td className="p-2.5 font-mono font-bold">
                         <span
-                          className={`px-1.5 py-0.5 rounded text-[10px] ${
-                            item.riskScore >= 75
-                              ? 'bg-rose-950 text-rose-300 border border-rose-800'
-                              : item.riskScore >= 55
-                              ? 'bg-amber-950 text-amber-300 border border-amber-800'
-                              : 'bg-slate-800 text-slate-300'
+                          className={`px-2 py-0.5 rounded text-[10px] uppercase font-bold border ${
+                            item.severityAssessment.severityLevel === 'extreme'
+                              ? 'bg-rose-950 text-rose-300 border-rose-700'
+                              : item.severityAssessment.severityLevel === 'critical'
+                              ? 'bg-amber-950 text-amber-300 border-amber-700'
+                              : item.severityAssessment.severityLevel === 'high'
+                              ? 'bg-yellow-950 text-yellow-300 border-yellow-700'
+                              : 'bg-slate-800 text-slate-300 border-slate-700'
                           }`}
                         >
-                          {item.riskScore} pts
+                          {item.severityAssessment.severityLevel} • {item.severityAssessment.severityScore} pts
                         </span>
                       </td>
                       <td className="p-2.5">
                         <div className="flex flex-wrap gap-1.5 text-[10px] font-mono">
-                          {item.allocatedResources.rescueBoats > 0 && (
-                            <span className="px-1.5 py-0.5 rounded bg-blue-950 text-blue-300 border border-blue-800">
-                              🚤 {item.allocatedResources.rescueBoats} Boats
-                            </span>
-                          )}
-                          {item.allocatedResources.dewateringPumps > 0 && (
-                            <span className="px-1.5 py-0.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-800">
-                              ⚙️ {item.allocatedResources.dewateringPumps} Pumps
-                            </span>
-                          )}
-                          {item.allocatedResources.sandbagTrucks > 0 && (
-                            <span className="px-1.5 py-0.5 rounded bg-amber-950 text-amber-300 border border-amber-800">
-                              🧱 {item.allocatedResources.sandbagTrucks} Sandbag Trks
-                            </span>
-                          )}
-                          {item.allocatedResources.evacuationBuses > 0 && (
-                            <span className="px-1.5 py-0.5 rounded bg-purple-950 text-purple-300 border border-purple-800">
-                              🚌 {item.allocatedResources.evacuationBuses} Buses
-                            </span>
-                          )}
-                          {item.allocatedResources.medicalReliefVans > 0 && (
-                            <span className="px-1.5 py-0.5 rounded bg-rose-950 text-rose-300 border border-rose-800">
-                              🚑 {item.allocatedResources.medicalReliefVans} Med Van
-                            </span>
+                          {item.assignedTeams.length > 0 ? (
+                            item.assignedTeams.map((team) => (
+                              <span
+                                key={team.teamId}
+                                className="px-1.5 py-0.5 rounded bg-slate-950 text-slate-200 border border-slate-700"
+                              >
+                                🚨 {team.teamName}
+                              </span>
+                            ))
+                          ) : (
+                            <span className="text-slate-500 italic">Precautionary Monitoring</span>
                           )}
                         </div>
                       </td>
