@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { WaterReusePlan, WaterAllocationItem } from '../../types/wastewater';
 import {
   X,
@@ -14,6 +14,8 @@ import {
   Droplets,
   Sprout,
   ShieldCheck,
+  Minus,
+  Maximize2,
 } from 'lucide-react';
 
 interface WaterDispatchOrderModalProps {
@@ -27,40 +29,88 @@ export const WaterDispatchOrderModal: React.FC<WaterDispatchOrderModalProps> = (
   item,
   onClose,
 }) => {
+  const [isMinimized, setIsMinimized] = useState<boolean>(false);
+
   const handlePrint = () => {
     window.print();
   };
 
   const currentItem = item || plan.items[0];
 
+  if (isMinimized) {
+    return (
+      <div className="fixed bottom-5 right-5 z-50 bg-white border-2 border-emerald-600 shadow-2xl rounded-2xl p-3.5 flex items-center gap-3 animate-in fade-in slide-in-from-bottom-5">
+        <div className="p-2 rounded-xl bg-emerald-100 text-emerald-800">
+          <Truck size={20} />
+        </div>
+        <div className="text-xs">
+          <div className="font-bold text-[#1b1b1d] flex items-center gap-1.5">
+            <span>Water Dispatch Order:</span>
+            <span className="font-mono text-emerald-800">{plan.planCode}</span>
+          </div>
+          <p className="text-[11px] text-[#57657b]">
+            Volume: <strong>{plan.totalVolumeAllocatedKLD.toLocaleString()} KL</strong> • Mode: <strong className="capitalize">{plan.distributionMethod.replace('_', ' ')}</strong>
+          </p>
+        </div>
+
+        <div className="flex items-center gap-2 pl-2 border-l border-slate-200">
+          <button
+            onClick={() => setIsMinimized(false)}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-700 hover:bg-emerald-600 text-white font-bold text-xs transition-all shadow-xs"
+            title="Expand Dispatch Order"
+          >
+            <Maximize2 size={14} />
+            <span>Expand Order</span>
+          </button>
+          <button
+            onClick={onClose}
+            className="p-1.5 rounded-lg text-[#76777d] hover:text-[#1b1b1d] hover:bg-slate-100 transition-all"
+            title="Close"
+          >
+            <X size={16} />
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-150 overflow-y-auto">
-      <div className="bg-white rounded-2xl max-w-3xl w-full shadow-2xl border border-[#76777d]/20 overflow-hidden my-8">
-        {/* Screen Top Bar */}
-        <div className="flex items-center justify-between px-6 py-4 bg-[#131b2e] text-white print:hidden">
+    <div className="fixed inset-0 z-50 flex items-start justify-center p-3 sm:p-6 bg-black/60 backdrop-blur-xs overflow-y-auto">
+      <div className="bg-white rounded-2xl max-w-3xl w-full shadow-2xl border border-[#76777d]/20 my-4 sm:my-8 flex flex-col max-h-[90vh] overflow-hidden print:my-0 print:border-none print:shadow-none print:max-h-none">
+        {/* Sticky Screen Top Bar */}
+        <div className="sticky top-0 z-30 shrink-0 flex items-center justify-between px-6 py-3.5 bg-[#131b2e] text-white shadow-xs print:hidden">
           <div className="flex items-center gap-2 font-bold text-sm uppercase tracking-wider">
             <Truck size={18} className="text-emerald-400" />
             <span>Official Treated Irrigation Water Dispatch Order</span>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setIsMinimized(true)}
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-bold uppercase tracking-wider text-slate-200 bg-white/10 hover:bg-white/20 border border-white/20 rounded-lg transition-all shadow-xs"
+              title="Minimize Order to bottom bar"
+            >
+              <Minus size={15} className="text-emerald-400" />
+              <span>Minimize</span>
+            </button>
+
             <button
               onClick={handlePrint}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold uppercase tracking-wider text-[#131b2e] bg-white hover:bg-slate-100 rounded-lg transition-all shadow-xs"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold uppercase tracking-wider text-[#131b2e] bg-white hover:bg-slate-100 rounded-lg transition-all shadow-xs"
             >
               <Printer size={14} />
               <span>Print Order</span>
             </button>
             <button
               onClick={onClose}
-              className="p-1 rounded-lg hover:bg-white/10 text-white/80 hover:text-white transition-colors"
+              className="p-1.5 rounded-lg hover:bg-white/10 text-white/80 hover:text-white transition-colors ml-1"
             >
               <X size={18} />
             </button>
           </div>
         </div>
 
-        {/* Printable Order Sheet */}
-        <div className="p-8 space-y-6 text-[#1b1b1d] bg-white print:p-6 print:m-0">
+        {/* Scrollable Printable Order Sheet */}
+        <div className="p-6 md:p-8 space-y-6 text-[#1b1b1d] bg-white overflow-y-auto flex-1 print:p-6 print:m-0 print:overflow-visible">
           {/* Header */}
           <div className="border-b-2 border-emerald-600/30 pb-5 text-center">
             <div className="flex items-center justify-between">
@@ -99,101 +149,59 @@ export const WaterDispatchOrderModal: React.FC<WaterDispatchOrderModalProps> = (
                   <span className="text-[11px] text-[#57657b] block">{currentItem.farmerPhone}</span>
                 </div>
                 <div>
-                  <span className="text-[10px] uppercase font-bold text-[#76777d] block">Agricultural Zone</span>
-                  <span className="font-bold text-emerald-800">{currentItem.commandZoneName}</span>
+                  <span className="text-[10px] uppercase font-bold text-[#76777d] block">Command Zone & Farmland</span>
+                  <span className="font-bold text-[#1b1b1d] text-sm">{currentItem.commandZoneName}</span>
+                  <span className="text-[11px] text-[#57657b] block">{currentItem.acreage} Acres • {currentItem.cropType}</span>
                 </div>
                 <div>
-                  <span className="text-[10px] uppercase font-bold text-[#76777d] block">Crop Type & Acreage</span>
-                  <span className="font-bold capitalize text-[#1b1b1d]">
-                    {currentItem.cropType} ({currentItem.acreage} Acres)
-                  </span>
+                  <span className="text-[10px] uppercase font-bold text-[#76777d] block">Allocated Quota</span>
+                  <span className="font-bold text-emerald-800 font-mono text-base">{currentItem.allocatedVolumeKLD.toLocaleString()} KL</span>
+                  <span className="text-[10px] text-emerald-700 font-bold uppercase block">CPCB Approved</span>
                 </div>
-                <div>
-                  <span className="text-[10px] uppercase font-bold text-[#76777d] block">Volume Allocated</span>
-                  <span className="font-mono font-bold text-[#1b1b1d] text-sm">
-                    {currentItem.allocatedVolumeKLD.toLocaleString()} KL (1,000L units)
-                  </span>
-                </div>
-                <div>
-                  <span className="text-[10px] uppercase font-bold text-[#76777d] block">Distribution Mode</span>
-                  <span className="font-bold capitalize text-[#1b1b1d]">
-                    {currentItem.distributionMethod.replace('_', ' ')}
-                  </span>
-                  {currentItem.assignedTankerCode && (
-                    <span className="text-[10px] text-emerald-700 block font-mono">
-                      Vehicle: {currentItem.assignedTankerCode}
-                    </span>
-                  )}
-                </div>
-                <div>
-                  <span className="text-[10px] uppercase font-bold text-[#76777d] block">Dispatch Time</span>
-                  <span className="font-medium text-[#57657b]">
-                    {new Date(currentItem.dispatchTime).toLocaleString('en-IN', {
-                      day: '2-digit',
-                      month: 'short',
-                      hour: '2-digit',
-                      minute: '2-digit',
-                    })}
-                  </span>
-                </div>
-                {plan.primaryDestination && (
-                  <div className="col-span-2 sm:col-span-3 pt-1 border-t border-[#76777d]/15">
-                    <span className="text-[10px] uppercase font-bold text-[#76777d] block">Authorized Flow Destination</span>
-                    <span className="font-bold text-emerald-850 capitalize">
-                      {plan.primaryDestination.replace('_', ' ')} (CPCB Certified Flow)
-                    </span>
-                  </div>
-                )}
               </div>
 
-              {/* Economic Subsidy & Savings Card */}
-              <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-xs">
-                <div className="flex items-center justify-between">
-                  <div className="space-y-1">
-                    <span className="text-[10px] uppercase font-bold text-emerald-900 block">
-                      Farmer Economic Benefit Summary
-                    </span>
-                    <p className="text-xs text-[#57657b]">
-                      Subsidized Municipal Rate: <strong className="text-[#1b1b1d]">₹{currentItem.subsidizedRateInrPerKL}/KL</strong> vs Commercial Private Tanker Rate: <strong>₹180/KL</strong>
-                    </p>
-                  </div>
-                  <div className="text-right">
-                    <span className="text-[10px] text-emerald-900 uppercase block font-bold">Total Farmer Cost Savings</span>
-                    <span className="text-lg font-bold text-emerald-700 font-mono">
-                      ₹{currentItem.commercialSavingsInr.toLocaleString()}
-                    </span>
-                  </div>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 bg-[#fcf8fa] p-4 rounded-xl border border-[#76777d]/15 text-xs">
+                <div>
+                  <span className="text-[10px] uppercase font-bold text-[#76777d] block">Delivery Method</span>
+                  <span className="font-mono font-bold text-[#1b1b1d] capitalize">{currentItem.distributionMethod.replace('_', ' ')}</span>
+                  <span className="text-[11px] text-[#57657b] block">Mode: {plan.distributionMethod.replace('_', ' ')}</span>
+                </div>
+                <div>
+                  <span className="text-[10px] uppercase font-bold text-[#76777d] block">Scheduled Window</span>
+                  <span className="font-bold text-[#1b1b1d] text-xs">{currentItem.dispatchTime}</span>
+                  <span className="text-[11px] text-[#57657b] block">Status: {currentItem.deliveredStatus}</span>
+                </div>
+                <div>
+                  <span className="text-[10px] uppercase font-bold text-[#76777d] block">Tariff / Revenue</span>
+                  <span className="font-mono font-bold text-emerald-800 text-sm">₹{(currentItem.subsidizedRateInrPerKL * currentItem.allocatedVolumeKLD).toLocaleString()}</span>
+                  <span className="text-[10px] text-[#57657b] block">₹{currentItem.subsidizedRateInrPerKL}/KL Subsidized Rate</span>
                 </div>
               </div>
             </div>
           ) : (
-            <p className="text-xs text-[#76777d]">No allocation items in this plan.</p>
+            <div className="p-4 bg-slate-50 rounded-xl text-center text-xs text-[#76777d]">
+              No individual allocation item specified.
+            </div>
           )}
 
-          {/* Signatures & Stamps */}
-          <div className="pt-8 border-t border-[#76777d]/15 grid grid-cols-3 gap-4 text-center text-xs">
-            <div className="space-y-6">
-              <div className="h-8"></div>
-              <div className="border-t border-[#76777d]/40 pt-1">
-                <span className="text-[#76777d] text-[10px] block uppercase">Dispatched By</span>
-                <span className="font-bold text-[#1b1b1d]">Plant Operations Officer</span>
+          {/* Verification and Sign-off */}
+          <div className="grid grid-cols-2 pt-6 border-t border-[#76777d]/20 text-xs">
+            <div className="space-y-1">
+              <span className="font-semibold text-[#1b1b1d] block">Security & Gate Pass Verification:</span>
+              <p className="text-[11px] text-[#57657b]">Present this QR pass at KMC STP Outlet Sluice Gate #3:</p>
+              <div className="flex items-center gap-2 pt-2">
+                <QrCode size={40} className="text-[#131b2e]" />
+                <span className="text-[10px] text-[#76777d] font-mono">
+                  PASS-ID: {plan.id.slice(0, 10).toUpperCase()}
+                </span>
               </div>
             </div>
 
-            <div className="space-y-6">
-              <div className="h-8"></div>
-              <div className="border-t border-[#76777d]/40 pt-1">
-                <span className="text-[#76777d] text-[10px] block uppercase">Vehicle / Canal Operator</span>
-                <span className="font-bold text-[#1b1b1d]">Driver / Sluice Gate In-charge</span>
-              </div>
-            </div>
-
-            <div className="space-y-6">
-              <div className="h-8"></div>
-              <div className="border-t border-[#76777d]/40 pt-1">
-                <span className="text-[#76777d] text-[10px] block uppercase">Beneficiary Farmer</span>
-                <span className="font-bold text-[#1b1b1d]">Acknowledgment Signature</span>
-              </div>
+            <div className="text-right space-y-1">
+              <span className="text-[#76777d] block text-[11px]">Authorized Sluice Gate Officer:</span>
+              <div className="font-bold text-sm text-[#1b1b1d]">Shri. V. M. Gite</div>
+              <p className="text-[11px] text-[#57657b]">Assistant Engineer (Irrigation & Distribution)</p>
+              <p className="text-[10px] text-emerald-800 font-mono font-bold mt-1">✓ DIGITALLY VERIFIED DISPATCH</p>
             </div>
           </div>
         </div>
