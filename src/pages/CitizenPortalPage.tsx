@@ -34,6 +34,8 @@ import {
   Globe,
   RefreshCw,
   Image as ImageIcon,
+  Info,
+  Calendar,
 } from 'lucide-react';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
@@ -104,11 +106,11 @@ export const CitizenPortalPage: React.FC = () => {
   const [trackQuery, setTrackQuery] = useState<string>('');
   const [trackedIssue, setTrackedIssue] = useState<any>(null);
 
-  // Acquire live GPS Geolocation
-  const handleAcquireGPS = async () => {
+  // Acquire live GPS Geolocation from where the user is uploading
+  const handleAcquireGPS = async (isFallback: boolean = false) => {
     setIsLocating(true);
     try {
-      const result = await PhotoGeoLocationService.getDeviceGPS(zones);
+      const result = await PhotoGeoLocationService.getDeviceGPS(zones, isFallback);
       setGeoCoordinates(result);
 
       if (result.closestWardId) {
@@ -188,7 +190,7 @@ export const CitizenPortalPage: React.FC = () => {
     };
   }, [title, description, photoDataUrl, address]);
 
-  // Handle Real File Upload & Automatic Location Extraction
+  // Handle Real File Upload & Automatic Metadata Location vs Upload Location
   const handleImageFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -213,20 +215,21 @@ export const CitizenPortalPage: React.FC = () => {
     };
     reader.readAsDataURL(file);
 
-    // 2. Read ArrayBuffer for EXIF GPS extraction + automatic device GPS fallback
+    // 2. Read ArrayBuffer to extract photo capture location from metadata (or fallback to upload place)
     const bufferReader = new FileReader();
     bufferReader.onload = async () => {
       const buffer = bufferReader.result as ArrayBuffer;
       const exifResult = PhotoGeoLocationService.extractExifGps(buffer, zones);
 
       if (exifResult) {
+        // Location extracted from original photo capture metadata!
         setGeoCoordinates(exifResult);
         if (exifResult.closestWardId) {
           setSelectedZoneId(exifResult.closestWardId);
         }
       } else {
-        // Automatically acquire device GPS coordinates to geotag the photo
-        await handleAcquireGPS();
+        // No metadata location found: fallback to the place from where it is being uploaded right now!
+        await handleAcquireGPS(true);
       }
     };
     bufferReader.readAsArrayBuffer(file);
@@ -236,7 +239,7 @@ export const CitizenPortalPage: React.FC = () => {
   const handleLiveCapture = async (dataUrl: string, fileName: string) => {
     setPhotoDataUrl(dataUrl);
     setPhotoFileName(fileName);
-    await handleAcquireGPS();
+    await handleAcquireGPS(false);
   };
 
   const removePhoto = () => {
@@ -357,7 +360,7 @@ export const CitizenPortalPage: React.FC = () => {
             Citizen Grievance & Tracking Portal
           </h1>
           <p className="text-xs sm:text-sm text-[#57657b] mt-1">
-            Capture live photos or upload incident evidence with automatic GPS geotagging to identify Department, Severity, Machinery & Crew requirements with full review control.
+            Capture live photos or upload incident evidence with automatic metadata extraction (or upload location fallback) to identify Department, Severity, Machinery & Crew requirements.
           </p>
         </div>
 
@@ -442,7 +445,7 @@ export const CitizenPortalPage: React.FC = () => {
                   </label>
                   <button
                     type="button"
-                    onClick={handleAcquireGPS}
+                    onClick={() => handleAcquireGPS(false)}
                     disabled={isLocating}
                     className="flex items-center gap-1 text-[11px] font-bold text-blue-700 hover:text-blue-900 bg-blue-50 hover:bg-blue-100 border border-blue-200 px-2.5 py-1 rounded-lg transition-colors"
                   >
@@ -506,7 +509,7 @@ export const CitizenPortalPage: React.FC = () => {
                           Choose from Gallery / Files
                         </div>
                         <p className="text-[10px] text-[#76777d] mt-0.5">
-                          Select an existing image from your phone gallery or disk.
+                          Auto-extracts photo metadata location or uses your upload place.
                         </p>
                       </div>
                       <span className="text-[10px] font-bold uppercase tracking-wider text-[#57657b] bg-slate-100 border border-slate-200 px-2.5 py-1 rounded-lg">
@@ -552,33 +555,86 @@ export const CitizenPortalPage: React.FC = () => {
                       </div>
                     </div>
 
-                    {/* Geotagged Location Coordinates Badge & Mini Preview */}
+                    {/* Geotagged Location Coordinates Badge & Intelligent EXIF vs Upload Location Indicator */}
                     {geoCoordinates && (
-                      <div className="p-3 bg-white rounded-xl border border-emerald-200 space-y-2">
-                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 text-[11px]">
-                          <div className="flex items-center gap-1.5 font-bold text-emerald-900">
-                            <MapPin size={13} className="text-red-600" />
-                            <span>GPS Geotag: {geoCoordinates.latitude.toFixed(5)}° N, {geoCoordinates.longitude.toFixed(5)}° E</span>
-                            {geoCoordinates.accuracyMeters && (
-                              <span className="text-[10px] text-[#76777d] font-mono font-normal">
-                                (±{geoCoordinates.accuracyMeters}m)
-                              </span>
-                            )}
+                      <div
+                        className={`p-3.5 rounded-xl border space-y-2.5 ${
+                          geoCoordinates.source === 'exif_metadata'
+                            ? 'bg-emerald-50/70 border-emerald-300'
+                            : 'bg-blue-50/70 border-blue-300'
+                        }`}
+                      >
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
+                          <div className="flex items-center gap-1.5 font-bold text-xs">
+                            <MapPin
+                              size={14}
+                              className={
+                                geoCoordinates.source === 'exif_metadata'
+                                  ? 'text-emerald-700'
+                                  : 'text-blue-700'
+                              }
+                            />
+                            <span className={geoCoordinates.source === 'exif_metadata' ? 'text-emerald-950' : 'text-blue-950'}>
+                              {geoCoordinates.source === 'exif_metadata'
+                                ? '📷 Original Photo Capture Location (From EXIF Metadata)'
+                                : '🛰️ Current Upload Location (Device GPS Geotag)'}
+                            </span>
                           </div>
-                          <span className="text-[10px] bg-emerald-100 text-emerald-800 font-mono font-bold px-2 py-0.5 rounded-md self-start sm:self-auto">
-                            {geoCoordinates.source === 'exif_metadata' ? '📷 EXIF Geotag' : '🛰️ Device GPS'}
+
+                          <span
+                            className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-md self-start sm:self-auto border ${
+                              geoCoordinates.source === 'exif_metadata'
+                                ? 'bg-emerald-100 text-emerald-900 border-emerald-300'
+                                : 'bg-blue-100 text-blue-900 border-blue-300'
+                            }`}
+                          >
+                            {geoCoordinates.source === 'exif_metadata'
+                              ? 'EXIF METADATA DETECTED'
+                              : 'UPLOAD PLACE GEOTAGGED'}
                           </span>
                         </div>
 
-                        {geoCoordinates.closestWardName && (
-                          <div className="text-[11px] text-[#57657b] flex items-center gap-1">
-                            <Compass size={12} className="text-blue-700" />
-                            <span>Auto-Matched Ward: <strong>{geoCoordinates.closestWardName}</strong></span>
+                        {/* Coordinates & Accuracy */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-[#1b1b1d]">
+                          <div className="flex items-center gap-1">
+                            <Globe size={12} className="text-[#57657b]" />
+                            <span>
+                              Coordinates:{' '}
+                              <strong className="font-mono">
+                                {geoCoordinates.latitude.toFixed(6)}° N, {geoCoordinates.longitude.toFixed(6)}° E
+                              </strong>
+                            </span>
+                          </div>
+
+                          {geoCoordinates.closestWardName && (
+                            <div className="flex items-center gap-1">
+                              <Compass size={12} className="text-[#57657b]" />
+                              <span>
+                                Matched Ward: <strong>{geoCoordinates.closestWardName}</strong>
+                              </span>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Metadata Date or Fallback Explanation Notice */}
+                        {geoCoordinates.source === 'exif_metadata' && geoCoordinates.exifDateTimeOriginal && (
+                          <div className="text-[11px] text-emerald-800 flex items-center gap-1 font-medium">
+                            <Calendar size={12} />
+                            <span>Original Capture Timestamp: {geoCoordinates.exifDateTimeOriginal}</span>
+                          </div>
+                        )}
+
+                        {geoCoordinates.isFallbackUploadLocation && (
+                          <div className="text-[11px] text-blue-900 flex items-start gap-1.5 bg-white/70 p-2 rounded-lg border border-blue-200/60 leading-relaxed">
+                            <Info size={13} className="text-blue-700 shrink-0 mt-0.5" />
+                            <span>
+                              <strong>Upload Location Fallback:</strong> This image had no embedded GPS metadata (e.g. from messaging apps or screenshots). The system has automatically geotagged it to the exact place from where you are uploading right now.
+                            </span>
                           </div>
                         )}
 
                         {/* Interactive Mini-Map Preview Pin */}
-                        <div className="h-28 w-full rounded-lg overflow-hidden border border-slate-200 relative z-0">
+                        <div className="h-28 w-full rounded-xl overflow-hidden border border-[#76777d]/20 relative z-0 shadow-xs">
                           <MapContainer
                             center={[geoCoordinates.latitude, geoCoordinates.longitude]}
                             zoom={15}
