@@ -15,6 +15,7 @@ import {
   HeartHandshake,
   Recycle,
   Droplets,
+  Waves,
 } from 'lucide-react';
 import { useCivic } from '../../context/CivicContext';
 
@@ -24,7 +25,7 @@ interface SidebarProps {
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({ sidebarOpen, setSidebarOpen }) => {
-  const { userRole, issues, resources, notifications } = useCivic();
+  const { userRole, issues, resources, notifications, damTelemetry } = useCivic();
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -41,6 +42,17 @@ export const Sidebar: React.FC<SidebarProps> = ({ sidebarOpen, setSidebarOpen })
       label: 'Overview',
       icon: <LayoutDashboard className="w-4 h-4" />,
       allowedRoles: ['officer', 'admin'],
+    },
+    {
+      to: '/flood-priority',
+      label: 'Flood Alert & Dispatch',
+      icon: <Waves className="w-4 h-4" />,
+      badge: damTelemetry.currentDischargeCusecs >= 25000 ? 'FLOOD' : undefined,
+      badgeColor:
+        damTelemetry.alertLevel === 'danger_red' || damTelemetry.alertLevel === 'catastrophic'
+          ? 'bg-red-600 text-white animate-pulse'
+          : 'bg-rose-600 text-white',
+      allowedRoles: ['citizen', 'officer', 'admin'],
     },
     {
       to: '/priority-engine',

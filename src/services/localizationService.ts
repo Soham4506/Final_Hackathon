@@ -47,6 +47,14 @@ export interface Translations {
   rechargeDest: string;
   retreatmentDest: string;
   sluiceGateRouting: string;
+  floodPriority: string;
+  damDischarge: string;
+  evacuationSequence: string;
+  rescueFleet: string;
+  dewateringPumps: string;
+  rescueBoats: string;
+  sandbagTrucks: string;
+  evacuationBuses: string;
 }
 
 export const DICTIONARY: Record<Language, Translations> = {
@@ -97,6 +105,14 @@ export const DICTIONARY: Record<Language, Translations> = {
     rechargeDest: 'Groundwater Aquifer Recharge',
     retreatmentDest: 'Re-treatment & Polishing Loop',
     sluiceGateRouting: 'Sluice Gate & Flow Allocation',
+    floodPriority: 'Flood Alert & Emergency Resource Dispatch',
+    damDischarge: 'Dam Discharge & River Surge Telemetry',
+    evacuationSequence: 'Zone Dispatch Priority Sequence',
+    rescueFleet: 'Emergency Disaster Response Fleet',
+    dewateringPumps: 'De-watering Heavy Pumps',
+    rescueBoats: 'Motorized Rescue Boats',
+    sandbagTrucks: 'Sandbag Bunding Trucks',
+    evacuationBuses: 'Emergency Evacuation Buses',
   },
   mr: {
     councilName: 'कोपरगाव नगरपरिषद',
@@ -145,5 +161,13 @@ export const DICTIONARY: Record<Language, Translations> = {
     rechargeDest: 'भूजल पुनर्भरण',
     retreatmentDest: 'पुनर्प्रक्रिया व शुद्धीकरण लूप',
     sluiceGateRouting: 'कालवा गेट व व्हॉल्व प्रवाह वाटप',
+    floodPriority: 'पूर इशारा व आपत्कालीन साधन वाटप',
+    damDischarge: 'धरण विसर्ग व नदी पातळी',
+    evacuationSequence: 'प्रभाग स्थलांतर व साधन प्राधान्यक्रम',
+    rescueFleet: 'आपत्कालीन बचाव ताफा',
+    dewateringPumps: 'पाणी उपसा डीझेल पंप',
+    rescueBoats: 'इन्फ्लेटेबल बचाव नौका',
+    sandbagTrucks: 'वाळू पोती संरक्षण ट्रक',
+    evacuationBuses: 'नागरिक स्थलांतर बसेस',
   },
 };
