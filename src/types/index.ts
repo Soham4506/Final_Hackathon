@@ -275,7 +275,7 @@ export interface AuditLog {
   actorName: string;
   actorRole: UserRole;
   action: string;
-  entityType: 'issue' | 'plan' | 'resource' | 'weight_config' | 'decision' | 'wastewater_batch' | 'reuse_plan' | 'quality_sample';
+  entityType: 'issue' | 'plan' | 'resource' | 'weight_config' | 'decision' | 'wastewater_batch' | 'reuse_plan' | 'quality_sample' | 'flood_dispatch';
   entityId?: string;
   details: Record<string, any>;
   ipAddress?: string;
@@ -283,3 +283,5 @@ export interface AuditLog {
 }
 
 export * from './wastewater';
+export * from './floodAlert';
+

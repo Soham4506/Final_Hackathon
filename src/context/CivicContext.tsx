@@ -23,6 +23,12 @@ import {
   WastewaterWorkflowStage,
   WaterQualityParameters,
   DistributionMethod,
+  UpstreamDamTelemetry,
+  ZoneFloodProfile,
+  EmergencyResourceInventory,
+  FloodDispatchOrder,
+  ZoneDispatchPlanItem,
+  DamDischargeAlertLevel,
 } from '../types';
 import { 
   INITIAL_ZONES, 
@@ -44,12 +50,18 @@ import {
   INITIAL_WATER_REUSE_PLANS,
   INITIAL_CIRCULAR_METRICS,
 } from '../data/wastewaterMockData';
+import {
+  INITIAL_DAM_TELEMETRY,
+  INITIAL_ZONE_FLOOD_PROFILES,
+  INITIAL_EMERGENCY_RESOURCES,
+} from '../data/floodMockData';
 import { PriorityEngine } from '../services/priorityEngine';
 import { AllocationEngine, ResourceDeficitReport } from '../services/allocationEngine';
 import { AIIntakeParser } from '../services/aiIntakeParser';
 import { MultiStrategyEngine, AllocationStrategy, StrategyComparisonMetric } from '../services/multiStrategyEngine';
 import { WaterQualityEngine } from '../services/waterQualityEngine';
 import { ReuseAllocationEngine } from '../services/reuseAllocationEngine';
+import { FloodPriorityEngine } from '../services/floodPriorityEngine';
 import { Language, DICTIONARY, Translations } from '../services/localizationService';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 
@@ -98,6 +110,17 @@ interface CivicContextType {
   submitFarmerBooking: (booking: Omit<FarmerBooking, 'id' | 'bookingNumber' | 'status' | 'submittedAt'>) => FarmerBooking;
   reprocessBatch: (batchId: string) => void;
   createWastewaterBatch: (wardIds: string[], volumeKLD: number, plantId: string) => WastewaterBatch;
+
+  // Flood Alert & Emergency Resource Dispatch State
+  damTelemetry: UpstreamDamTelemetry;
+  zoneFloodProfiles: ZoneFloodProfile[];
+  emergencyInventory: EmergencyResourceInventory;
+  floodDispatchOrders: FloodDispatchOrder[];
+
+  // Flood Dispatch Actions
+  updateDamDischarge: (dischargeCusecs: number, rainfallMmHr?: number) => void;
+  generateFloodDispatchPlan: (officerNotes?: string) => FloodDispatchOrder;
+  approveFloodDispatchOrder: (orderId: string) => void;
 
   // Master Data
   zones: Zone[];
@@ -251,6 +274,20 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     getStored('circular_metrics', INITIAL_CIRCULAR_METRICS)
   );
 
+  // Flood Alert & Emergency Resource Dispatch State
+  const [damTelemetry, setDamTelemetry] = useState<UpstreamDamTelemetry>(() =>
+    getStored('dam_telemetry', INITIAL_DAM_TELEMETRY)
+  );
+  const [zoneFloodProfiles, setZoneFloodProfiles] = useState<ZoneFloodProfile[]>(() =>
+    getStored('zone_flood_profiles', INITIAL_ZONE_FLOOD_PROFILES)
+  );
+  const [emergencyInventory, setEmergencyInventory] = useState<EmergencyResourceInventory>(() =>
+    getStored('emergency_inventory', INITIAL_EMERGENCY_RESOURCES)
+  );
+  const [floodDispatchOrders, setFloodDispatchOrders] = useState<FloodDispatchOrder[]>(() =>
+    getStored('flood_dispatch_orders', [])
+  );
+
   // Issues start clean
   const [issues, setIssues] = useState<CivicIssue[]>(() => {
     const stored = getStored<CivicIssue[] | null>('issues', null);
@@ -374,9 +411,12 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       localStorage.setItem('civicpulse_command_zones', JSON.stringify(commandZones));
       localStorage.setItem('civicpulse_wastewater_batches', JSON.stringify(wastewaterBatches));
       localStorage.setItem('civicpulse_quality_samples', JSON.stringify(qualitySamples));
-      localStorage.setItem('civicpulse_farmer_bookings', JSON.stringify(farmerBookings));
       localStorage.setItem('civicpulse_water_reuse_plans', JSON.stringify(waterReusePlans));
       localStorage.setItem('civicpulse_circular_metrics', JSON.stringify(circularMetrics));
+      localStorage.setItem('civicpulse_dam_telemetry', JSON.stringify(damTelemetry));
+      localStorage.setItem('civicpulse_zone_flood_profiles', JSON.stringify(zoneFloodProfiles));
+      localStorage.setItem('civicpulse_emergency_inventory', JSON.stringify(emergencyInventory));
+      localStorage.setItem('civicpulse_flood_dispatch_orders', JSON.stringify(floodDispatchOrders));
     } catch {
       // ignore
     }
@@ -399,6 +439,10 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     farmerBookings,
     waterReusePlans,
     circularMetrics,
+    damTelemetry,
+    zoneFloodProfiles,
+    emergencyInventory,
+    floodDispatchOrders,
   ]);
 
   // Recalculate all scores
@@ -1370,6 +1414,119 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     return newBatch;
   };
 
+  // -------------------------------------------------------------
+  // FLOOD ALERT & EMERGENCY RESOURCE DISPATCH ACTIONS
+  // -------------------------------------------------------------
+  const updateDamDischarge = (dischargeCusecs: number, rainfallMmHr?: number) => {
+    let alertLevel: DamDischargeAlertLevel = 'normal';
+    if (dischargeCusecs >= 60000) alertLevel = 'catastrophic';
+    else if (dischargeCusecs >= 45000) alertLevel = 'danger_red';
+    else if (dischargeCusecs >= 25000) alertLevel = 'alert_orange';
+    else if (dischargeCusecs >= 15000) alertLevel = 'advisory_green';
+
+    // Gauge level model: datum 492m base + proportional surge
+    const newGaugeLevel = Number((493.2 + (dischargeCusecs / 65000) * 5.8).toFixed(2));
+
+    setDamTelemetry((prev) => {
+      const updated: UpstreamDamTelemetry = {
+        ...prev,
+        currentDischargeCusecs: dischargeCusecs,
+        waterLevelMeters: newGaugeLevel,
+        alertLevel,
+        rainfallMmPerHour: rainfallMmHr !== undefined ? rainfallMmHr : prev.rainfallMmPerHour,
+        lastUpdated: new Date().toISOString(),
+      };
+      return updated;
+    });
+
+    if (dischargeCusecs >= 25000) {
+      const notif: NotificationItem = {
+        id: `notif-flood-${Date.now()}`,
+        recipientId: currentUser.id,
+        title: `🚨 Godavari Flood Alert (${dischargeCusecs.toLocaleString()} Cusecs)`,
+        message: `Upstream dam discharge elevated to ${dischargeCusecs.toLocaleString()} cusecs. Godavari water level at ${newGaugeLevel}m. Riverbank wards (Ward 1 & Ward 8) placed on critical dispatch priority.`,
+        channel: 'app',
+        isRead: false,
+        createdAt: new Date().toISOString(),
+      };
+      setNotifications((prev) => [notif, ...prev]);
+    }
+  };
+
+  const generateFloodDispatchPlan = (officerNotes?: string): FloodDispatchOrder => {
+    const plan = FloodPriorityEngine.generateEmergencyDispatchPlan(
+      zoneFloodProfiles,
+      damTelemetry,
+      emergencyInventory,
+      currentUser.fullName
+    );
+
+    setFloodDispatchOrders((prev) => [plan, ...prev]);
+
+    const log: AuditLog = {
+      id: `log-flood-plan-${Date.now()}`,
+      actorName: currentUser.fullName,
+      actorRole: currentUser.role,
+      action: 'FLOOD_DISPATCH_PLAN_GENERATED',
+      entityType: 'flood_dispatch',
+      entityId: plan.id,
+      details: {
+        orderNumber: plan.orderNumber,
+        dischargeCusecs: plan.damDischargeCusecs,
+        zonesAtRisk: plan.totalZonesAtRisk,
+        citizensCovered: plan.totalVulnerableCitizensCovered,
+        notes: officerNotes || 'Automated greedy knapsack allocation',
+      },
+      createdAt: new Date().toISOString(),
+    };
+    setAuditLogs((prev) => [log, ...prev]);
+
+    return plan;
+  };
+
+  const approveFloodDispatchOrder = (orderId: string) => {
+    const target = floodDispatchOrders.find((o) => o.id === orderId);
+    if (!target) return;
+
+    setFloodDispatchOrders((prev) =>
+      prev.map((o) => {
+        if (o.id !== orderId) return o;
+        return {
+          ...o,
+          isApproved: true,
+          approvedAt: new Date().toISOString(),
+          approvedBy: currentUser.fullName,
+        };
+      })
+    );
+
+    const log: AuditLog = {
+      id: `log-flood-appr-${Date.now()}`,
+      actorName: currentUser.fullName,
+      actorRole: currentUser.role,
+      action: 'FLOOD_DISPATCH_PLAN_APPROVED',
+      entityType: 'flood_dispatch',
+      entityId: orderId,
+      details: {
+        orderNumber: target.orderNumber,
+        officer: currentUser.fullName,
+      },
+      createdAt: new Date().toISOString(),
+    };
+    setAuditLogs((prev) => [log, ...prev]);
+
+    const notif: NotificationItem = {
+      id: `notif-flood-appr-${Date.now()}`,
+      recipientId: currentUser.id,
+      title: `Flood Resource Dispatch Order Committed (${target.orderNumber})`,
+      message: `Disaster response fleet dispatched to ${target.totalZonesAtRisk} critical zones along Godavari River. Shelter evacuation buses mobilized.`,
+      channel: 'app',
+      isRead: false,
+      createdAt: new Date().toISOString(),
+    };
+    setNotifications((prev) => [notif, ...prev]);
+  };
+
   const markNotificationAsRead = (notificationId: string) => {
     setNotifications((prev) =>
       prev.map((n) => (n.id === notificationId ? { ...n, isRead: true } : n))
@@ -1393,6 +1550,10 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setFarmerBookings(INITIAL_FARMER_BOOKINGS);
     setWaterReusePlans(INITIAL_WATER_REUSE_PLANS);
     setCircularMetrics(INITIAL_CIRCULAR_METRICS);
+    setDamTelemetry(INITIAL_DAM_TELEMETRY);
+    setZoneFloodProfiles(INITIAL_ZONE_FLOOD_PROFILES);
+    setEmergencyInventory(INITIAL_EMERGENCY_RESOURCES);
+    setFloodDispatchOrders([]);
     setIsAuthenticated(false);
     setUserRole('citizen');
     setCurrentUser(DEFAULT_GUEST_USER);
@@ -1430,6 +1591,10 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         farmerBookings,
         waterReusePlans,
         circularMetrics,
+        damTelemetry,
+        zoneFloodProfiles,
+        emergencyInventory,
+        floodDispatchOrders,
         submitIssue,
         updateIssueStatus,
         overridePriority,
@@ -1446,6 +1611,9 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         submitFarmerBooking,
         reprocessBatch,
         createWastewaterBatch,
+        updateDamDischarge,
+        generateFloodDispatchPlan,
+        approveFloodDispatchOrder,
         resetAllDataToDefaults,
       }}
     >
