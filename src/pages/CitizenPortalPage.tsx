@@ -5,6 +5,7 @@ import { PriorityBadge } from '../components/common/PriorityBadge';
 import { StatusBadge } from '../components/common/StatusBadge';
 import { AIIntakeParser, AIIntakeResult } from '../services/aiIntakeParser';
 import { ExplainabilityService } from '../services/explainabilityService';
+import { PhotoGeoLocationService, GeolocationResult } from '../services/photoGeoLocation';
 import { UrgencyLevel, ResourceType } from '../types';
 import {
   PlusCircle,
@@ -26,8 +27,30 @@ import {
   Building,
   Layers,
   Cpu,
+  Navigation,
+  Crosshair,
+  Compass,
+  Globe,
+  RefreshCw,
 } from 'lucide-react';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
+import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import L from 'leaflet';
+
+const createPinIcon = () => {
+  const svgIcon = `
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#ba1a1a" width="30" height="30" stroke="#ffffff" stroke-width="1.5">
+      <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+    </svg>
+  `;
+
+  return L.divIcon({
+    html: svgIcon,
+    className: 'custom-pin-marker',
+    iconSize: [30, 30],
+    iconAnchor: [15, 30],
+  });
+};
 
 export const CitizenPortalPage: React.FC = () => {
   const { zones, departments, categories, submitIssue, issues, currentUser, t, language } = useCivic();
@@ -42,9 +65,11 @@ export const CitizenPortalPage: React.FC = () => {
   const [address, setAddress] = useState('');
   const [selectedZoneId, setSelectedZoneId] = useState<string>(zones[0]?.id || 'a0000000-0000-0000-0000-000000000001');
 
-  // Real Uploaded Photo State
+  // Real Uploaded Photo & Location Geotagging State
   const [photoDataUrl, setPhotoDataUrl] = useState<string | null>(null);
   const [photoFileName, setPhotoFileName] = useState<string>('');
+  const [geoCoordinates, setGeoCoordinates] = useState<GeolocationResult | null>(null);
+  const [isLocating, setIsLocating] = useState<boolean>(false);
   const [isAnalyzingImage, setIsAnalyzingImage] = useState<boolean>(false);
 
   // AI-Detected & User-Editable Form Parameters (SDDS Style)
@@ -74,6 +99,27 @@ export const CitizenPortalPage: React.FC = () => {
   // Tracking Search State
   const [trackQuery, setTrackQuery] = useState<string>('');
   const [trackedIssue, setTrackedIssue] = useState<any>(null);
+
+  // Acquire live GPS Geolocation
+  const handleAcquireGPS = async () => {
+    setIsLocating(true);
+    try {
+      const result = await PhotoGeoLocationService.getDeviceGPS(zones);
+      setGeoCoordinates(result);
+
+      if (result.closestWardId) {
+        setSelectedZoneId(result.closestWardId);
+      }
+
+      if (!address.trim() && result.closestWardName) {
+        setAddress(`${result.closestWardName}, Kopargaon`);
+      }
+    } catch (err) {
+      console.warn('GPS location error:', err);
+    } finally {
+      setIsLocating(false);
+    }
+  };
 
   // Trigger Multimodal Vision & Text Analysis
   useEffect(() => {
@@ -138,12 +184,14 @@ export const CitizenPortalPage: React.FC = () => {
     };
   }, [title, description, photoDataUrl, address]);
 
-  // Handle Real File Upload
+  // Handle Real File Upload & Automatic Location Extraction
   const handleImageFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
     setPhotoFileName(file.name);
+
+    // 1. Read Base64 Data URL for image rendering & vision
     const reader = new FileReader();
     reader.onload = async () => {
       const base64 = reader.result as string;
@@ -159,13 +207,31 @@ export const CitizenPortalPage: React.FC = () => {
         }
       }
     };
-
     reader.readAsDataURL(file);
+
+    // 2. Read ArrayBuffer for EXIF GPS extraction + automatic device GPS fallback
+    const bufferReader = new FileReader();
+    bufferReader.onload = async () => {
+      const buffer = bufferReader.result as ArrayBuffer;
+      const exifResult = PhotoGeoLocationService.extractExifGps(buffer, zones);
+
+      if (exifResult) {
+        setGeoCoordinates(exifResult);
+        if (exifResult.closestWardId) {
+          setSelectedZoneId(exifResult.closestWardId);
+        }
+      } else {
+        // Automatically acquire device GPS coordinates to geotag the photo
+        await handleAcquireGPS();
+      }
+    };
+    bufferReader.readAsArrayBuffer(file);
   };
 
   const removePhoto = () => {
     setPhotoDataUrl(null);
     setPhotoFileName('');
+    setGeoCoordinates(null);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -183,6 +249,8 @@ export const CitizenPortalPage: React.FC = () => {
         address: address.trim(),
         zoneId: selectedZoneId,
         categoryId: selectedCategoryId,
+        latitude: geoCoordinates?.latitude,
+        longitude: geoCoordinates?.longitude,
         photoUrls: photoDataUrl ? [photoDataUrl] : [],
         affectedPopulation: affectedPop,
       });
@@ -218,11 +286,27 @@ export const CitizenPortalPage: React.FC = () => {
         setDescription('मागील ४ तासांपासून कोपरगाव सिव्हिल हॉस्पिटल मुख्य रस्त्यावर डांबरीकरण खचून २ फूट खोल खड्डा पडला असून अपघात घडण्याचा गंभीर धोका आहे.');
         setAddress('सिव्हिल हॉस्पिटल चौक, स्टेशन रोड, प्रभाग ४');
         setSelectedZoneId('a0000000-0000-0000-0000-000000000004');
+        setGeoCoordinates({
+          latitude: 19.8878,
+          longitude: 74.4891,
+          accuracyMeters: 5,
+          source: 'device_gps',
+          closestWardId: 'a0000000-0000-0000-0000-000000000004',
+          closestWardName: 'WARD-04 - Civil Hospital & Station Road',
+        });
       } else {
         setTitle('Critical deep crater cave-in on Station Road near Civil Hospital');
         setDescription('A large 2-foot asphalt crater has caved in on Station Road near Civil Hospital entrance creating immediate road accident and ambulance blockage risk.');
         setAddress('Civil Hospital Junction, Station Road, Ward 4');
         setSelectedZoneId('a0000000-0000-0000-0000-000000000004');
+        setGeoCoordinates({
+          latitude: 19.8878,
+          longitude: 74.4891,
+          accuracyMeters: 5,
+          source: 'device_gps',
+          closestWardId: 'a0000000-0000-0000-0000-000000000004',
+          closestWardName: 'WARD-04 - Civil Hospital & Station Road',
+        });
       }
       setIsRecording(false);
     }, 1500);
@@ -251,7 +335,7 @@ export const CitizenPortalPage: React.FC = () => {
         <div>
           <div className="flex items-center gap-2 mb-1">
             <span className="bg-emerald-50 text-emerald-800 border border-emerald-200 text-[10px] font-mono uppercase font-bold px-2 py-0.5 rounded flex items-center gap-1">
-              <Cpu size={12} /> Multimodal AI Gateway
+              <Cpu size={12} /> Multimodal AI & Geotag Gateway
             </span>
             <span className="text-xs text-[#76777d]">Kopargaon Citizen Service Portal</span>
           </div>
@@ -259,7 +343,7 @@ export const CitizenPortalPage: React.FC = () => {
             Citizen Grievance & Tracking Portal
           </h1>
           <p className="text-xs sm:text-sm text-[#57657b] mt-1">
-            Upload incident photos to auto-detect Department, Severity, Machine & Crew requirements, with full freedom to review and correct.
+            Upload incident photos with automatic GPS geotagging to identify Department, Severity, Machinery & Crew requirements with full review control.
           </p>
         </div>
 
@@ -335,19 +419,23 @@ export const CitizenPortalPage: React.FC = () => {
             )}
 
             <form onSubmit={handleSubmit} className="space-y-4 text-xs">
-              {/* Photo Upload Area First */}
+              {/* Photo Upload & Geotag Area */}
               <div className="space-y-2">
-                <label className="block text-[#1b1b1d] font-bold flex items-center justify-between">
-                  <span className="flex items-center gap-1.5">
+                <div className="flex items-center justify-between">
+                  <label className="text-[#1b1b1d] font-bold flex items-center gap-1.5">
                     <Camera size={14} className="text-[#131b2e]" />
-                    <span>Upload Site Photo (AI Vision Auto-Assessment)</span>
-                  </span>
-                  {photoDataUrl && (
-                    <span className="text-[10px] text-emerald-700 font-mono font-bold flex items-center gap-1">
-                      <CheckCircle2 size={12} /> Image Attached (100% Confidence)
-                    </span>
-                  )}
-                </label>
+                    <span>Upload Site Photo & GPS Geotag</span>
+                  </label>
+                  <button
+                    type="button"
+                    onClick={handleAcquireGPS}
+                    disabled={isLocating}
+                    className="flex items-center gap-1 text-[11px] font-bold text-blue-700 hover:text-blue-900 bg-blue-50 hover:bg-blue-100 border border-blue-200 px-2.5 py-1 rounded-lg transition-colors"
+                  >
+                    <Crosshair size={12} className={isLocating ? 'animate-spin' : ''} />
+                    <span>{isLocating ? 'Acquiring GPS...' : '📍 Auto-Geotag Location'}</span>
+                  </button>
+                </div>
 
                 <input
                   type="file"
@@ -369,34 +457,82 @@ export const CitizenPortalPage: React.FC = () => {
                       Click to upload photo from camera / gallery
                     </div>
                     <p className="text-[10px] text-[#76777d]">
-                      Gemini Vision will automatically identify the defect, department, machinery, and crew size.
+                      Photo will be automatically geotagged with high-accuracy GPS coordinates & analyzed with Gemini Vision.
                     </p>
                   </div>
                 ) : (
-                  <div className="relative bg-[#fcf8fa] border border-[#76777d]/20 rounded-2xl p-3 flex items-center justify-between gap-4">
-                    <div className="flex items-center gap-3">
-                      <img
-                        src={photoDataUrl}
-                        alt="Uploaded preview"
-                        className="w-16 h-16 object-cover rounded-xl border border-slate-300"
-                      />
-                      <div>
-                        <div className="font-bold text-[#1b1b1d] truncate max-w-[220px] text-xs">
-                          {photoFileName || 'Attached Site Photo'}
-                        </div>
-                        <div className="text-[10px] text-emerald-700 flex items-center gap-1 mt-0.5 font-bold">
-                          <CheckCircle2 size={11} /> Photo Loaded • Vision Assessment Ready
+                  <div className="bg-[#fcf8fa] border border-[#76777d]/20 rounded-2xl p-3.5 space-y-3">
+                    <div className="flex items-center justify-between gap-4">
+                      <div className="flex items-center gap-3">
+                        <img
+                          src={photoDataUrl}
+                          alt="Uploaded preview"
+                          className="w-16 h-16 object-cover rounded-xl border border-slate-300 shadow-xs"
+                        />
+                        <div>
+                          <div className="font-bold text-[#1b1b1d] truncate max-w-[220px] text-xs">
+                            {photoFileName || 'Attached Site Photo'}
+                          </div>
+                          <div className="text-[10px] text-emerald-700 flex items-center gap-1 mt-0.5 font-bold">
+                            <CheckCircle2 size={11} /> Photo Loaded • Vision & Geotag Ready
+                          </div>
                         </div>
                       </div>
+                      <button
+                        type="button"
+                        onClick={removePhoto}
+                        className="p-1.5 rounded-lg bg-white hover:bg-red-50 text-slate-500 hover:text-red-700 border border-slate-200 transition-colors"
+                        title="Remove Photo"
+                      >
+                        <X size={16} />
+                      </button>
                     </div>
-                    <button
-                      type="button"
-                      onClick={removePhoto}
-                      className="p-1.5 rounded-lg bg-white hover:bg-red-50 text-slate-500 hover:text-red-700 border border-slate-200 transition-colors"
-                      title="Remove Photo"
-                    >
-                      <X size={16} />
-                    </button>
+
+                    {/* Geotagged Location Coordinates Badge & Mini Preview */}
+                    {geoCoordinates && (
+                      <div className="p-3 bg-white rounded-xl border border-emerald-200 space-y-2">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 text-[11px]">
+                          <div className="flex items-center gap-1.5 font-bold text-emerald-900">
+                            <MapPin size={13} className="text-red-600" />
+                            <span>GPS Geotag: {geoCoordinates.latitude.toFixed(5)}° N, {geoCoordinates.longitude.toFixed(5)}° E</span>
+                            {geoCoordinates.accuracyMeters && (
+                              <span className="text-[10px] text-[#76777d] font-mono font-normal">
+                                (±{geoCoordinates.accuracyMeters}m)
+                              </span>
+                            )}
+                          </div>
+                          <span className="text-[10px] bg-emerald-100 text-emerald-800 font-mono font-bold px-2 py-0.5 rounded-md self-start sm:self-auto">
+                            {geoCoordinates.source === 'exif_metadata' ? '📷 EXIF Geotag' : '🛰️ Device GPS'}
+                          </span>
+                        </div>
+
+                        {geoCoordinates.closestWardName && (
+                          <div className="text-[11px] text-[#57657b] flex items-center gap-1">
+                            <Compass size={12} className="text-blue-700" />
+                            <span>Auto-Matched Ward: <strong>{geoCoordinates.closestWardName}</strong></span>
+                          </div>
+                        )}
+
+                        {/* Interactive Mini-Map Preview Pin */}
+                        <div className="h-28 w-full rounded-lg overflow-hidden border border-slate-200 relative z-0">
+                          <MapContainer
+                            center={[geoCoordinates.latitude, geoCoordinates.longitude]}
+                            zoom={15}
+                            zoomControl={false}
+                            attributionControl={false}
+                            dragging={false}
+                            scrollWheelZoom={false}
+                            style={{ height: '100%', width: '100%' }}
+                          >
+                            <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+                            <Marker
+                              position={[geoCoordinates.latitude, geoCoordinates.longitude]}
+                              icon={createPinIcon()}
+                            />
+                          </MapContainer>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
