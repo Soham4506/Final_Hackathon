@@ -18,7 +18,14 @@ import {
   RefreshCw,
   HardDrive,
   Cpu,
+  ShieldCheck,
+  Smartphone,
+  KeyRound,
+  Download,
+  Trash2,
 } from 'lucide-react';
+import { TwoFactorSetupModal } from '../components/auth/TwoFactorSetupModal';
+import { getUser2FAConfig, disable2FA, is2FAEnabledForUser } from '../services/twoFactorService';
 
 export const SettingsPage: React.FC = () => {
   const {
@@ -43,7 +50,9 @@ export const SettingsPage: React.FC = () => {
     runRecovery,
   } = useResilience();
 
-  const [activeTab, setActiveTab] = useState<'weights' | 'audit' | 'chaos'>('weights');
+  const [activeTab, setActiveTab] = useState<'weights' | 'audit' | 'chaos' | '2fa'>('weights');
+  const [show2FASetupModal, setShow2FASetupModal] = useState(false);
+  const [twoFactorConfig, setTwoFactorConfig] = useState(getUser2FAConfig(currentUser.id));
 
   // Form state for weights
   const [sev, setSev] = useState(weightConfig.weightSeverity);
@@ -86,6 +95,13 @@ export const SettingsPage: React.FC = () => {
     setPenaltyMax(20.0);
   };
 
+  const handleDisable2FA = () => {
+    if (window.confirm('Disable Two-Factor Authentication for your account?')) {
+      disable2FA(currentUser.id);
+      setTwoFactorConfig(getUser2FAConfig(currentUser.id));
+    }
+  };
+
   return (
     <div className="space-y-5">
       {/* Header */}
@@ -98,18 +114,19 @@ export const SettingsPage: React.FC = () => {
             <span className="text-xs text-[#76777d]">KoparNiti (कोपरनीती) • Engine Tuning & Ledger</span>
           </div>
           <h1 className="text-xl sm:text-2xl font-bold text-[#1b1b1d] tracking-tight">
-            Settings, Priority Weights & Audit Ledger
+            Settings, Priority Weights & Security
           </h1>
           <p className="text-xs sm:text-sm text-[#57657b] mt-1">
-            Configure mathematical formula weighting parameters and inspect the permanent municipal audit ledger.
+            Configure formula weighting parameters, audit logs, 2FA authentication, and blackout chaos testing.
           </p>
         </div>
 
         {/* Tab Switcher */}
-        <div className="bg-[#f0edef] p-1 rounded-xl border border-[#76777d]/15 flex items-center text-xs shrink-0">
+        <div className="bg-[#f0edef] p-1 rounded-xl border border-[#76777d]/15 flex flex-wrap items-center text-xs shrink-0 gap-1">
           <button
+            type="button"
             onClick={() => setActiveTab('weights')}
-            className={`px-4 py-2 rounded-lg font-bold uppercase text-[11px] tracking-wider transition-all flex items-center gap-1.5 ${
+            className={`px-3.5 py-2 rounded-lg font-bold uppercase text-[11px] tracking-wider transition-all flex items-center gap-1.5 cursor-pointer ${
               activeTab === 'weights'
                 ? 'bg-[#131b2e] text-white shadow-xs'
                 : 'text-[#57657b] hover:text-[#1b1b1d]'
@@ -119,8 +136,9 @@ export const SettingsPage: React.FC = () => {
             <span>Formula Weights</span>
           </button>
           <button
+            type="button"
             onClick={() => setActiveTab('audit')}
-            className={`px-4 py-2 rounded-lg font-bold uppercase text-[11px] tracking-wider transition-all flex items-center gap-1.5 ${
+            className={`px-3.5 py-2 rounded-lg font-bold uppercase text-[11px] tracking-wider transition-all flex items-center gap-1.5 cursor-pointer ${
               activeTab === 'audit'
                 ? 'bg-[#131b2e] text-white shadow-xs'
                 : 'text-[#57657b] hover:text-[#1b1b1d]'
@@ -130,19 +148,36 @@ export const SettingsPage: React.FC = () => {
             <span>Audit Ledger</span>
           </button>
           <button
+            type="button"
+            onClick={() => {
+              setTwoFactorConfig(getUser2FAConfig(currentUser.id));
+              setActiveTab('2fa');
+            }}
+            className={`px-3.5 py-2 rounded-lg font-bold uppercase text-[11px] tracking-wider transition-all flex items-center gap-1.5 cursor-pointer ${
+              activeTab === '2fa'
+                ? 'bg-[#131b2e] text-white shadow-xs'
+                : 'text-[#57657b] hover:text-[#1b1b1d]'
+            }`}
+          >
+            <ShieldCheck size={14} className={is2FAEnabledForUser(currentUser.id) ? 'text-emerald-500' : 'text-amber-500'} />
+            <span>2FA Security</span>
+          </button>
+          <button
+            type="button"
             onClick={() => setActiveTab('chaos')}
-            className={`px-4 py-2 rounded-lg font-bold uppercase text-[11px] tracking-wider transition-all flex items-center gap-1.5 ${
+            className={`px-3.5 py-2 rounded-lg font-bold uppercase text-[11px] tracking-wider transition-all flex items-center gap-1.5 cursor-pointer ${
               activeTab === 'chaos'
                 ? 'bg-amber-600 text-white shadow-xs'
                 : 'text-amber-800 hover:text-amber-950 bg-amber-50/50'
             }`}
           >
             <Zap size={14} />
-            <span>⚡ Chaos Testing (Blackout)</span>
+            <span>⚡ Chaos Testing</span>
           </button>
         </div>
       </div>
 
+      {/* 1. Formula Weights Tab */}
       {activeTab === 'weights' && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
           {/* Form Controls (2 Cols) */}
@@ -264,7 +299,7 @@ export const SettingsPage: React.FC = () => {
                 <button
                   type="submit"
                   disabled={!isValidSum}
-                  className="px-6 py-2.5 bg-[#131b2e] hover:bg-[#1e2a47] disabled:opacity-50 text-white rounded-xl font-bold text-xs shadow-xs transition-all uppercase tracking-wider flex items-center gap-2"
+                  className="px-6 py-2.5 bg-[#131b2e] hover:bg-[#1e2a47] disabled:opacity-50 text-white rounded-xl font-bold text-xs shadow-xs transition-all uppercase tracking-wider flex items-center gap-2 cursor-pointer"
                 >
                   <Save size={14} />
                   <span>Save Formula & Recalculate</span>
@@ -290,7 +325,7 @@ export const SettingsPage: React.FC = () => {
         </div>
       )}
 
-      {/* Audit Ledger Tab */}
+      {/* 2. Audit Ledger Tab */}
       {activeTab === 'audit' && (
         <div className="bg-white border border-[#76777d]/20 rounded-2xl overflow-hidden shadow-xs">
           <div className="p-4 border-b border-[#76777d]/15 bg-[#fcf8fa]">
@@ -319,7 +354,95 @@ export const SettingsPage: React.FC = () => {
         </div>
       )}
 
-      {/* Chaos Testing (Blackout Resilience) Tab */}
+      {/* 3. 2FA Security Tab */}
+      {activeTab === '2fa' && (
+        <div className="bg-white border border-[#76777d]/20 rounded-2xl p-6 shadow-xs space-y-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#76777d]/15 pb-4">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-2xl bg-[#131b2e] flex items-center justify-center text-amber-400 shadow-md">
+                <ShieldCheck size={26} />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h2 className="text-base font-bold text-[#1b1b1d]">Two-Factor Authentication (2FA) Shield</h2>
+                  <span className={`text-[10px] uppercase font-mono font-bold px-2 py-0.5 rounded border ${
+                    twoFactorConfig.enabled
+                      ? 'bg-emerald-100 text-emerald-900 border-emerald-300'
+                      : 'bg-slate-100 text-slate-600 border-slate-300'
+                  }`}>
+                    {twoFactorConfig.enabled ? '✓ ACTIVE' : 'INACTIVE'}
+                  </span>
+                </div>
+                <p className="text-xs text-[#57657b] mt-0.5">
+                  Protect officer and citizen accounts with RFC 6238 TOTP (Google Authenticator) & SMS OTP.
+                </p>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setShow2FASetupModal(true)}
+              className="px-5 py-2.5 bg-[#131b2e] hover:bg-[#1e2a47] text-white rounded-xl font-bold text-xs flex items-center gap-2 transition-all cursor-pointer shadow-sm self-start sm:self-auto"
+            >
+              <Smartphone size={15} className="text-amber-400" />
+              <span>{twoFactorConfig.enabled ? 'Reconfigure 2FA' : 'Setup 2FA Authenticator'}</span>
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl space-y-2">
+              <div className="flex items-center gap-2 text-slate-800 font-bold text-xs">
+                <Smartphone size={16} className="text-blue-700" />
+                <span>Authenticator App (TOTP)</span>
+              </div>
+              <p className="text-[11px] text-slate-500 leading-relaxed">
+                Compatible with Google Authenticator, Microsoft Authenticator, Apple Passwords, Authy, and 1Password.
+              </p>
+            </div>
+
+            <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl space-y-2">
+              <div className="flex items-center gap-2 text-slate-800 font-bold text-xs">
+                <KeyRound size={16} className="text-amber-600" />
+                <span>Emergency Backup Codes</span>
+              </div>
+              <p className="text-[11px] text-slate-500 leading-relaxed">
+                8 cryptographically hashed single-use recovery codes generated for emergency offline account access.
+              </p>
+            </div>
+
+            <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl space-y-2">
+              <div className="flex items-center gap-2 text-slate-800 font-bold text-xs">
+                <Activity size={16} className="text-emerald-600" />
+                <span>SMS OTP Delivery</span>
+              </div>
+              <p className="text-[11px] text-slate-500 leading-relaxed">
+                Instant SMS verification fallback sent to the user's verified registered Indian mobile number (+91).
+              </p>
+            </div>
+          </div>
+
+          {twoFactorConfig.enabled && (
+            <div className="p-4 bg-emerald-50/70 border border-emerald-200 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-3">
+              <div className="flex items-center gap-2.5">
+                <CheckCircle2 size={18} className="text-emerald-700 shrink-0" />
+                <span className="text-xs text-emerald-900 font-semibold">
+                  2FA is protecting this session. Any sign-in from a new device will prompt for 6-digit TOTP or SMS code.
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={handleDisable2FA}
+                className="px-3 py-1.5 bg-red-100 hover:bg-red-200 text-red-800 font-bold text-xs rounded-lg transition-colors flex items-center gap-1.5 cursor-pointer shrink-0"
+              >
+                <Trash2 size={13} />
+                <span>Disable 2FA</span>
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* 4. Chaos Testing Tab */}
       {activeTab === 'chaos' && (
         <div className="space-y-5">
           {/* Status KPI Cards */}
@@ -447,6 +570,14 @@ export const SettingsPage: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* 2FA Setup Modal */}
+      <TwoFactorSetupModal
+        user={currentUser}
+        isOpen={show2FASetupModal}
+        onClose={() => setShow2FASetupModal(false)}
+        onConfigUpdated={() => setTwoFactorConfig(getUser2FAConfig(currentUser.id))}
+      />
     </div>
   );
 };

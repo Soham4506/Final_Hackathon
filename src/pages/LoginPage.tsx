@@ -13,8 +13,11 @@ import {
   ShieldCheck,
   KeyRound,
   Activity,
+  Smartphone,
 } from 'lucide-react';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
+import { TwoFactorVerifyModal } from '../components/auth/TwoFactorVerifyModal';
+import { is2FAEnabledForUser } from '../services/twoFactorService';
 
 export const LoginPage: React.FC = () => {
   const { login, language, setLanguage, isSupabaseLive, zones, departments } = useCivic();
@@ -23,6 +26,11 @@ export const LoginPage: React.FC = () => {
   const [mode, setMode] = useState<'signin' | 'signup'>('signin');
   const [selectedRole, setSelectedRole] = useState<UserRole>('citizen');
   
+  // 2FA Verification Flow State
+  const [pending2faUser, setPending2faUser] = useState<{ role: UserRole; user: UserProfile } | null>(null);
+  const [show2faModal, setShow2faModal] = useState(false);
+  const [enforce2faDemo, setEnforce2faDemo] = useState(false);
+
   // Sign In Form
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -36,6 +44,19 @@ export const LoginPage: React.FC = () => {
 
   const [authError, setAuthError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+
+  const finalizeLoginWith2FA = (targetRole: UserRole, targetUser: UserProfile) => {
+    const has2FA = is2FAEnabledForUser(targetUser.id) || enforce2faDemo || targetRole === 'admin';
+    if (has2FA) {
+      setPending2faUser({ role: targetRole, user: targetUser });
+      setShow2faModal(true);
+      setIsLoading(false);
+      return;
+    }
+
+    login(targetRole, targetUser);
+    navigate(targetRole === 'citizen' ? '/citizen-portal' : '/');
+  };
 
   const proceedWithLocalAuth = (roleToUse: UserRole, name?: string) => {
     let derivedName = name || email.split('@')[0].replace(/[\._]/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()) || 'Municipal Officer';
@@ -66,8 +87,7 @@ export const LoginPage: React.FC = () => {
       isVerified: true,
     };
 
-    login(roleToUse, userObj);
-    navigate(roleToUse === 'citizen' ? '/citizen-portal' : '/');
+    finalizeLoginWith2FA(roleToUse, userObj);
   };
 
   const handleSignIn = async (e: React.FormEvent) => {
@@ -146,8 +166,7 @@ export const LoginPage: React.FC = () => {
             isVerified: profile?.is_verified ?? true,
           };
 
-          login(role, userObj);
-          navigate(role === 'citizen' ? '/citizen-portal' : '/');
+          finalizeLoginWith2FA(role, userObj);
           return;
         }
       } catch (err: any) {
@@ -243,8 +262,7 @@ export const LoginPage: React.FC = () => {
             isVerified: true,
           };
 
-          login(targetRole, userObj);
-          navigate(targetRole === 'citizen' ? '/citizen-portal' : '/');
+          finalizeLoginWith2FA(targetRole, userObj);
           return;
         }
       } catch (err: any) {
@@ -296,8 +314,7 @@ export const LoginPage: React.FC = () => {
         status: 'active',
         isVerified: true,
       };
-      login(selectedRole, googleUser);
-      navigate(selectedRole === 'citizen' ? '/citizen-portal' : '/');
+      finalizeLoginWith2FA(selectedRole, googleUser);
       setIsLoading(false);
     }, 400);
   };
@@ -465,6 +482,23 @@ export const LoginPage: React.FC = () => {
                 </button>
               </div>
             )}
+
+            {/* 2FA Quick Enforce Checkbox */}
+            <div className="flex items-center justify-between p-2.5 bg-muted/40 border border-border rounded-xl text-xs">
+              <label className="flex items-center gap-2 text-foreground font-medium cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={enforce2faDemo}
+                  onChange={(e) => setEnforce2faDemo(e.target.checked)}
+                  className="rounded text-primary focus:ring-primary"
+                />
+                <span className="flex items-center gap-1">
+                  <ShieldCheck size={14} className="text-amber-500" />
+                  <span>Enforce Two-Factor Authentication (2FA)</span>
+                </span>
+              </label>
+              <span className="text-[10px] font-mono text-muted-foreground">TOTP / SMS</span>
+            </div>
 
             <button
               type="submit"
@@ -658,6 +692,24 @@ export const LoginPage: React.FC = () => {
       <div className="max-w-5xl w-full mx-auto text-center text-xs text-[#7c839b]">
         © 2026 Kopargaon Municipal Council (कोपरगाव नगरपरिषद). All rights reserved.
       </div>
+
+      {/* 2FA Verification Modal */}
+      {pending2faUser && (
+        <TwoFactorVerifyModal
+          user={pending2faUser.user}
+          isOpen={show2faModal}
+          onSuccess={() => {
+            login(pending2faUser.role, pending2faUser.user);
+            setShow2faModal(false);
+            navigate(pending2faUser.role === 'citizen' ? '/citizen-portal' : '/');
+          }}
+          onCancel={() => {
+            setShow2faModal(false);
+            setPending2faUser(null);
+            setIsLoading(false);
+          }}
+        />
+      )}
     </div>
   );
 };

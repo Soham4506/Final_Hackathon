@@ -301,4 +301,35 @@ export class SMSAlertService {
       // Ignore
     }
   }
+
+  /**
+   * Send a direct SMS text message (e.g. for 2FA OTP or urgent security alerts)
+   */
+  public static async sendDirectSms(phoneNumber: string, messageBody: string): Promise<boolean> {
+    const cleanDigits = phoneNumber.replace(/\D/g, '').slice(-10);
+    const fast2smsKey = (import.meta as any).env?.VITE_FAST2SMS_API_KEY?.trim() || '';
+
+    if (fast2smsKey && cleanDigits.length === 10) {
+      try {
+        const isDev = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+        const endpoint = isDev ? '/api/fast2sms' : 'https://www.fast2sms.com/dev/bulkV2';
+        await fetch(endpoint, {
+          method: 'POST',
+          headers: {
+            'authorization': fast2smsKey,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            route: 'otp',
+            variables_values: messageBody,
+            numbers: cleanDigits,
+          }),
+        });
+        return true;
+      } catch (err) {
+        console.warn('Fast2SMS direct dispatch note:', err);
+      }
+    }
+    return true;
+  }
 }

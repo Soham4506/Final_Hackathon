@@ -19,6 +19,8 @@ import {
 import { useCivic } from '../../context/CivicContext';
 import { useResilience } from '../../context/ResilienceContext';
 import { OperationalStatusModal } from '../modals/OperationalStatusModal';
+import { TwoFactorSetupModal } from '../auth/TwoFactorSetupModal';
+import { is2FAEnabledForUser } from '../../services/twoFactorService';
 
 interface HeaderProps {
   sidebarOpen: boolean;
@@ -44,6 +46,7 @@ export const Header: React.FC<HeaderProps> = ({ sidebarOpen, setSidebarOpen }) =
 
   const [searchQuery, setSearchQuery] = useState('');
   const [showStatusModal, setShowStatusModal] = useState(false);
+  const [show2FASetupModal, setShow2FASetupModal] = useState(false);
   const [showNotifs, setShowNotifs] = useState(false);
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
 
@@ -243,10 +246,33 @@ export const Header: React.FC<HeaderProps> = ({ sidebarOpen, setSidebarOpen }) =
                   )}
                 </div>
 
-                <div className="p-2">
+                <div className="p-2 space-y-1">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setProfileDropdownOpen(false);
+                      setShow2FASetupModal(true);
+                    }}
+                    className="w-full text-left px-3 py-2 text-slate-800 hover:bg-slate-100 rounded-xl font-bold flex items-center justify-between transition-colors cursor-pointer"
+                  >
+                    <div className="flex items-center gap-2">
+                      <ShieldCheck size={14} className="text-amber-500" />
+                      <span>Two-Factor Auth (2FA)</span>
+                    </div>
+                    {is2FAEnabledForUser(currentUser.id) ? (
+                      <span className="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-1.5 py-0.5 rounded">
+                        ACTIVE
+                      </span>
+                    ) : (
+                      <span className="text-[10px] bg-slate-200 text-slate-700 font-bold px-1.5 py-0.5 rounded">
+                        SETUP
+                      </span>
+                    )}
+                  </button>
+
                   <button
                     onClick={handleLogout}
-                    className="w-full text-left px-3 py-2 text-red-600 hover:bg-red-50 rounded-xl font-bold flex items-center gap-2 transition-colors"
+                    className="w-full text-left px-3 py-2 text-red-600 hover:bg-red-50 rounded-xl font-bold flex items-center gap-2 transition-colors cursor-pointer"
                   >
                     <LogOut size={14} />
                     <span>Sign Out</span>
@@ -267,6 +293,13 @@ export const Header: React.FC<HeaderProps> = ({ sidebarOpen, setSidebarOpen }) =
       <OperationalStatusModal
         isOpen={showStatusModal}
         onClose={() => setShowStatusModal(false)}
+      />
+
+      {/* 2FA Setup & Security Configuration Modal */}
+      <TwoFactorSetupModal
+        user={currentUser}
+        isOpen={show2FASetupModal}
+        onClose={() => setShow2FASetupModal(false)}
       />
     </>
   );
