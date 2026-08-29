@@ -65,6 +65,10 @@ import { ReuseAllocationEngine } from '../services/reuseAllocationEngine';
 import { FloodPriorityEngine } from '../services/floodPriorityEngine';
 import { Language, DICTIONARY, Translations } from '../services/localizationService';
 import { SMSAlertService } from '../services/smsAlertService';
+import { EventLogService } from '../services/eventLogService';
+import { IntegrityCheckService } from '../services/integrityCheckService';
+import { RecoveryService } from '../services/recoveryService';
+import { RecoveryReport, LedgerEvent, LedgerEventType } from '../types';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 
 
@@ -188,6 +192,14 @@ interface CivicContextType {
   markNotificationAsRead: (notificationId: string) => void;
 
   resetAllDataToDefaults: () => void;
+
+  // Blackout Resilience & Disaster Recovery
+  recoveryReport: RecoveryReport | null;
+  isRecoveryModeActive: boolean;
+  isBlackoutSimulating: boolean;
+  acknowledgeRecoveryReport: () => void;
+  simulateBlackoutChaos: () => Promise<RecoveryReport>;
+  confirmUnconfirmedInFlightIssue: (issueId: string, notes?: string) => void;
 }
 
 const CivicContext = createContext<CivicContextType | undefined>(undefined);
@@ -310,8 +322,31 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     getStored('flood_dispatch_orders', [])
   );
 
-  // Issues start clean
+  // Blackout Resilience & Disaster Recovery State
+  const [recoveryReport, setRecoveryReport] = useState<RecoveryReport | null>(() =>
+    getStored<RecoveryReport | null>('recovery_report', null)
+  );
+  const [isRecoveryModeActive, setIsRecoveryModeActive] = useState<boolean>(() =>
+    getStored<boolean>('is_recovery_mode', false)
+  );
+  const [isBlackoutSimulating, setIsBlackoutSimulating] = useState<boolean>(false);
+
+  // Issues initialization with boot-time integrity check & recovery
   const [issues, setIssues] = useState<CivicIssue[]>(() => {
+    EventLogService.seedInitialLedgerIfEmpty(INITIAL_ISSUES);
+    const integrity = IntegrityCheckService.verifyStorageIntegrity();
+
+    if (!integrity.isValid && !integrity.isMissing) {
+      console.warn('⚠️ Boot-time storage corruption detected. Recovering from independent event ledger...');
+      const recovery = RecoveryService.executeRecovery(
+        'boot_integrity_check',
+        INITIAL_CATEGORIES,
+        INITIAL_ZONES,
+        INITIAL_WEIGHT_CONFIG
+      );
+      return recovery.recoveredIssues;
+    }
+
     const stored = getStored<CivicIssue[] | null>('issues', null);
     const baseIssues = stored || INITIAL_ISSUES;
     return baseIssues.map((issue) => {
@@ -324,6 +359,127 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       };
     });
   });
+
+  const acknowledgeRecoveryReport = () => {
+    setIsRecoveryModeActive(false);
+    if (recoveryReport) {
+      const updatedReport = {
+        ...recoveryReport,
+        acknowledgedByOfficer: true,
+        acknowledgedAt: new Date().toISOString(),
+      };
+      setRecoveryReport(updatedReport);
+      localStorage.setItem('civicpulse_recovery_report', JSON.stringify(updatedReport));
+    }
+    localStorage.setItem('civicpulse_is_recovery_mode', JSON.stringify(false));
+  };
+
+  const confirmUnconfirmedInFlightIssue = (issueId: string, notes: string = 'Re-verified by Municipal Officer') => {
+    setIssues((prev) =>
+      prev.map((iss) => {
+        if (iss.id === issueId) {
+          return {
+            ...iss,
+            recoveryStatus: 'recovered',
+            recoveryNote: `Re-verified and confirmed: ${notes}`,
+          };
+        }
+        return iss;
+      })
+    );
+
+    EventLogService.appendEvent(
+      'IN_FLIGHT_OPERATION_COMPLETED',
+      issueId,
+      { notes },
+      `confirm-inflight-${issueId}-${Date.now()}`,
+      currentUser.fullName,
+      currentUser.role
+    );
+
+    if (recoveryReport) {
+      const updated = {
+        ...recoveryReport,
+        unconfirmedInFlightTickets: recoveryReport.unconfirmedInFlightTickets.filter((t) => t.issueId !== issueId),
+      };
+      setRecoveryReport(updated);
+      localStorage.setItem('civicpulse_recovery_report', JSON.stringify(updated));
+    }
+  };
+
+  const simulateBlackoutChaos = async (): Promise<RecoveryReport> => {
+    setIsBlackoutSimulating(true);
+
+    try {
+      // 1. Trigger an active in-flight operation on first candidate issue
+      const targetIssue = issues[0] || INITIAL_ISSUES[0];
+      if (targetIssue) {
+        EventLogService.appendEvent(
+          'IN_FLIGHT_OPERATION_STARTED',
+          targetIssue.id,
+          {
+            operationName: 'Emergency Jetting Machinery Allocation & Citizen SMS Dispatch',
+            targetTicket: targetIssue.ticketNumber,
+            timestamp: new Date().toISOString(),
+          },
+          `inflight-op-${targetIssue.id}-${Date.now()}`,
+          currentUser.fullName,
+          currentUser.role,
+          true
+        );
+      }
+
+      // 2. Short artificial delay to simulate mid-flight execution
+      await new Promise((r) => setTimeout(r, 400));
+
+      // 3. Catastrophically corrupt primary data stores (simulate power outage / disk crash)
+      localStorage.setItem(
+        'civicpulse_issues',
+        '{"CORRUPTED_BLOB_ZERO_BYTE_BLACKOUT": true, "raw_byte_truncation_at": 2048, "malformed_json_syntax_'
+      );
+      localStorage.setItem('civicpulse_active_plans', '{corrupted_plans_mid_write_');
+      localStorage.setItem('civicpulse_issues_checksum', 'chk-corrupted-hash-invalid');
+
+      // 4. Truncate the tail of the independent event ledger (honest partial write-ahead buffer loss)
+      EventLogService.truncateTail(2);
+
+      // 5. Execute state reconstruction from independent ledger
+      const recovery = RecoveryService.executeRecovery(
+        'manual_simulation',
+        categories,
+        zones,
+        weightConfig
+      );
+
+      // 6. Update operational state with recovered records
+      setIssues(recovery.recoveredIssues);
+      setRecoveryReport(recovery.report);
+      setIsRecoveryModeActive(true);
+      localStorage.setItem('civicpulse_recovery_report', JSON.stringify(recovery.report));
+      localStorage.setItem('civicpulse_is_recovery_mode', JSON.stringify(true));
+
+      // 7. Write clean audit log of recovery execution
+      const log: AuditLog = {
+        id: `log-recovery-${Date.now()}`,
+        actorName: currentUser.fullName,
+        actorRole: currentUser.role,
+        action: 'CHAOS_BLACKOUT_RECOVERY_EXECUTED',
+        entityType: 'decision',
+        details: {
+          recoveredCount: recovery.report.recoveredIssuesCount,
+          corruptedEventsCount: recovery.report.corruptedEventsCount,
+          unconfirmedInFlight: recovery.report.unconfirmedInFlightTickets.length,
+          timestamp: recovery.report.recoveryTimestamp,
+        },
+        createdAt: new Date().toISOString(),
+      };
+      setAuditLogs((prev) => [log, ...prev]);
+
+      return recovery.report;
+    } finally {
+      setIsBlackoutSimulating(false);
+    }
+  };
 
   // Login method: Sets actual user profile immediately and persists session
   const login = (role: UserRole, userProfile: UserProfile) => {
@@ -551,6 +707,9 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       localStorage.setItem('civicpulse_user_role', JSON.stringify(userRole));
       localStorage.setItem('civicpulse_current_user', JSON.stringify(currentUser));
       localStorage.setItem('civicpulse_issues', JSON.stringify(issues));
+      IntegrityCheckService.recordChecksum(issues);
+      localStorage.setItem('civicpulse_recovery_report', JSON.stringify(recoveryReport));
+      localStorage.setItem('civicpulse_is_recovery_mode', JSON.stringify(isRecoveryModeActive));
       localStorage.setItem('civicpulse_resources', JSON.stringify(resources));
       localStorage.setItem('civicpulse_audit_logs', JSON.stringify(auditLogs));
       localStorage.setItem('civicpulse_notifications', JSON.stringify(notifications));
@@ -576,6 +735,8 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     userRole,
     currentUser,
     issues,
+    recoveryReport,
+    isRecoveryModeActive,
     resources,
     auditLogs,
     notifications,
@@ -594,6 +755,34 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     emergencyInventory,
     floodDispatchOrders,
   ]);
+
+  // Liveness Storage Integrity Monitor (polled every 3.5s + storage event)
+  useEffect(() => {
+    const checkIntegrity = () => {
+      if (isBlackoutSimulating) return;
+      const integrity = IntegrityCheckService.verifyStorageIntegrity();
+      if (!integrity.isValid && (integrity.isCorrupted || integrity.isMissing)) {
+        console.warn('⚠️ Runtime storage integrity violation detected! Reconstructing from independent ledger...');
+        const recovery = RecoveryService.executeRecovery(
+          'automatic_detection',
+          categories,
+          zones,
+          weightConfig
+        );
+        setIssues(recovery.recoveredIssues);
+        setRecoveryReport(recovery.report);
+        setIsRecoveryModeActive(true);
+      }
+    };
+
+    const interval = setInterval(checkIntegrity, 3500);
+    window.addEventListener('storage', checkIntegrity);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('storage', checkIntegrity);
+    };
+  }, [isBlackoutSimulating, categories, zones, weightConfig]);
 
   // Recalculate all scores
   const recalculateAllPriorities = () => {
@@ -718,6 +907,16 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       };
       setAuditLogs((prev) => [mergeLog, ...prev]);
 
+      // Independent Append-Only Event Ledger
+      EventLogService.appendEvent(
+        'ISSUE_UPDATED',
+        existingDuplicate.id,
+        mergedIssue,
+        `merge-${existingDuplicate.id}-${updatedEscalation}`,
+        currentUser.fullName,
+        currentUser.role
+      );
+
       const notif: NotificationItem = {
         id: `notif-merge-${Date.now()}`,
         recipientId: currentUser.id,
@@ -820,6 +1019,16 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     };
     setAuditLogs((prev) => [log, ...prev]);
 
+    // Independent Append-Only Event Ledger Record
+    EventLogService.appendEvent(
+      'ISSUE_CREATED',
+      newIssue.id,
+      newIssue,
+      `create-${newIssue.id}`,
+      currentUser.fullName,
+      currentUser.role
+    );
+
     const notif: NotificationItem = {
       id: `notif-${Date.now()}`,
       recipientId: currentUser.id,
@@ -909,6 +1118,16 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     };
     setAuditLogs((prev) => [log, ...prev]);
 
+    // Independent Append-Only Event Ledger
+    EventLogService.appendEvent(
+      'STATUS_CHANGED',
+      issueId,
+      { newStatus, notes: officerNotes, ticketNumber: targetIssue?.ticketNumber },
+      `status-${issueId}-${newStatus}-${Date.now()}`,
+      currentUser.fullName,
+      currentUser.role
+    );
+
     if (targetIssue) {
       const notif: NotificationItem = {
         id: `notif-${Date.now()}`,
@@ -985,6 +1204,16 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     };
     setAuditLogs((prev) => [log, ...prev]);
 
+    // Independent Append-Only Event Ledger
+    EventLogService.appendEvent(
+      'OFFICER_OVERRIDDEN',
+      issueId,
+      { overrideScore: overriddenScore, reason: overrideReason, notes: officerNotes },
+      `override-${issueId}-${Date.now()}`,
+      currentUser.fullName,
+      currentUser.role
+    );
+
     if (isSupabaseConfigured) {
       supabase.from('priority_decisions').insert([{
         issue_id: issueId,
@@ -1036,6 +1265,21 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       createdAt: new Date().toISOString(),
     };
     setAuditLogs((prev) => [log, ...prev]);
+
+    // Independent Append-Only Event Ledger
+    EventLogService.appendEvent(
+      'FIELD_VERIFIED',
+      issueId,
+      {
+        fieldVerifiedBy: currentUser.fullName,
+        fieldVerifiedAt: verifiedIss.fieldVerifiedAt,
+        notes: officerNotes,
+        ticketNumber: verifiedIss.ticketNumber,
+      },
+      `verify-${issueId}-${Date.now()}`,
+      currentUser.fullName,
+      currentUser.role
+    );
 
     if (isSupabaseConfigured) {
       supabase.from('issues').update({
@@ -1855,6 +2099,12 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         generateFloodDispatchPlan,
         approveFloodDispatchOrder,
         resetAllDataToDefaults,
+        recoveryReport,
+        isRecoveryModeActive,
+        isBlackoutSimulating,
+        acknowledgeRecoveryReport,
+        simulateBlackoutChaos,
+        confirmUnconfirmedInFlightIssue,
       }}
     >
       {children}

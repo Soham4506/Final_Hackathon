@@ -182,6 +182,11 @@ export interface CivicIssue {
   fieldVerifiedAt?: string;
   fieldVerificationNotes?: string;
   
+  // Blackout Resilience & Recovery Metadata
+  recoveryStatus?: 'normal' | 'recovered' | 'unconfirmed_in_flight' | 'unrecoverable_partial';
+  recoveryNote?: string;
+  lastKnownAuditTimestamp?: string;
+  
   status: IssueStatus;
   urgency: UrgencyLevel;
   
@@ -312,6 +317,53 @@ export interface AuditLog {
   createdAt: string;
 }
 
+// ==============================================================================
+// BLACKOUT RESILIENCE & INDEPENDENT EVENT LEDGER TYPES
+// ==============================================================================
+
+export type LedgerEventType =
+  | 'ISSUE_CREATED'
+  | 'ISSUE_UPDATED'
+  | 'STATUS_CHANGED'
+  | 'PRIORITY_RECALCULATED'
+  | 'FIELD_VERIFIED'
+  | 'OFFICER_OVERRIDDEN'
+  | 'ALLOCATION_APPROVED'
+  | 'ALLOCATION_DEFERRED'
+  | 'SMS_DISPATCHED'
+  | 'IN_FLIGHT_OPERATION_STARTED'
+  | 'IN_FLIGHT_OPERATION_COMPLETED';
+
+export interface LedgerEvent<T = any> {
+  eventId: string;
+  type: LedgerEventType;
+  entityId: string;
+  payload: T;
+  timestamp: string;
+  idempotencyKey: string;
+  sequenceNumber: number;
+  isInFlight?: boolean;
+  isCorruptedOrTruncated?: boolean;
+  actorName?: string;
+  actorRole?: string;
+}
+
+export interface RecoveryReport {
+  recoveryTimestamp: string;
+  triggerSource: 'automatic_detection' | 'manual_simulation' | 'boot_integrity_check';
+  totalEventsProcessed: number;
+  successfulEventsReplayed: number;
+  corruptedEventsCount: number;
+  unrecoverableTickets: { ticketNumber?: string; eventId: string; reason: string; lastKnownDetails?: string }[];
+  unconfirmedInFlightTickets: { ticketNumber: string; issueId: string; operation: string; timestamp: string }[];
+  fullyRecoveredCount: number;
+  recoveredIssuesCount: number;
+  details: string[];
+  acknowledgedByOfficer?: boolean;
+  acknowledgedAt?: string;
+}
+
 export * from './wastewater';
 export * from './floodAlert';
+
 

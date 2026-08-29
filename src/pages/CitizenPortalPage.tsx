@@ -1118,6 +1118,19 @@ export const CitizenPortalPage: React.FC = () => {
                 </div>
               </div>
 
+              {/* Resilience Re-verification Note for Citizen */}
+              {trackedIssue.recoveryStatus === 'unconfirmed_in_flight' && (
+                <div className="bg-amber-50 border border-amber-300 rounded-xl p-3.5 flex items-start gap-2.5 text-amber-950">
+                  <ShieldCheck size={18} className="text-amber-700 shrink-0 mt-0.5" />
+                  <div className="text-xs space-y-0.5">
+                    <span className="font-bold block text-amber-950">Municipal System Resilience Note</span>
+                    <p className="text-[11px] text-amber-900 leading-relaxed">
+                      We are currently re-verifying the latest operational dispatch status of your report with on-duty ward engineers following a routine server recovery. Your grievance is completely safe in our municipal records — no action is needed from you.
+                    </p>
+                  </div>
+                </div>
+              )}
+
               {/* Photo Evidence */}
               {trackedIssue.photoUrls && trackedIssue.photoUrls.length > 0 && (
                 <div className="space-y-1.5">

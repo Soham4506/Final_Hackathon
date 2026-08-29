@@ -1,4 +1,4 @@
-﻿# 🏛️ KoparNiti (कोपरनीती) — Municipal Decision Architecture
+# 🏛️ KoparNiti (कोपरनीती) — Municipal Decision Architecture
 ### 5-Minute Executive Guide for Hackathon Judges & Municipal Leadership
 **Kopargaon Municipal Council (कोपरगाव नगरपरिषद) • Track 2 Open Innovation**
 
@@ -73,3 +73,25 @@ KoparNiti provides an interactive **Optimality Comparison Toggle** on the Decisi
 The core decision engine was built specifically for **Infrastructure & Sanitation Grievance Prioritization**. It is also extended to two high-impact secondary municipal operations:
 1. **Flood Alert & Emergency Evacuation Dispatch** (Upstream Darna/Bhandardara dam discharge telemetry & Godavari riverbank ward evacuation).
 2. **Circular Wastewater-to-Agriculture Allocation** (Secondary-treated effluent testing, sugarcane booking, and tanker distribution).
+
+---
+
+## 💥 7. Challenge 1: "The Blackout" Resilience Architecture & Live Demo
+
+When primary browser/server storage is wiped or corrupted mid-operation, KoparNiti provides a **fully clickable, deterministic state recovery engine**:
+
+### 🛠️ Architecture:
+1. **Independent Append-Only Event Ledger (`civicpulse_event_ledger_v1`)**: Every state mutation (`ISSUE_CREATED`, `STATUS_CHANGED`, `FIELD_VERIFIED`, `OFFICER_OVERRIDDEN`, `IN_FLIGHT_OPERATION_STARTED`) is appended to an isolated storage key with unique idempotency hashes.
+2. **Liveness Integrity Monitor & Checksum**: Detects JSON syntax destruction and hash mismatches automatically at boot and every 3.5s in the background.
+3. **Honest Partial Loss (No Magic Fake Recovery)**: Real-world crashes truncate uncommitted write-ahead buffers. KoparNiti honestly catalogues buffer drops in the recovery audit log.
+4. **Human-in-the-Loop Re-verification**: Operations interrupted mid-flight are flagged as `unconfirmed_in_flight` — requiring explicit officer confirmation, while reassuring citizens on their tracking screen.
+5. **Continuous Operations**: The system stays 100% operational immediately after recovery, continuing to accept new complaints with zero restarts.
+
+### 🎬 1-Minute Live Demo Script for Judges:
+1. Log in as **Super Admin** or **Municipal Officer**.
+2. Navigate to **Settings** $\rightarrow$ Click **⚡ Chaos Testing (Blackout)**.
+3. Click the red button: **"💥 Simulate Data Store Blackout Mid-Operation"**.
+4. Observe the persistent top banner:
+   > *"⚠️ Data Store Integrity Failure Detected — State Reconstructed. Recovered 11 records from isolated append-only event ledger. 2 uncommitted events could not be recovered. 1 in-flight action requires officer re-verification."*
+5. Click **"View Recovery Report"** to inspect the full audit modal and tap **"✓ Confirm & Re-Verify Action"** on the in-flight ticket.
+6. Open **Citizen Portal** tracking for ticket `KMC-2026-00101` to show the reassuring plain-language resilience notice.
