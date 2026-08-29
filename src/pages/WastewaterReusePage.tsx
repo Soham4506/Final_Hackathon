@@ -129,45 +129,45 @@ export const WastewaterReusePage: React.FC = () => {
   }[] = [
     {
       id: 'municipal_waste',
-      titleEn: '1. Municipal Waste',
-      titleMr: '१. कचरा व सांडपाणी संकलन',
+      titleEn: '1. Waste Inflow',
+      titleMr: '१. कचरा संकलन',
       icon: Trash2,
-      desc: 'Solid-liquid separation & ward collection streams',
+      desc: 'Ward drainage streams',
     },
     {
       id: 'wastewater_intake',
-      titleEn: '2. Wastewater Intake',
+      titleEn: '2. Raw Intake',
       titleMr: '२. सांडपाणी आवक',
       icon: Droplets,
-      desc: 'Raw drainage screening & baseline diagnostics',
+      desc: 'Screening & diagnostics',
     },
     {
       id: 'treatment',
-      titleEn: '3. STP Treatment',
-      titleMr: '३. मलनिःसारण प्रक्रिया',
+      titleEn: '3. MBBR Treatment',
+      titleMr: '३. सांडपाणी प्रक्रिया',
       icon: Cpu,
-      desc: 'MBBR Biological aeration & Sand/Carbon filtration',
+      desc: 'Biofilm & filtration',
     },
     {
       id: 'quality_check',
       titleEn: '4. Quality Check',
-      titleMr: '४. CPCB गुणवत्ता तपासणी',
+      titleMr: '४. CPCB तपासणी',
       icon: ShieldCheck,
-      desc: 'Agricultural safety standards & lab certification',
+      desc: 'CPCB safety clearance',
     },
     {
       id: 'reuse_plan',
       titleEn: '5. Reuse Plan',
-      titleMr: '५. कृषी वाटप आराखडा',
+      titleMr: '५. वाटप आराखडा',
       icon: ClipboardList,
-      desc: 'Demand matching & canal/tanker distribution',
+      desc: 'Demand & canal splits',
     },
     {
       id: 'agriculture',
       titleEn: '6. Agriculture',
-      titleMr: '६. शेती सिंचन वितरण',
+      titleMr: '६. शेती सिंचन',
       icon: Sprout,
-      desc: 'Farmer delivery, crop health & fertilizer savings',
+      desc: 'Farmland delivery',
     },
   ];
 
@@ -258,44 +258,42 @@ export const WastewaterReusePage: React.FC = () => {
   return (
     <div className="space-y-5">
       {/* 1. Header Banner */}
-      <div className="bg-white border border-[#76777d]/20 rounded-2xl p-5 sm:p-6 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="bg-white border border-[#76777d]/20 rounded-2xl p-5 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2 mb-1">
             <span className="bg-emerald-50 text-emerald-800 border border-emerald-200 text-[10px] font-mono uppercase font-bold px-2 py-0.5 rounded flex items-center gap-1">
               <Sparkles size={12} className="text-emerald-600" />
-              <span>Smart Circular Economy Workflow</span>
+              <span>Circular Economy</span>
             </span>
-            <span className="text-xs text-[#76777d]">
-              Kopargaon Municipal Council (कोपरगाव नगरपरिषद)
-            </span>
+            <span className="text-xs text-[#76777d]">Kopargaon MC</span>
           </div>
 
           <h1 className="text-xl sm:text-2xl font-bold text-[#1b1b1d] tracking-tight flex items-center gap-2">
             <Sprout className="text-emerald-700" size={24} />
-            <span>Wastewater-to-Agriculture Reuse Hub</span>
+            <span>Wastewater-to-Agriculture Reuse</span>
           </h1>
 
-          <p className="text-xs sm:text-sm text-[#57657b] mt-1 max-w-2xl">
-            Treating municipal wastewater into certified irrigation water for Kopargaon sugarcane, crops & agroforestry.
+          <p className="text-xs text-[#57657b] mt-1">
+            Treating municipal wastewater for certified agriculture and agroforestry irrigation under CPCB norms.
           </p>
         </div>
 
         {/* Action Buttons */}
-        <div className="flex flex-wrap gap-2.5 shrink-0">
+        <div className="flex flex-wrap gap-2 shrink-0">
           <button
             onClick={() => setShowBookingModal(true)}
-            className="flex items-center gap-2 bg-[#131b2e] hover:bg-[#1e2a47] text-white text-xs font-bold uppercase tracking-wider px-4 py-2.5 rounded-xl shadow-xs transition-all"
+            className="flex items-center gap-1.5 bg-[#131b2e] hover:bg-[#1e2a47] text-white text-xs font-bold uppercase tracking-wider px-3.5 py-2 rounded-xl shadow-xs transition-all"
           >
-            <PlusCircle size={15} />
-            <span>{t.bookWaterQuota || 'Book Water Quota'}</span>
+            <PlusCircle size={14} />
+            <span>{t.bookWaterQuota || 'Book Quota'}</span>
           </button>
 
           <button
             onClick={handleCreateSampleIntake}
-            className="flex items-center gap-2 bg-white hover:bg-slate-50 text-[#131b2e] border border-[#76777d]/30 text-xs font-bold uppercase tracking-wider px-4 py-2.5 rounded-xl shadow-xs transition-all"
+            className="flex items-center gap-1.5 bg-white hover:bg-slate-50 text-[#131b2e] border border-[#76777d]/30 text-xs font-bold uppercase tracking-wider px-3.5 py-2 rounded-xl shadow-xs transition-all"
           >
-            <Droplets size={15} className="text-cyan-700" />
-            <span>New Waste Intake</span>
+            <Droplets size={14} className="text-cyan-700" />
+            <span>New Batch</span>
           </button>
         </div>
       </div>
@@ -485,45 +483,45 @@ export const WastewaterReusePage: React.FC = () => {
       <div className="bg-white border border-[#76777d]/20 rounded-2xl p-6 shadow-xs space-y-6 text-[#1b1b1d]">
         {/* STAGE 1: MUNICIPAL WASTE INTAKE */}
         {activeStageTab === 'municipal_waste' && (
-          <div className="space-y-5">
+          <div className="space-y-4">
             <div className="flex items-center justify-between">
               <div>
                 <h3 className="text-base font-bold text-[#1b1b1d] flex items-center gap-2">
                   <Trash2 size={20} className="text-amber-600" />
-                  <span>Stage 1: Municipal Waste Collection & Solid-Liquid Segregation</span>
+                  <span>Stage 1: Waste Inflow & Segregation</span>
                 </h3>
                 <p className="text-xs text-[#57657b]">
-                  Monitors ward-wise wastewater streams, sewage discharge lines, and coarse solids screening before intake.
+                  Ward-wise sewage lines and coarse solids screening before STP intake.
                 </p>
               </div>
               <button
                 onClick={() => advanceWastewaterStage(selectedBatch?.id || '')}
                 className="flex items-center gap-1.5 bg-[#131b2e] hover:bg-[#1e2a47] text-white text-xs font-bold uppercase tracking-wider px-3.5 py-2 rounded-xl transition-all"
               >
-                <span>Route to Wastewater Intake</span>
+                <span>To Intake</span>
                 <ArrowRight size={14} />
               </button>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3.5">
               {wasteSources.map((src) => (
-                <div key={src.id} className="bg-[#fcf8fa] border border-[#76777d]/15 p-4 rounded-xl space-y-2">
+                <div key={src.id} className="bg-[#fcf8fa] border border-[#76777d]/15 p-3.5 rounded-xl space-y-2">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-bold text-[#1b1b1d] truncate">{src.wardName}</span>
                     <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-200 text-slate-800 uppercase font-mono font-bold">
                       {src.sourceType.replace('_', ' ')}
                     </span>
                   </div>
-                  <div className="space-y-1 text-xs">
-                    <div className="flex justify-between text-[#57657b]">
-                      <span>Daily Inflow Volume:</span>
+                  <div className="space-y-1 text-xs text-[#57657b]">
+                    <div className="flex justify-between">
+                      <span>Daily Inflow:</span>
                       <strong className="text-[#1b1b1d] font-mono">{src.dailyVolumeKLD.toLocaleString()} KL/day</strong>
                     </div>
-                    <div className="flex justify-between text-[#57657b]">
-                      <span>Initial Turbidity:</span>
+                    <div className="flex justify-between">
+                      <span>Turbidity:</span>
                       <strong className="text-amber-700 font-mono">{src.initialTurbidityNTU} NTU</strong>
                     </div>
-                    <div className="flex justify-between text-[#57657b]">
+                    <div className="flex justify-between">
                       <span>Baseline BOD:</span>
                       <strong className="text-[#1b1b1d] font-mono">{src.initialBOD} mg/L</strong>
                     </div>
@@ -536,53 +534,53 @@ export const WastewaterReusePage: React.FC = () => {
 
         {/* STAGE 2: WASTEWATER INTAKE & DIAGNOSTICS */}
         {activeStageTab === 'wastewater_intake' && (
-          <div className="space-y-5">
+          <div className="space-y-4">
             <div className="flex items-center justify-between">
               <div>
                 <h3 className="text-base font-bold text-[#1b1b1d] flex items-center gap-2">
                   <Droplets size={20} className="text-cyan-700" />
-                  <span>Stage 2: Raw Wastewater Inflow & Primary Diagnostics</span>
+                  <span>Stage 2: Raw Intake & Diagnostics</span>
                 </h3>
                 <p className="text-xs text-[#57657b]">
-                  Initial parameter profiling (Turbidity, BOD, COD, Suspended Solids) before biological reactor injection.
+                  Inflow parameter profiling before biological reactor injection.
                 </p>
               </div>
               <button
                 onClick={() => advanceWastewaterStage(selectedBatch?.id || '')}
                 className="flex items-center gap-1.5 bg-[#131b2e] hover:bg-[#1e2a47] text-white text-xs font-bold uppercase tracking-wider px-3.5 py-2 rounded-xl transition-all"
               >
-                <span>Inject to MBBR Treatment Plant</span>
+                <span>To MBBR Treatment</span>
                 <ArrowRight size={14} />
               </button>
             </div>
 
             {selectedBatch && (
               <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
-                <div className="p-3.5 bg-[#fcf8fa] rounded-xl border border-[#76777d]/15 text-xs">
+                <div className="p-3 bg-[#fcf8fa] rounded-xl border border-[#76777d]/15 text-xs">
                   <span className="text-[#76777d] font-bold block text-[10px] uppercase">Batch Inflow</span>
                   <span className="text-base font-bold text-[#1b1b1d] font-mono">
                     {selectedBatch.intakeVolumeKLD.toLocaleString()} KL
                   </span>
                 </div>
-                <div className="p-3.5 bg-[#fcf8fa] rounded-xl border border-[#76777d]/15 text-xs">
+                <div className="p-3 bg-[#fcf8fa] rounded-xl border border-[#76777d]/15 text-xs">
                   <span className="text-[#76777d] font-bold block text-[10px] uppercase">Baseline BOD</span>
                   <span className="text-base font-bold text-amber-700 font-mono">
                     {selectedBatch.initialParameters.bod} mg/L
                   </span>
                 </div>
-                <div className="p-3.5 bg-[#fcf8fa] rounded-xl border border-[#76777d]/15 text-xs">
+                <div className="p-3 bg-[#fcf8fa] rounded-xl border border-[#76777d]/15 text-xs">
                   <span className="text-[#76777d] font-bold block text-[10px] uppercase">Baseline COD</span>
                   <span className="text-base font-bold text-[#1b1b1d] font-mono">
                     {selectedBatch.initialParameters.cod} mg/L
                   </span>
                 </div>
-                <div className="p-3.5 bg-[#fcf8fa] rounded-xl border border-[#76777d]/15 text-xs">
-                  <span className="text-[#76777d] font-bold block text-[10px] uppercase">Initial Turbidity</span>
+                <div className="p-3 bg-[#fcf8fa] rounded-xl border border-[#76777d]/15 text-xs">
+                  <span className="text-[#76777d] font-bold block text-[10px] uppercase">Turbidity</span>
                   <span className="text-base font-bold text-cyan-800 font-mono">
                     {selectedBatch.initialParameters.turbidity} NTU
                   </span>
                 </div>
-                <div className="p-3.5 bg-[#fcf8fa] rounded-xl border border-[#76777d]/15 text-xs">
+                <div className="p-3 bg-[#fcf8fa] rounded-xl border border-[#76777d]/15 text-xs">
                   <span className="text-[#76777d] font-bold block text-[10px] uppercase">Intake pH</span>
                   <span className="text-base font-bold text-emerald-800 font-mono">
                     {selectedBatch.initialParameters.ph}
@@ -595,39 +593,38 @@ export const WastewaterReusePage: React.FC = () => {
 
         {/* STAGE 3: STP TREATMENT PROCESS */}
         {activeStageTab === 'treatment' && (
-          <div className="space-y-5">
+          <div className="space-y-4">
             <div className="flex items-center justify-between">
               <div>
                 <h3 className="text-base font-bold text-[#1b1b1d] flex items-center gap-2">
                   <Cpu size={20} className="text-blue-700" />
-                  <span>Stage 3: Sewage Treatment Plant (STP) Multi-Reactor Process</span>
+                  <span>Stage 3: STP MBBR Treatment</span>
                 </h3>
                 <p className="text-xs text-[#57657b]">
-                  Live monitoring of Primary Grit Screening, Moving Bed Biofilm Reactor (MBBR), Dual Media Sand/Carbon filtration, and UV Disinfection.
+                  Biofilm aeration, dual media sand/carbon filtration, and UV disinfection.
                 </p>
               </div>
               <button
                 onClick={() => advanceWastewaterStage(selectedBatch?.id || '')}
                 className="flex items-center gap-1.5 bg-[#131b2e] hover:bg-[#1e2a47] text-white text-xs font-bold uppercase tracking-wider px-3.5 py-2 rounded-xl transition-all"
               >
-                <span>Send Sample to Quality Lab</span>
+                <span>To Quality Lab</span>
                 <ArrowRight size={14} />
               </button>
             </div>
 
             {/* Plant Overview Banner */}
-            <div className="p-4 bg-[#fcf8fa] rounded-xl border border-[#76777d]/15 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 text-xs">
-              <div className="space-y-1">
+            <div className="p-3.5 bg-[#fcf8fa] rounded-xl border border-[#76777d]/15 flex flex-col md:flex-row items-start md:items-center justify-between gap-3 text-xs">
+              <div>
                 <span className="text-[10px] font-mono uppercase text-emerald-800 font-bold block">
-                  Active Facility • {currentPlant.code}
+                  Facility • {currentPlant.code}
                 </span>
                 <h4 className="text-sm font-bold text-[#1b1b1d]">{currentPlant.name}</h4>
-                <p className="text-[#57657b] text-[11px]">{currentPlant.location}</p>
               </div>
 
-              <div className="flex items-center gap-4">
+              <div className="flex items-center gap-4 text-xs">
                 <div>
-                  <span className="text-[10px] text-[#76777d] font-bold uppercase block">Plant Capacity</span>
+                  <span className="text-[10px] text-[#76777d] font-bold uppercase block">Capacity</span>
                   <span className="font-bold text-[#1b1b1d]">{currentPlant.capacityMLD} MLD</span>
                 </div>
                 <div>
@@ -635,7 +632,7 @@ export const WastewaterReusePage: React.FC = () => {
                   <span className="font-bold text-emerald-800">{currentPlant.dailyTreatedKLD.toLocaleString()} KL</span>
                 </div>
                 <div>
-                  <span className="text-[10px] text-[#76777d] font-bold uppercase block">Energy Efficiency</span>
+                  <span className="text-[10px] text-[#76777d] font-bold uppercase block">Energy</span>
                   <span className="font-bold text-cyan-800">{currentPlant.energyEfficiencyKWhPerKL} kWh/KL</span>
                 </div>
               </div>
@@ -644,28 +641,28 @@ export const WastewaterReusePage: React.FC = () => {
             {/* 4 Multi-Stage Reactors */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
               {currentPlant.stages.map((st, i) => (
-                <div key={i} className="p-4 bg-[#fcf8fa] rounded-xl border border-[#76777d]/15 space-y-2.5 text-xs">
+                <div key={i} className="p-3.5 bg-[#fcf8fa] rounded-xl border border-[#76777d]/15 space-y-2 text-xs">
                   <div className="flex items-center justify-between">
                     <span className="text-[10px] font-mono text-[#76777d] font-bold">STAGE 0{i + 1}</span>
                     <span className="px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 border border-emerald-200 text-[10px] font-bold">
-                      {st.efficiencyRating}% Efficiency
+                      {st.efficiencyRating}%
                     </span>
                   </div>
                   <h5 className="font-bold text-[#1b1b1d]">{st.stageName}</h5>
                   <div className="space-y-1 text-[#57657b] text-[11px]">
                     <div className="flex justify-between">
-                      <span>Retention Time:</span>
-                      <span className="text-[#1b1b1d] font-mono">{st.retentionHours} hrs</span>
+                      <span>Retention:</span>
+                      <span className="text-[#1b1b1d] font-mono">{st.retentionHours}h</span>
                     </div>
                     {st.monitoredParameters.dissolvedOxygen && (
                       <div className="flex justify-between">
-                        <span>Dissolved Oxygen:</span>
+                        <span>DO:</span>
                         <span className="text-cyan-800 font-mono font-bold">{st.monitoredParameters.dissolvedOxygen} mg/L</span>
                       </div>
                     )}
                     {st.monitoredParameters.uvDosage && (
                       <div className="flex justify-between">
-                        <span>UV Intensity:</span>
+                        <span>UV:</span>
                         <span className="text-purple-800 font-mono font-bold">{st.monitoredParameters.uvDosage} mJ/cm²</span>
                       </div>
                     )}
@@ -687,15 +684,15 @@ export const WastewaterReusePage: React.FC = () => {
           );
 
           return (
-            <div className="space-y-6">
+            <div className="space-y-5">
               <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
                 <div>
                   <h3 className="text-base font-bold text-[#1b1b1d] flex items-center gap-2">
                     <ShieldCheck size={20} className="text-emerald-700" />
-                    <span>Stage 4: Comprehensive Water Parameter Analyzer & Flow Routing Decision Engine</span>
+                    <span>Stage 4: Quality Check & Flow Decision</span>
                   </h3>
                   <p className="text-xs text-[#57657b]">
-                    Evaluates all physicochemical parameters to intelligently route flow: High-Value Food, Sugarcane Belt, Big Trees & Agroforestry, or Construction.
+                    Evaluates CPCB lab parameters to route water to Food Crops, Sugarcane, Trees, or Construction.
                   </p>
                 </div>
 
@@ -707,35 +704,35 @@ export const WastewaterReusePage: React.FC = () => {
                     className="px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-900 border border-emerald-200 text-[11px] font-bold hover:bg-emerald-100 flex items-center gap-1"
                   >
                     <Apple size={12} />
-                    <span>Food Crops (BOD ≤ 10)</span>
+                    <span>Food Crops</span>
                   </button>
                   <button
                     onClick={() => applyPresetParams('grade_b')}
                     className="px-2.5 py-1 rounded-lg bg-blue-50 text-blue-900 border border-blue-200 text-[11px] font-bold hover:bg-blue-100 flex items-center gap-1"
                   >
                     <Wheat size={12} />
-                    <span>Sugarcane (High NPK)</span>
+                    <span>Sugarcane</span>
                   </button>
                   <button
                     onClick={() => applyPresetParams('big_trees')}
                     className="px-2.5 py-1 rounded-lg bg-teal-50 text-teal-900 border border-teal-200 text-[11px] font-bold hover:bg-teal-100 flex items-center gap-1"
                   >
                     <Trees size={12} />
-                    <span>Big Trees & Forestry</span>
+                    <span>Big Trees</span>
                   </button>
                   <button
                     onClick={() => applyPresetParams('construction')}
                     className="px-2.5 py-1 rounded-lg bg-amber-50 text-amber-900 border border-amber-200 text-[11px] font-bold hover:bg-amber-100 flex items-center gap-1"
                   >
                     <Hammer size={12} />
-                    <span>PWD Construction</span>
+                    <span>Construction</span>
                   </button>
                   <button
                     onClick={() => applyPresetParams('failed')}
                     className="px-2.5 py-1 rounded-lg bg-red-50 text-red-900 border border-red-200 text-[11px] font-bold hover:bg-red-100 flex items-center gap-1"
                   >
                     <AlertTriangle size={12} />
-                    <span>Safety Lockout</span>
+                    <span>Lockout</span>
                   </button>
                 </div>
               </div>
@@ -1125,35 +1122,35 @@ export const WastewaterReusePage: React.FC = () => {
 
         {/* STAGE 5: REUSE PLAN & ALLOCATION */}
         {activeStageTab === 'reuse_plan' && (
-          <div className="space-y-6">
+          <div className="space-y-4">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
                 <h3 className="text-base font-bold text-[#1b1b1d] flex items-center gap-2">
                   <ClipboardList size={20} className="text-purple-700" />
-                  <span>Stage 5: Agricultural Reuse Plan & Demand Matching Engine</span>
+                  <span>Stage 5: Reuse Plan & Demand Allocation</span>
                 </h3>
                 <p className="text-xs text-[#57657b]">
-                  Matches treated water inventory with registered farmer bookings across Kopargaon command zones.
+                  Matches treated water inventory with registered farmer bookings.
                 </p>
               </div>
 
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2.5">
                 <select
                   value={preferredDistMode}
                   onChange={(e) => setPreferredDistMode(e.target.value as DistributionMethod)}
-                  className="bg-[#f6f3f5] border border-[#76777d]/20 rounded-xl px-3 py-2 text-[#1b1b1d] text-xs font-semibold focus:outline-none focus:border-[#131b2e] capitalize"
+                  className="bg-[#f6f3f5] border border-[#76777d]/20 rounded-xl px-3 py-1.5 text-[#1b1b1d] text-xs font-semibold focus:outline-none focus:border-[#131b2e] capitalize"
                 >
                   <option value="gravity_canal">Gravity Canal (कालवा)</option>
-                  <option value="underground_pipeline">Underground Pipeline (पाइपलाइन)</option>
-                  <option value="municipal_tanker">Municipal Tanker (टँकर)</option>
+                  <option value="underground_pipeline">Pipeline (पाइपलाइन)</option>
+                  <option value="municipal_tanker">Tanker (टँकर)</option>
                 </select>
 
                 <button
                   onClick={handleGeneratePlan}
-                  className="flex items-center gap-2 bg-[#131b2e] hover:bg-[#1e2a47] text-white text-xs font-bold uppercase tracking-wider px-4 py-2 rounded-xl shadow-xs transition-all"
+                  className="flex items-center gap-1.5 bg-[#131b2e] hover:bg-[#1e2a47] text-white text-xs font-bold uppercase tracking-wider px-3.5 py-2 rounded-xl shadow-xs transition-all"
                 >
-                  <Cpu size={15} />
-                  <span>Generate Reuse Plan</span>
+                  <Cpu size={14} />
+                  <span>Generate Plan</span>
                 </button>
               </div>
             </div>
@@ -1161,15 +1158,15 @@ export const WastewaterReusePage: React.FC = () => {
             {/* Active Reuse Plans List */}
             <div className="space-y-3">
               <h4 className="text-xs font-bold uppercase tracking-wider text-[#76777d]">
-                Generated Reuse Action Plans ({waterReusePlans.length})
+                Generated Plans ({waterReusePlans.length})
               </h4>
 
               {waterReusePlans.map((plan) => (
-                <div key={plan.id} className="p-4 bg-[#fcf8fa] rounded-xl border border-[#76777d]/15 space-y-3 text-xs">
+                <div key={plan.id} className="p-3.5 bg-[#fcf8fa] rounded-xl border border-[#76777d]/15 space-y-2.5 text-xs">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <span className="font-mono font-bold text-[#131b2e]">{plan.planCode}</span>
-                      <span className="text-[#76777d]">for Batch {plan.batchNumber}</span>
+                      <span className="text-[#76777d]">Batch {plan.batchNumber}</span>
                     </div>
 
                     <span
@@ -1183,21 +1180,21 @@ export const WastewaterReusePage: React.FC = () => {
                     </span>
                   </div>
 
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 bg-white p-3 rounded-xl border border-[#76777d]/10 text-[11px]">
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 bg-white p-2.5 rounded-xl border border-[#76777d]/10 text-[11px]">
                     <div>
-                      <span className="text-[#76777d] block">Allocated Volume:</span>
+                      <span className="text-[#76777d] block">Volume:</span>
                       <strong className="text-[#1b1b1d] font-mono">{plan.totalVolumeAllocatedKLD.toLocaleString()} KL</strong>
                     </div>
                     <div>
-                      <span className="text-[#76777d] block">Farmer Beneficiaries:</span>
+                      <span className="text-[#76777d] block">Beneficiaries:</span>
                       <strong className="text-emerald-800">{plan.totalFarmerBeneficiaries} Farmers</strong>
                     </div>
                     <div>
-                      <span className="text-[#76777d] block">Distribution Mode:</span>
+                      <span className="text-[#76777d] block">Mode:</span>
                       <strong className="capitalize text-[#1b1b1d]">{plan.distributionMethod.replace('_', ' ')}</strong>
                     </div>
                     <div>
-                      <span className="text-[#76777d] block">Farmer Savings:</span>
+                      <span className="text-[#76777d] block">Savings:</span>
                       <strong className="text-emerald-800 font-mono">₹{plan.totalCommercialSavingsInr.toLocaleString()}</strong>
                     </div>
                   </div>
@@ -1208,16 +1205,16 @@ export const WastewaterReusePage: React.FC = () => {
                       className="text-blue-700 hover:underline text-xs font-bold flex items-center gap-1"
                     >
                       <Truck size={14} />
-                      <span>View Dispatch Order Sheet</span>
+                      <span>View Dispatch Order</span>
                     </button>
 
                     {plan.status === 'draft' && (
                       <button
                         onClick={() => approveWaterReusePlan(plan.id)}
-                        className="flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs uppercase tracking-wider px-3.5 py-1.5 rounded-lg shadow-xs transition-all"
+                        className="flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs uppercase tracking-wider px-3 py-1.5 rounded-lg shadow-xs transition-all"
                       >
-                        <CheckCircle2 size={14} />
-                        <span>Approve & Release Irrigation Dispatch</span>
+                        <CheckCircle2 size={13} />
+                        <span>Approve & Dispatch</span>
                       </button>
                     )}
                   </div>
@@ -1229,36 +1226,36 @@ export const WastewaterReusePage: React.FC = () => {
 
         {/* STAGE 6: AGRICULTURE & FARMER DELIVERY */}
         {activeStageTab === 'agriculture' && (
-          <div className="space-y-6">
+          <div className="space-y-4">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
                 <h3 className="text-base font-bold text-[#1b1b1d] flex items-center gap-2">
                   <Sprout size={20} className="text-emerald-700" />
-                  <span>Stage 6: Agriculture & Farmer Irrigation Dispatch Hub</span>
+                  <span>Stage 6: Agriculture & Farmland Delivery</span>
                 </h3>
                 <p className="text-xs text-[#57657b]">
-                  Track farmer water quota fulfillments, soil health enrichment, and agricultural impact across Kopargaon.
+                  Farmer quota fulfillments and fertilizer savings across Kopargaon.
                 </p>
               </div>
 
               <button
                 onClick={() => setShowBookingModal(true)}
-                className="flex items-center gap-2 bg-[#131b2e] hover:bg-[#1e2a47] text-white text-xs font-bold uppercase tracking-wider px-4 py-2 rounded-xl shadow-xs transition-all"
+                className="flex items-center gap-1.5 bg-[#131b2e] hover:bg-[#1e2a47] text-white text-xs font-bold uppercase tracking-wider px-3.5 py-2 rounded-xl shadow-xs transition-all"
               >
-                <PlusCircle size={15} />
-                <span>Register Farmer Quota</span>
+                <PlusCircle size={14} />
+                <span>Register Quota</span>
               </button>
             </div>
 
             {/* Farmer Bookings Queue */}
             <div className="space-y-3">
               <h4 className="text-xs font-bold uppercase tracking-wider text-[#76777d]">
-                Registered Farmer Water Quota Requests ({farmerBookings.length})
+                Farmer Quota Requests ({farmerBookings.length})
               </h4>
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                 {farmerBookings.map((bk) => (
-                  <div key={bk.id} className="p-4 bg-[#fcf8fa] rounded-xl border border-[#76777d]/15 space-y-2.5 text-xs">
+                  <div key={bk.id} className="p-3.5 bg-[#fcf8fa] rounded-xl border border-[#76777d]/15 space-y-2 text-xs">
                     <div className="flex items-center justify-between">
                       <span className="font-bold text-[#1b1b1d]">{bk.farmerName}</span>
                       <span
@@ -1276,24 +1273,24 @@ export const WastewaterReusePage: React.FC = () => {
 
                     <div className="space-y-1 text-[11px] text-[#57657b]">
                       <div className="flex justify-between">
-                        <span>Crop & Acreage:</span>
+                        <span>Crop:</span>
                         <strong className="capitalize text-[#1b1b1d]">
-                          {bk.cropType} ({bk.farmAcreage} Acres)
+                          {bk.cropType} ({bk.farmAcreage} Ac)
                         </strong>
                       </div>
                       <div className="flex justify-between">
-                        <span>Requested Volume:</span>
+                        <span>Volume:</span>
                         <strong className="text-emerald-800 font-mono">{bk.requestedVolumeKLD.toLocaleString()} KL</strong>
                       </div>
                       <div className="flex justify-between">
-                        <span>Delivery Channel:</span>
+                        <span>Channel:</span>
                         <strong className="capitalize text-[#1b1b1d]">
                           {bk.preferredDistribution.replace('_', ' ')}
                         </strong>
                       </div>
                       <div className="flex justify-between">
-                        <span>Location:</span>
-                        <span className="text-[#76777d] truncate max-w-[150px]">{bk.wardOrVillage}</span>
+                        <span>Village:</span>
+                        <span className="text-[#76777d] truncate max-w-[140px]">{bk.wardOrVillage}</span>
                       </div>
                     </div>
                   </div>
