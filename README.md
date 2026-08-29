@@ -1,5 +1,5 @@
-# 🏛️ CivicPulse
-### AI-Assisted Municipal Decision-Support & Priority Engine
+# 🏛️ KoparNiti (कोपरनीती)
+### AI-Assisted Municipal Decision-Support & Civic Governance Engine
 **Kopargaon Municipal Council (कोपरगाव नगरपरिषद) • Smart Kopargaon Hackathon 2026 (Track 2)**
 
 ---

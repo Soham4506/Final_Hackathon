@@ -315,48 +315,61 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   useEffect(() => {
     if (!isSupabaseConfigured) return;
 
-    // 1. Restore session: check if a valid Supabase auth session exists
-    const restoreSession = async () => {
+    // 1. Map and fetch profile helper matching SDDS architecture
+    const fetchUserProfile = async (userId: string, authUser?: any): Promise<UserProfile | null> => {
       try {
-        const { data: sessionData } = await supabase.auth.getSession();
-        const session = sessionData?.session;
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', userId)
+          .maybeSingle();
 
-        if (session?.user) {
-          // We have a valid session — fetch the profile safely with maybeSingle
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', session.user.id)
-            .maybeSingle();
+        const rawRole = profile?.role || authUser?.user_metadata?.role || 'citizen';
+        const role = (rawRole as UserRole);
 
-          const rawRole = profile?.role || session.user.user_metadata?.role || 'citizen';
-          const role = (rawRole as UserRole);
-          const userObj: UserProfile = {
-            id: session.user.id,
-            role,
-            fullName: profile?.full_name || session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || 'Citizen User',
-            phone: profile?.phone || session.user.user_metadata?.phone || '',
-            address: profile?.address || 'Kopargaon',
-            wardId: profile?.ward_id || session.user.user_metadata?.ward_id,
-            departmentId: profile?.department_id || session.user.user_metadata?.department_id,
-            employeeId: profile?.employee_id || session.user.user_metadata?.employee_id,
-            isVerified: profile?.is_verified ?? true,
-          };
-          setUserRole(role);
-          setCurrentUser(userObj);
-          setIsAuthenticated(true);
-          localStorage.setItem('civicpulse_is_auth', JSON.stringify(true));
-          localStorage.setItem('civicpulse_user_role', JSON.stringify(role));
-          localStorage.setItem('civicpulse_current_user', JSON.stringify(userObj));
-        }
+        return {
+          id: userId,
+          role,
+          fullName: profile?.full_name || authUser?.user_metadata?.full_name || authUser?.email?.split('@')[0] || 'Citizen User',
+          email: profile?.email || authUser?.email,
+          phone: profile?.phone || authUser?.user_metadata?.phone || '',
+          address: profile?.address || 'Kopargaon',
+          wardId: profile?.ward_id || authUser?.user_metadata?.ward_id,
+          departmentId: profile?.department_id || authUser?.user_metadata?.department_id,
+          employeeId: profile?.employee_id || authUser?.user_metadata?.employee_id,
+          designation: profile?.designation,
+          status: profile?.status || 'active',
+          isVerified: profile?.is_verified ?? true,
+          avatarUrl: profile?.avatar_url,
+          createdAt: profile?.created_at,
+          lastLogin: profile?.last_login,
+        };
       } catch (err) {
-        console.warn('Session restore failed:', err);
+        console.warn('fetchUserProfile error:', err);
+        return null;
       }
     };
 
-    restoreSession();
+    // 2. Restore session on mount
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      if (session?.user) {
+        const userObj = await fetchUserProfile(session.user.id, session.user);
+        if (userObj) {
+          if (userObj.status === 'inactive') {
+            await supabase.auth.signOut();
+            return;
+          }
+          setUserRole(userObj.role);
+          setCurrentUser(userObj);
+          setIsAuthenticated(true);
+          localStorage.setItem('civicpulse_is_auth', JSON.stringify(true));
+          localStorage.setItem('civicpulse_user_role', JSON.stringify(userObj.role));
+          localStorage.setItem('civicpulse_current_user', JSON.stringify(userObj));
+        }
+      }
+    });
 
-    // 2. Listen for auth state changes (sign in, sign out, token refresh)
+    // 3. Listen for Auth State Changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         if (event === 'SIGNED_OUT' || !session) {
@@ -366,9 +379,53 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           localStorage.setItem('civicpulse_is_auth', JSON.stringify(false));
           localStorage.removeItem('civicpulse_current_user');
           localStorage.removeItem('civicpulse_user_role');
+        } else if (session?.user) {
+          const userObj = await fetchUserProfile(session.user.id, session.user);
+          if (userObj) {
+            setUserRole(userObj.role);
+            setCurrentUser(userObj);
+            setIsAuthenticated(true);
+            localStorage.setItem('civicpulse_is_auth', JSON.stringify(true));
+            localStorage.setItem('civicpulse_user_role', JSON.stringify(userObj.role));
+            localStorage.setItem('civicpulse_current_user', JSON.stringify(userObj));
+          }
         }
       }
     );
+
+    // 4. Real-time Profile Updates (SDDS RBAC Real-time sync)
+    let profileChannel: any = null;
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!session?.user?.id) return;
+      profileChannel = supabase
+        .channel(`koparniti-profile-watch-${session.user.id}`)
+        .on(
+          'postgres_changes',
+          {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'profiles',
+            filter: `id=eq.${session.user.id}`,
+          },
+          async (payload: any) => {
+            const updated = payload.new;
+            if (updated?.status === 'inactive') {
+              await supabase.auth.signOut();
+              setIsAuthenticated(false);
+              setCurrentUser(DEFAULT_GUEST_USER);
+            } else if (updated) {
+              const freshUser = await fetchUserProfile(updated.id, session.user);
+              if (freshUser) {
+                setUserRole(freshUser.role);
+                setCurrentUser(freshUser);
+                localStorage.setItem('civicpulse_user_role', JSON.stringify(freshUser.role));
+                localStorage.setItem('civicpulse_current_user', JSON.stringify(freshUser));
+              }
+            }
+          }
+        )
+        .subscribe();
+    });
 
     // 3. Load operational data from Supabase
     const loadSupabaseData = async () => {

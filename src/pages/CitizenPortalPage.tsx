@@ -364,7 +364,7 @@ export const CitizenPortalPage: React.FC = () => {
             <span className="bg-emerald-50 text-emerald-800 border border-emerald-200 text-[10px] font-mono uppercase font-bold px-2 py-0.5 rounded flex items-center gap-1">
               <Phone size={12} /> Real-Time Cellular SMS Alerts & AI Vision
             </span>
-            <span className="text-xs text-[#76777d]">Kopargaon Citizen Service Portal</span>
+            <span className="text-xs text-[#76777d]">KoparNiti • Kopargaon Citizen Service Portal (कोपरनीती)</span>
           </div>
           <h1 className="text-xl sm:text-2xl font-bold text-[#1b1b1d] tracking-tight">
             Citizen Grievance & Tracking Portal

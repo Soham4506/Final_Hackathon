@@ -235,12 +235,12 @@ export const LoginPage: React.FC = () => {
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <span className="font-extrabold text-lg text-white tracking-tight">Kopargaon MC</span>
+              <span className="font-extrabold text-lg text-white tracking-tight">KoparNiti</span>
               <span className="bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded">
-                MUNICIPAL COMMAND
+                कोपरनीती • KMC
               </span>
             </div>
-            <p className="text-xs text-[#7c839b]">KMC Operational Intelligence Node</p>
+            <p className="text-xs text-[#7c839b]">Kopargaon Municipal Decision Support & Civic Engine</p>
           </div>
         </div>
 
@@ -259,7 +259,7 @@ export const LoginPage: React.FC = () => {
         <div className="text-center space-y-1.5">
           <div className="inline-flex items-center gap-1.5 bg-slate-100 text-[#131b2e] border border-slate-300 text-[11px] font-mono font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider">
             <Activity size={12} className="text-emerald-600" />
-            <span>कोपरगाव नगरपरिषद • Portal Login</span>
+            <span>कोपरगाव नगरपरिषद • KoparNiti</span>
           </div>
           <h1 className="text-xl sm:text-2xl font-bold text-[#1b1b1d] tracking-tight">
             {mode === 'signin' ? 'Sign In to Your Account' : 'Register New Account'}

@@ -81,8 +81,9 @@ export const Header: React.FC<HeaderProps> = ({ sidebarOpen, setSidebarOpen }) =
             <div className="w-8 h-8 rounded-lg bg-[#131b2e] flex items-center justify-center text-white font-black text-xs shadow-sm md:hidden">
               KMC
             </div>
-            <h1 className="text-base sm:text-lg font-bold text-[#1b1b1d] tracking-tight truncate">
-              KMC Operational Intelligence
+            <h1 className="text-base sm:text-lg font-bold text-[#1b1b1d] tracking-tight truncate flex items-center gap-2">
+              <span>KoparNiti</span>
+              <span className="text-xs text-[#76777d] font-normal hidden lg:inline">कोपरनीती • KMC</span>
             </h1>
             <span className="hidden sm:inline-flex items-center gap-1.5 text-[11px] font-bold tracking-wider uppercase px-2 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-200">
               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>

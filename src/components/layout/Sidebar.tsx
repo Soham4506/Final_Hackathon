@@ -132,10 +132,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ sidebarOpen, setSidebarOpen })
           </div>
           <div className="min-w-0">
             <h2 className="text-base font-bold text-white tracking-tight truncate">
-              Kopargaon MC
+              KoparNiti
             </h2>
-            <p className="text-[11px] font-bold uppercase tracking-wider text-[#7c839b]">
-              Municipal Command
+            <p className="text-[10px] font-bold uppercase tracking-wider text-emerald-400">
+              कोपरनीती • KMC
             </p>
           </div>
         </div>

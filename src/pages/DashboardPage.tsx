@@ -81,10 +81,10 @@ export const DashboardPage: React.FC = () => {
             <span className="text-xs text-[#76777d]">Ahilyanagar District, Kopargaon</span>
           </div>
           <h1 className="text-xl sm:text-2xl font-bold text-[#1b1b1d] tracking-tight">
-            Municipal Command & Operational Intelligence
+            KoparNiti: Municipal Command & Operational Intelligence
           </h1>
           <p className="text-xs sm:text-sm text-[#57657b] mt-1 max-w-2xl">
-            Deterministic prioritization and multi-strategy optimization for constrained municipal fleet, workforce, and departmental budgets.
+            कोपरनीती — Deterministic prioritization and multi-strategy optimization for constrained municipal fleet, workforce, and departmental budgets.
           </p>
         </div>
 

@@ -62,13 +62,18 @@ export interface UserProfile {
   id: string;
   role: UserRole;
   fullName: string;
+  email?: string;
   phone: string;
   address?: string;
   wardId?: string;
   departmentId?: string;
   employeeId?: string;
+  designation?: string;
+  status?: 'active' | 'pending' | 'inactive';
   isVerified: boolean;
   avatarUrl?: string;
+  lastLogin?: string;
+  createdAt?: string;
 }
 
 export interface IssueCategory {

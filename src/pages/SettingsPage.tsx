@@ -76,7 +76,7 @@ export const SettingsPage: React.FC = () => {
             <span className="bg-slate-100 text-[#131b2e] border border-slate-300 text-[10px] font-mono uppercase font-bold px-2 py-0.5 rounded flex items-center gap-1">
               <Settings size={12} /> Council Administration
             </span>
-            <span className="text-xs text-[#76777d]">Deterministic Engine Tuning & Ledger</span>
+            <span className="text-xs text-[#76777d]">KoparNiti (कोपरनीती) • Engine Tuning & Ledger</span>
           </div>
           <h1 className="text-xl sm:text-2xl font-bold text-[#1b1b1d] tracking-tight">
             Settings, Priority Weights & Audit Ledger
