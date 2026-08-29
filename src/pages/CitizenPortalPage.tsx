@@ -100,6 +100,9 @@ export const CitizenPortalPage: React.FC = () => {
   // AI Analysis Feedback
   const [aiResult, setAiResult] = useState<AIIntakeResult | null>(null);
 
+  // Field Verification Loop (Non-Smartphone / Missing Evidence Compensating Action)
+  const [requestFieldVerification, setRequestFieldVerification] = useState<boolean>(false);
+
   const [submittedTicket, setSubmittedTicket] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
@@ -274,6 +277,9 @@ export const CitizenPortalPage: React.FC = () => {
         affectedPopulation: affectedPop,
         citizenPhone: currentUser.phone || '',
         citizenName: currentUser.fullName || '',
+        verificationMethod: photoDataUrl
+          ? 'digital_evidence'
+          : (requestFieldVerification ? 'field_verification_requested' : 'unverified'),
       });
 
       setSubmittedTicket(newIssue.ticketNumber);
@@ -282,6 +288,7 @@ export const CitizenPortalPage: React.FC = () => {
       setDescription('');
       setAddress('');
       removePhoto();
+      setRequestFieldVerification(false);
       setIsDeptOverridden(false);
       setIsCategoryOverridden(false);
       setIsUrgencyOverridden(false);
@@ -694,6 +701,26 @@ export const CitizenPortalPage: React.FC = () => {
                         </div>
                       </div>
                     )}
+                  </div>
+                )}
+
+                {/* Non-Smartphone / Field Verification Compensating Loop */}
+                {!photoDataUrl && (
+                  <div className="p-3 bg-amber-50/80 border border-amber-200 rounded-xl space-y-1">
+                    <label className="flex items-start gap-2.5 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={requestFieldVerification}
+                        onChange={(e) => setRequestFieldVerification(e.target.checked)}
+                        className="mt-0.5 h-4 w-4 rounded border-amber-300 text-blue-900 focus:ring-blue-800"
+                      />
+                      <div className="text-xs text-amber-950">
+                        <span className="font-bold block">No smartphone or photos? Request On-Site Field Verification</span>
+                        <span className="text-[11px] text-amber-800 leading-tight block mt-0.5">
+                          A KMC Ward Field Inspector (प्रभाग मित्र) will conduct an on-site physical inspection. Once verified, full confidence will be restored without scoring penalties.
+                        </span>
+                      </div>
+                    </label>
                   </div>
                 )}
               </div>

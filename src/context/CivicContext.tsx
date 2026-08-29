@@ -151,10 +151,13 @@ interface CivicContextType {
     affectedPopulation?: number;
     citizenPhone?: string;
     citizenName?: string;
+    verificationMethod?: 'digital_evidence' | 'field_verification_requested' | 'phone_intake' | 'unverified';
   }) => Promise<CivicIssue>;
 
   updateIssueStatus: (issueId: string, newStatus: IssueStatus, officerNotes?: string) => void;
   
+  verifyIssueOnSite: (issueId: string, officerNotes?: string) => void;
+
   overridePriority: (
     issueId: string, 
     overriddenScore: number, 
@@ -995,6 +998,55 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   };
 
+  // Field Verification Loop: One-tap on-site physical verification by municipal field inspector
+  const verifyIssueOnSite = (issueId: string, officerNotes: string = 'Field inspector on-site physical inspection confirmed.') => {
+    const targetIssue = issues.find((i) => i.id === issueId);
+    if (!targetIssue) return;
+
+    const category = categories.find((c) => c.id === targetIssue.categoryId) || categories[0];
+    const zone = zones.find((z) => z.id === targetIssue.zoneId) || zones[0];
+    
+    const verifiedIss: CivicIssue = {
+      ...targetIssue,
+      fieldVerificationStatus: 'verified',
+      fieldVerifiedBy: currentUser.fullName,
+      fieldVerifiedAt: new Date().toISOString(),
+      fieldVerificationNotes: officerNotes,
+      confidenceScore: 1.0,
+    };
+
+    const newScore = PriorityEngine.calculateScore(verifiedIss, category, zone, weightConfig);
+    verifiedIss.priorityScore = newScore;
+
+    setIssues((prev) => prev.map((iss) => (iss.id === issueId ? verifiedIss : iss)));
+
+    const log: AuditLog = {
+      id: `log-${Date.now()}`,
+      actorName: currentUser.fullName,
+      actorRole: currentUser.role,
+      action: 'FIELD_VERIFICATION_CONFIRMED',
+      entityType: 'issue',
+      entityId: issueId,
+      details: {
+        ticketNumber: verifiedIss.ticketNumber,
+        notes: officerNotes,
+        restoredConfidence: 1.0,
+        recomputedScore: newScore.finalScore,
+      },
+      createdAt: new Date().toISOString(),
+    };
+    setAuditLogs((prev) => [log, ...prev]);
+
+    if (isSupabaseConfigured) {
+      supabase.from('issues').update({
+        field_verification_status: 'verified',
+        field_verified_by: currentUser.fullName,
+        field_verified_at: new Date().toISOString(),
+        confidence_score: 1.0,
+      }).eq('id', issueId).then();
+    }
+  };
+
   // Run Allocation Engine with optional exact DP Knapsack or Greedy mode
   const generateAllocationPlan = (
     departmentId: string,
@@ -1784,6 +1836,7 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         floodDispatchOrders,
         submitIssue,
         updateIssueStatus,
+        verifyIssueOnSite,
         overridePriority,
         generateAllocationPlan,
         getStrategyComparisons,

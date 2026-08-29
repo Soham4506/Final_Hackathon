@@ -220,23 +220,39 @@ export const ExplainabilityModal: React.FC<ExplainabilityModalProps> = ({ issue,
                 </div>
               </div>
 
-              {/* 6. Confidence Penalty Deduction */}
-              <div className="bg-slate-950/60 border border-red-900/40 p-3.5 rounded-xl">
+              {/* 6. Confidence Penalty Deduction & Field Verification Loop */}
+              <div className={`p-3.5 rounded-xl border ${
+                issue.fieldVerificationStatus === 'verified'
+                  ? 'bg-emerald-950/40 border-emerald-800'
+                  : (breakdown?.confidencePenaltyDeduction ?? 0) > 0
+                  ? 'bg-slate-950/60 border-red-900/40'
+                  : 'bg-slate-950/60 border-slate-800'
+              }`}>
                 <div className="flex justify-between items-center mb-1">
                   <span className="font-semibold text-slate-300 flex items-center gap-1.5">
-                    <AlertTriangle size={14} className="text-red-400" /> Confidence Penalty
+                    <AlertTriangle size={14} className={issue.fieldVerificationStatus === 'verified' ? 'text-emerald-400' : 'text-red-400'} /> Confidence Penalty
                   </span>
-                  <span className="text-[10px] text-red-400 font-mono">DEDUCTION</span>
+                  <span className={`text-[10px] font-mono font-bold ${issue.fieldVerificationStatus === 'verified' ? 'text-emerald-400' : 'text-red-400'}`}>
+                    {issue.fieldVerificationStatus === 'verified' ? 'RESTORED' : 'DEDUCTION'}
+                  </span>
                 </div>
                 <div className="flex items-baseline justify-between mt-2">
-                  <span className="text-slate-400 text-xs">Missing Fields:</span>
+                  <span className="text-slate-400 text-xs">Verification:</span>
                   <span className="font-mono font-bold text-slate-300">
-                    {issue.missingAttributes.length} item(s)
+                    {issue.fieldVerificationStatus === 'verified'
+                      ? 'Verified On-Site'
+                      : issue.fieldVerificationStatus === 'pending'
+                      ? 'Field Inspection Pending'
+                      : 'Missing Evidence'}
                   </span>
                 </div>
-                <div className="flex items-baseline justify-between mt-1 text-red-400 font-mono font-semibold">
-                  <span>Score Penalty:</span>
-                  <span>-{breakdown?.confidencePenaltyDeduction.toFixed(1)} pts</span>
+                <div className={`flex items-baseline justify-between mt-1 font-mono font-semibold ${issue.fieldVerificationStatus === 'verified' ? 'text-emerald-400' : 'text-red-400'}`}>
+                  <span>Score Impact:</span>
+                  <span>
+                    {issue.fieldVerificationStatus === 'verified'
+                      ? '0.0 pts (Restored)'
+                      : `-${breakdown?.confidencePenaltyDeduction.toFixed(1)} pts`}
+                  </span>
                 </div>
               </div>
             </div>

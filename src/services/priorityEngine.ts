@@ -77,10 +77,16 @@ export class PriorityEngine {
     const weightedEscalation = rawEscalationScore * config.weightEscalation;
 
     // 6. CONFIDENCE PENALTY (Deduction of 0 to missingDataPenaltyMax)
-    // If confidence is 0.7 (e.g. missing photo/location precision), deduct 30% of max penalty
-    const confidence = Math.min(1.0, Math.max(0.1, issue.confidenceScore ?? 1.0));
-    const missingRatio = 1.0 - confidence;
-    const confidencePenaltyDeduction = Math.round(missingRatio * config.missingDataPenaltyMax * 10) / 10;
+    // If verified on-site by field agent, confidence is fully restored (penalty = 0)
+    const isFieldVerified = issue.fieldVerificationStatus === 'verified';
+    const effectiveConfidence = isFieldVerified 
+      ? 1.0 
+      : Math.min(1.0, Math.max(0.1, issue.confidenceScore ?? 1.0));
+    
+    const missingRatio = 1.0 - effectiveConfidence;
+    const confidencePenaltyDeduction = isFieldVerified 
+      ? 0 
+      : Math.round(missingRatio * config.missingDataPenaltyMax * 10) / 10;
 
     // COMPOSITE DETERMINISTIC SCORE
     const sumWeightedComponents = 
@@ -101,7 +107,8 @@ export class PriorityEngine {
       finalScore,
       rawSeverity,
       slaRatio,
-      confidencePenaltyDeduction
+      confidencePenaltyDeduction,
+      isFieldVerified
     );
 
     const breakdown: PriorityScoreBreakdown = {
@@ -115,7 +122,7 @@ export class PriorityEngine {
       weightedLocation: Math.round(weightedLocation * 10) / 10,
       rawEscalationScore,
       weightedEscalation: Math.round(weightedEscalation * 10) / 10,
-      confidenceScore: confidence,
+      confidenceScore: effectiveConfidence,
       confidencePenaltyDeduction,
       finalScore,
     };
@@ -141,7 +148,8 @@ export class PriorityEngine {
     finalScore: number,
     rawSeverity: number,
     slaRatio: number,
-    penalty: number
+    penalty: number,
+    isFieldVerified: boolean
   ): string {
     const drivers: string[] = [];
 
@@ -163,8 +171,14 @@ export class PriorityEngine {
 
     let summary = `Score ${finalScore}/100. Key priority drivers: ${drivers.slice(0, 3).join(', ') || 'Standard service request'}.`;
     
-    if (penalty > 0) {
-      summary += ` Note: Score adjusted with -${penalty} confidence penalty due to ${issue.missingAttributes?.join(', ') || 'incomplete field data'}.`;
+    if (isFieldVerified) {
+      summary += ` Note: On-site physical verification confirmed by KMC Ward Field Inspector; full confidence restored (0 penalty applied).`;
+    } else if (penalty > 0) {
+      if (issue.verificationMethod === 'field_verification_requested' || issue.fieldVerificationStatus === 'pending') {
+        summary += ` Note: Score includes -${penalty} confidence penalty; field verification requested and pending on-site KMC ward inspection.`;
+      } else {
+        summary += ` Note: Score includes -${penalty} confidence penalty due to ${issue.missingAttributes?.join(', ') || 'missing photo/GPS evidence'} (no verification requested).`;
+      }
     }
 
     return summary;

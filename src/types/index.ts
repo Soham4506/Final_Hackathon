@@ -175,6 +175,13 @@ export interface CivicIssue {
   mergedTicketCount?: number;
   mergedEvidenceNotes?: string[];
   
+  // Field Verification Loop (Compensating action for non-smartphone/incomplete data)
+  verificationMethod?: 'digital_evidence' | 'field_verification_requested' | 'phone_intake' | 'unverified';
+  fieldVerificationStatus?: 'none' | 'pending' | 'verified';
+  fieldVerifiedBy?: string;
+  fieldVerifiedAt?: string;
+  fieldVerificationNotes?: string;
+  
   status: IssueStatus;
   urgency: UrgencyLevel;
   

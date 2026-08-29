@@ -28,7 +28,7 @@ import {
 } from 'lucide-react';
 
 export const IssuesQueuePage: React.FC = () => {
-  const { issues, departments, zones, categories, updateIssueStatus, userRole } = useCivic();
+  const { issues, departments, zones, categories, updateIssueStatus, verifyIssueOnSite, userRole } = useCivic();
   const [searchParams, setSearchParams] = useSearchParams();
 
   // Filters state
@@ -214,9 +214,20 @@ export const IssuesQueuePage: React.FC = () => {
                       {issue.rawDescription}
                     </p>
 
-                    <div className="flex items-center gap-3 text-[11px] text-[#76777d] font-mono pt-1">
+                    <div className="flex flex-wrap items-center gap-2 text-[11px] text-[#76777d] font-mono pt-1">
                       <span>Reported: {new Date(issue.reportedAt).toLocaleDateString()}</span>
+                      <span>•</span>
                       <span>SLA: {new Date(issue.slaDueAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                      {issue.fieldVerificationStatus === 'verified' && (
+                        <span className="bg-emerald-50 text-emerald-800 border border-emerald-300 px-2 py-0.5 rounded font-bold text-[10px]">
+                          ✓ Verified On-Site
+                        </span>
+                      )}
+                      {(issue.fieldVerificationStatus === 'pending' || issue.verificationMethod === 'field_verification_requested') && (
+                        <span className="bg-amber-50 text-amber-800 border border-amber-300 px-2 py-0.5 rounded font-bold text-[10px]">
+                          ⏳ Field Inspection Pending
+                        </span>
+                      )}
                     </div>
                   </div>
 
@@ -287,6 +298,47 @@ export const IssuesQueuePage: React.FC = () => {
                     Override
                   </button>
                 </div>
+              </div>
+
+              {/* Field Verification Loop Card (Compensating action for non-smartphone/missing evidence) */}
+              <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
+                <div className="flex justify-between items-center text-xs">
+                  <span className="font-bold text-[#1b1b1d]">Field Verification:</span>
+                  {activeIssue.fieldVerificationStatus === 'verified' ? (
+                    <span className="text-[10px] bg-emerald-100 text-emerald-800 border border-emerald-300 font-bold px-2 py-0.5 rounded">
+                      ✓ Confirmed On-Site
+                    </span>
+                  ) : activeIssue.fieldVerificationStatus === 'pending' || activeIssue.verificationMethod === 'field_verification_requested' ? (
+                    <span className="text-[10px] bg-amber-100 text-amber-900 border border-amber-300 font-bold px-2 py-0.5 rounded">
+                      ⏳ Inspection Pending
+                    </span>
+                  ) : (
+                    <span className="text-[10px] bg-slate-200 text-slate-700 font-medium px-2 py-0.5 rounded">
+                      Standard
+                    </span>
+                  )}
+                </div>
+
+                {activeIssue.fieldVerificationStatus === 'verified' ? (
+                  <p className="text-[11px] text-emerald-800 font-medium leading-relaxed">
+                    Verified on-site by <strong>{activeIssue.fieldVerifiedBy || 'KMC Ward Inspector'}</strong>. Confidence penalty restored to 0.
+                  </p>
+                ) : (
+                  <div className="space-y-1.5">
+                    <p className="text-[11px] text-[#57657b] leading-tight">
+                      {activeIssue.verificationMethod === 'field_verification_requested'
+                        ? 'Citizen reported without smartphone photos and requested physical verification.'
+                        : 'Missing photo/GPS evidence. Confirming on-site restores full confidence score.'}
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => verifyIssueOnSite(activeIssue.id, 'Physical on-site inspection verified by Ward Officer.')}
+                      className="w-full py-1.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-lg font-bold text-[10px] uppercase tracking-wider transition-colors shadow-2xs"
+                    >
+                      ✓ Confirm On-Site Verification (+Confidence Bump)
+                    </button>
+                  </div>
+                )}
               </div>
 
               {/* Status Update Quick Buttons */}
