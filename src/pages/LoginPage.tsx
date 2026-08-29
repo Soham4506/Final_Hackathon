@@ -21,7 +21,7 @@ export const LoginPage: React.FC = () => {
   const navigate = useNavigate();
 
   const [mode, setMode] = useState<'signin' | 'signup'>('signin');
-  const [selectedRole, setSelectedRole] = useState<UserRole>('officer');
+  const [selectedRole, setSelectedRole] = useState<UserRole>('citizen');
   
   // Sign In Form
   const [email, setEmail] = useState('');
@@ -77,23 +77,40 @@ export const LoginPage: React.FC = () => {
         }
 
         if (data.user) {
-          const { data: profile } = await supabase
+          // Fetch the user's profile from the database
+          let profile: any = null;
+          const { data: profileData, error: profileErr } = await supabase
             .from('profiles')
             .select('*')
             .eq('id', data.user.id)
             .single();
 
-          const role = (profile?.role as UserRole) || selectedRole;
+          if (!profileErr && profileData) {
+            profile = profileData;
+          } else {
+            // Profile may not exist yet (trigger race condition) — retry once after a short delay
+            await new Promise((res) => setTimeout(res, 500));
+            const { data: retryData } = await supabase
+              .from('profiles')
+              .select('*')
+              .eq('id', data.user.id)
+              .single();
+            profile = retryData;
+          }
+
+          // CRITICAL: Always default to 'citizen' if no profile role found.
+          // Never use selectedRole as fallback — that caused the officer bug.
+          const role: UserRole = (profile?.role as UserRole) || 'citizen';
           const userObj: UserProfile = {
             id: data.user.id,
             role,
-            fullName: profile?.full_name || email.split('@')[0],
+            fullName: profile?.full_name || data.user.email?.split('@')[0] || 'Citizen',
             phone: profile?.phone || '',
             address: profile?.address || 'Kopargaon',
             wardId: profile?.ward_id,
             departmentId: profile?.department_id,
             employeeId: profile?.employee_id,
-            isVerified: true,
+            isVerified: profile?.is_verified ?? true,
           };
 
           login(role, userObj);
@@ -147,7 +164,13 @@ export const LoginPage: React.FC = () => {
         }
 
         if (data.user) {
-          await supabase.from('profiles').insert([{
+          // The handle_new_user() trigger auto-creates a profile with role='citizen'.
+          // We need to update it with the user-selected role and additional details.
+          // First, wait briefly for the trigger to execute.
+          await new Promise((res) => setTimeout(res, 300));
+
+          // Upsert the profile: if trigger already created it, update it; otherwise insert.
+          const { error: profileError } = await supabase.from('profiles').upsert({
             id: data.user.id,
             role: selectedRole,
             full_name: fullName.trim(),
@@ -156,7 +179,35 @@ export const LoginPage: React.FC = () => {
             department_id: selectedRole === 'officer' ? departmentId : null,
             employee_id: selectedRole !== 'citizen' ? employeeId.trim() : null,
             is_verified: true,
-          }]);
+          }, { onConflict: 'id' });
+
+          if (profileError) {
+            console.warn('Profile upsert error:', profileError);
+            // Profile may have been created by trigger with default citizen role.
+            // Fetch whatever exists and use that.
+            const { data: existingProfile } = await supabase
+              .from('profiles')
+              .select('*')
+              .eq('id', data.user.id)
+              .single();
+
+            if (existingProfile) {
+              const role = (existingProfile.role as UserRole) || 'citizen';
+              const userObj: UserProfile = {
+                id: data.user.id,
+                role,
+                fullName: existingProfile.full_name || fullName.trim(),
+                phone: existingProfile.phone || phone.trim(),
+                wardId: existingProfile.ward_id,
+                departmentId: existingProfile.department_id,
+                employeeId: existingProfile.employee_id,
+                isVerified: existingProfile.is_verified ?? true,
+              };
+              login(role, userObj);
+              navigate(role === 'citizen' ? '/citizen-portal' : '/');
+              return;
+            }
+          }
 
           const userObj: UserProfile = {
             id: data.user.id,

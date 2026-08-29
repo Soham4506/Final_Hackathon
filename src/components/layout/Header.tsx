@@ -94,13 +94,13 @@ export const Header: React.FC<HeaderProps> = ({ sidebarOpen, setSidebarOpen }) =
         {/* Right controls */}
         <div className="flex items-center gap-2 sm:gap-3">
           {/* Search input with submit handler */}
-          <form onSubmit={handleSearchSubmit} className="relative hidden md:block w-52 lg:w-68">
+          <form onSubmit={handleSearchSubmit} className="relative hidden md:block w-48 lg:w-60">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[#76777d] w-4 h-4" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search ID, Zone, Ward, Fleet..."
+              placeholder="Search ID, Ward, Fleet..."
               className="w-full bg-[#f6f3f5] border border-[#76777d]/20 rounded-lg pl-9 pr-3 py-1.5 text-xs text-[#1b1b1d] placeholder:text-[#76777d]/80 focus:outline-none focus:border-[#131b2e] focus:ring-1 focus:ring-[#131b2e] transition-all font-medium"
             />
             {searchQuery && (
@@ -193,7 +193,7 @@ export const Header: React.FC<HeaderProps> = ({ sidebarOpen, setSidebarOpen }) =
             <span className="sm:hidden">Status</span>
           </button>
 
-          {/* User Profile Avatar with Dropdown */}
+          {/* User Profile Avatar with Read-Only Security Details */}
           <div className="relative">
             <button
               onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
@@ -208,16 +208,17 @@ export const Header: React.FC<HeaderProps> = ({ sidebarOpen, setSidebarOpen }) =
             {profileDropdownOpen && (
               <div className="absolute right-0 mt-2 w-72 bg-white rounded-2xl shadow-2xl border border-slate-200 py-2 z-50 animate-in fade-in slide-in-from-top-2 duration-150 text-xs">
                 <div className="px-4 py-3 border-b border-slate-100">
-                  <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
+                  <div className="flex items-center justify-between">
                     <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
-                      Authenticated Session
+                      Security Profile
+                    </span>
+                    <span className="px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 font-mono text-[10px] font-bold uppercase">
+                      {userRole}
                     </span>
                   </div>
                   <p className="font-bold text-slate-900 text-sm mt-0.5">{currentUser.fullName}</p>
-                  <p className="text-xs text-emerald-700 font-semibold capitalize font-mono">{userRole}</p>
                   {currentUser.phone && (
-                    <p className="text-[11px] text-slate-500 mt-0.5">{currentUser.phone}</p>
+                    <p className="text-[11px] text-slate-500 mt-0.5 font-mono">{currentUser.phone}</p>
                   )}
                 </div>
 
@@ -232,8 +233,8 @@ export const Header: React.FC<HeaderProps> = ({ sidebarOpen, setSidebarOpen }) =
                 </div>
 
                 <div className="px-4 py-2 border-t border-slate-100 text-[10px] text-slate-400 flex items-center justify-between font-mono">
+                  <span>RLS Security Active</span>
                   <span>Kopargaon Node #08</span>
-                  <span>v4.12.0</span>
                 </div>
               </div>
             )}

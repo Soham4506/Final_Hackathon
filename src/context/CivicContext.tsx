@@ -51,6 +51,7 @@ import { MultiStrategyEngine, AllocationStrategy, StrategyComparisonMetric } fro
 import { WaterQualityEngine } from '../services/waterQualityEngine';
 import { ReuseAllocationEngine } from '../services/reuseAllocationEngine';
 import { Language, DICTIONARY, Translations } from '../services/localizationService';
+import { SMSAlertService } from '../services/smsAlertService';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 
 
@@ -124,6 +125,8 @@ interface CivicContextType {
     longitude?: number;
     photoUrls?: string[];
     affectedPopulation?: number;
+    citizenPhone?: string;
+    citizenName?: string;
   }) => Promise<CivicIssue>;
 
   updateIssueStatus: (issueId: string, newStatus: IssueStatus, officerNotes?: string) => void;
@@ -276,84 +279,156 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     localStorage.setItem('civicpulse_current_user', JSON.stringify(userProfile));
   };
 
-  // Logout method: Clears authentication gate
-  const logout = () => {
+  // Logout method: Clears authentication gate and Supabase session
+  const logout = async () => {
+    // Sign out from Supabase to invalidate the session token
+    if (isSupabaseConfigured) {
+      try {
+        await supabase.auth.signOut();
+      } catch (err) {
+        console.warn('Supabase signOut error:', err);
+      }
+    }
     setIsAuthenticated(false);
+    setUserRole('citizen');
+    setCurrentUser(DEFAULT_GUEST_USER);
     localStorage.setItem('civicpulse_is_auth', JSON.stringify(false));
     localStorage.removeItem('civicpulse_current_user');
-    setCurrentUser(DEFAULT_GUEST_USER);
+    localStorage.removeItem('civicpulse_user_role');
   };
 
-  // Hydrate from Supabase on load if configured
+  // Hydrate auth session and data from Supabase on load if configured
   useEffect(() => {
-    if (isSupabaseConfigured) {
-      const loadSupabaseData = async () => {
-        try {
-          const { data: dbIssues, error: issuesErr } = await supabase.from('issues').select('*');
-          if (!issuesErr && dbIssues && dbIssues.length > 0) {
-            setIssues(
-              dbIssues.map((dbIss: any) => {
-                const cat = categories.find((c) => c.id === dbIss.category_id) || categories[0];
-                const zone = zones.find((z) => z.id === dbIss.zone_id) || zones[0];
-                const issueObj: CivicIssue = {
-                  id: dbIss.id,
-                  ticketNumber: dbIss.ticket_number,
-                  citizenId: dbIss.citizen_id,
-                  categoryId: dbIss.category_id,
-                  departmentId: dbIss.department_id,
-                  zoneId: dbIss.zone_id,
-                  title: dbIss.title,
-                  rawDescription: dbIss.raw_description,
-                  locationAddress: dbIss.location_address,
-                  latitude: Number(dbIss.latitude),
-                  longitude: Number(dbIss.longitude),
-                  photoUrls: dbIss.photo_urls || [],
-                  structuredData: dbIss.structured_data || {},
-                  affectedPopulationEstimate: dbIss.affected_population_estimate,
-                  confidenceScore: Number(dbIss.confidence_score),
-                  missingAttributes: dbIss.missing_attributes || [],
-                  status: dbIss.status,
-                  urgency: dbIss.urgency,
-                  estimatedCost: Number(dbIss.estimated_cost),
-                  estimatedHours: Number(dbIss.estimated_hours),
-                  requiredStaffCount: dbIss.required_staff_count,
-                  requiredEquipment: dbIss.required_equipment,
-                  reportedAt: dbIss.reported_at,
-                  slaDueAt: dbIss.sla_due_at,
-                  resolvedAt: dbIss.resolved_at,
-                  escalationCount: dbIss.escalation_count,
-                };
-                issueObj.priorityScore = PriorityEngine.calculateScore(issueObj, cat, zone, weightConfig);
-                return issueObj;
-              })
-            );
-            setIsSupabaseLive(true);
-          }
+    if (!isSupabaseConfigured) return;
 
-          const { data: dbLogs } = await supabase.from('audit_logs').select('*').order('created_at', { ascending: false });
-          if (dbLogs && dbLogs.length > 0) {
-            setAuditLogs(
-              dbLogs.map((l: any) => ({
-                id: l.id,
-                actorId: l.actor_id,
-                actorName: l.actor_id || 'Officer',
-                actorRole: l.actor_role || 'officer',
-                action: l.action,
-                entityType: l.entity_type,
-                entityId: l.entity_id,
-                details: l.details || {},
-                createdAt: l.created_at,
-              }))
-            );
+    // 1. Restore session: check if a valid Supabase auth session exists
+    const restoreSession = async () => {
+      try {
+        const { data: sessionData } = await supabase.auth.getSession();
+        const session = sessionData?.session;
+
+        if (session?.user) {
+          // We have a valid session — fetch the profile
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', session.user.id)
+            .single();
+
+          if (profile) {
+            const role = (profile.role as UserRole) || 'citizen';
+            const userObj: UserProfile = {
+              id: session.user.id,
+              role,
+              fullName: profile.full_name || session.user.email?.split('@')[0] || 'Citizen',
+              phone: profile.phone || '',
+              address: profile.address || 'Kopargaon',
+              wardId: profile.ward_id,
+              departmentId: profile.department_id,
+              employeeId: profile.employee_id,
+              isVerified: profile.is_verified ?? true,
+            };
+            setUserRole(role);
+            setCurrentUser(userObj);
+            setIsAuthenticated(true);
+            localStorage.setItem('civicpulse_is_auth', JSON.stringify(true));
+            localStorage.setItem('civicpulse_user_role', JSON.stringify(role));
+            localStorage.setItem('civicpulse_current_user', JSON.stringify(userObj));
           }
-        } catch (err) {
-          console.warn('Supabase fetch failed, operating in local mode:', err);
-          setIsSupabaseLive(false);
         }
-      };
+      } catch (err) {
+        console.warn('Session restore failed:', err);
+      }
+    };
 
-      loadSupabaseData();
-    }
+    restoreSession();
+
+    // 2. Listen for auth state changes (sign in, sign out, token refresh)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        if (event === 'SIGNED_OUT' || !session) {
+          setIsAuthenticated(false);
+          setUserRole('citizen');
+          setCurrentUser(DEFAULT_GUEST_USER);
+          localStorage.setItem('civicpulse_is_auth', JSON.stringify(false));
+          localStorage.removeItem('civicpulse_current_user');
+          localStorage.removeItem('civicpulse_user_role');
+        }
+      }
+    );
+
+    // 3. Load operational data from Supabase
+    const loadSupabaseData = async () => {
+      try {
+        const { data: dbIssues, error: issuesErr } = await supabase.from('issues').select('*');
+        if (!issuesErr && dbIssues && dbIssues.length > 0) {
+          setIssues(
+            dbIssues.map((dbIss: any) => {
+              const cat = categories.find((c) => c.id === dbIss.category_id) || categories[0];
+              const zone = zones.find((z) => z.id === dbIss.zone_id) || zones[0];
+              const issueObj: CivicIssue = {
+                id: dbIss.id,
+                ticketNumber: dbIss.ticket_number,
+                citizenId: dbIss.citizen_id,
+                categoryId: dbIss.category_id,
+                departmentId: dbIss.department_id,
+                zoneId: dbIss.zone_id,
+                title: dbIss.title,
+                rawDescription: dbIss.raw_description,
+                locationAddress: dbIss.location_address,
+                latitude: Number(dbIss.latitude),
+                longitude: Number(dbIss.longitude),
+                photoUrls: dbIss.photo_urls || [],
+                structuredData: dbIss.structured_data || {},
+                affectedPopulationEstimate: dbIss.affected_population_estimate,
+                confidenceScore: Number(dbIss.confidence_score),
+                missingAttributes: dbIss.missing_attributes || [],
+                status: dbIss.status,
+                urgency: dbIss.urgency,
+                estimatedCost: Number(dbIss.estimated_cost),
+                estimatedHours: Number(dbIss.estimated_hours),
+                requiredStaffCount: dbIss.required_staff_count,
+                requiredEquipment: dbIss.required_equipment,
+                reportedAt: dbIss.reported_at,
+                slaDueAt: dbIss.sla_due_at,
+                resolvedAt: dbIss.resolved_at,
+                escalationCount: dbIss.escalation_count,
+              };
+              issueObj.priorityScore = PriorityEngine.calculateScore(issueObj, cat, zone, weightConfig);
+              return issueObj;
+            })
+          );
+          setIsSupabaseLive(true);
+        }
+
+        const { data: dbLogs } = await supabase.from('audit_logs').select('*').order('created_at', { ascending: false });
+        if (dbLogs && dbLogs.length > 0) {
+          setAuditLogs(
+            dbLogs.map((l: any) => ({
+              id: l.id,
+              actorId: l.actor_id,
+              actorName: l.actor_id || 'Officer',
+              actorRole: l.actor_role || 'officer',
+              action: l.action,
+              entityType: l.entity_type,
+              entityId: l.entity_id,
+              details: l.details || {},
+              createdAt: l.created_at,
+            }))
+          );
+        }
+      } catch (err) {
+        console.warn('Supabase fetch failed, operating in local mode:', err);
+        setIsSupabaseLive(false);
+      }
+    };
+
+    loadSupabaseData();
+
+    // Cleanup subscription on unmount
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
 
   // Sync state changes to localStorage
@@ -447,6 +522,8 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     longitude?: number;
     photoUrls?: string[];
     affectedPopulation?: number;
+    citizenPhone?: string;
+    citizenName?: string;
   }): Promise<CivicIssue> => {
     const hasPhotos = Boolean(data.photoUrls && data.photoUrls.length > 0);
     const hasPreciseLocation = Boolean(data.latitude && data.longitude);
@@ -535,6 +612,14 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       };
       setNotifications((prev) => [notif, ...prev]);
 
+      // Automated SMS Alert for Merged Issue
+      SMSAlertService.sendLifecycleSms(
+        mergedIssue,
+        'submitted',
+        data.citizenPhone || currentUser.phone,
+        language
+      );
+
       if (isSupabaseConfigured) {
         supabase
           .from('issues')
@@ -554,13 +639,15 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     // -------------------------------------------------------------
     const ticketNumber = `KMC-2026-${String(Math.floor(10000 + Math.random() * 90000)).slice(0, 5)}`;
     const slaDueAt = new Date(now.getTime() + cat.defaultSlaHours * 3600 * 1000).toISOString();
+    const effectivePhone = data.citizenPhone || currentUser.phone || '';
+    const effectiveName = data.citizenName || currentUser.fullName || 'Citizen User';
 
     const newIssue: CivicIssue = {
       id: `iss-${Date.now()}`,
       ticketNumber,
       citizenId: currentUser.id,
-      citizenName: currentUser.fullName,
-      citizenPhone: currentUser.phone,
+      citizenName: effectiveName,
+      citizenPhone: effectivePhone,
       categoryId: cat.id,
       departmentId: dept.id,
       zoneId: zone.id,
@@ -625,6 +712,14 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       createdAt: now.toISOString(),
     };
     setNotifications((prev) => [notif, ...prev]);
+
+    // Send Automated Lifecycle SMS Alert upon Registration
+    SMSAlertService.sendLifecycleSms(
+      newIssue,
+      'submitted',
+      effectivePhone,
+      language
+    );
 
     if (isSupabaseConfigured) {
       supabase.from('issues').insert([{
@@ -691,10 +786,10 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     };
     setAuditLogs((prev) => [log, ...prev]);
 
-    if (targetIssue?.citizenId) {
+    if (targetIssue) {
       const notif: NotificationItem = {
         id: `notif-${Date.now()}`,
-        recipientId: targetIssue.citizenId,
+        recipientId: targetIssue.citizenId || 'citizen-public',
         issueId: targetIssue.id,
         ticketNumber: targetIssue.ticketNumber,
         title: `Status Updated: ${newStatus.toUpperCase()}`,
@@ -704,6 +799,14 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         createdAt: new Date().toISOString(),
       };
       setNotifications((prev) => [notif, ...prev]);
+
+      // Automated Lifecycle SMS Notification to Citizen Handset
+      SMSAlertService.sendLifecycleSms(
+        { ...targetIssue, status: newStatus },
+        newStatus,
+        targetIssue.citizenPhone,
+        language
+      );
     }
 
     if (isSupabaseConfigured) {

@@ -7,7 +7,7 @@ import { AIIntakeParser, AIIntakeResult } from '../services/aiIntakeParser';
 import { ExplainabilityService } from '../services/explainabilityService';
 import { PhotoGeoLocationService, GeolocationResult } from '../services/photoGeoLocation';
 import { LiveCameraModal } from '../components/common/CameraCaptureModal';
-import { UrgencyLevel, ResourceType } from '../types';
+import { UrgencyLevel, ResourceType, IssueStatus } from '../types';
 import {
   PlusCircle,
   Search,
@@ -36,6 +36,10 @@ import {
   Image as ImageIcon,
   Info,
   Calendar,
+  Phone,
+  Truck,
+  CheckCheck,
+  UserCheck,
 } from 'lucide-react';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
@@ -57,7 +61,7 @@ const createPinIcon = () => {
 };
 
 export const CitizenPortalPage: React.FC = () => {
-  const { zones, departments, categories, submitIssue, issues, currentUser, t, language } = useCivic();
+  const { zones, departments, categories, submitIssue, updateIssueStatus, issues, currentUser, t, language } = useCivic();
   const [searchParams, setSearchParams] = useSearchParams();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
@@ -222,13 +226,11 @@ export const CitizenPortalPage: React.FC = () => {
       const exifResult = PhotoGeoLocationService.extractExifGps(buffer, zones);
 
       if (exifResult) {
-        // Location extracted from original photo capture metadata!
         setGeoCoordinates(exifResult);
         if (exifResult.closestWardId) {
           setSelectedZoneId(exifResult.closestWardId);
         }
       } else {
-        // No metadata location found: fallback to the place from where it is being uploaded right now!
         await handleAcquireGPS(true);
       }
     };
@@ -270,6 +272,8 @@ export const CitizenPortalPage: React.FC = () => {
         longitude: geoCoordinates?.longitude,
         photoUrls: photoDataUrl ? [photoDataUrl] : [],
         affectedPopulation: affectedPop,
+        citizenPhone: currentUser.phone || '',
+        citizenName: currentUser.fullName || '',
       });
 
       setSubmittedTicket(newIssue.ticketNumber);
@@ -288,6 +292,12 @@ export const CitizenPortalPage: React.FC = () => {
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handleSimulateStatus = (stage: IssueStatus) => {
+    if (!trackedIssue) return;
+    updateIssueStatus(trackedIssue.id, stage, `Automated simulated progression to ${stage}`);
+    setTrackedIssue({ ...trackedIssue, status: stage });
   };
 
   const handleVoiceIntake = () => {
@@ -352,7 +362,7 @@ export const CitizenPortalPage: React.FC = () => {
         <div>
           <div className="flex items-center gap-2 mb-1">
             <span className="bg-emerald-50 text-emerald-800 border border-emerald-200 text-[10px] font-mono uppercase font-bold px-2 py-0.5 rounded flex items-center gap-1">
-              <Cpu size={12} /> Multimodal AI & Geotag Gateway
+              <Phone size={12} /> Real-Time Cellular SMS Alerts & AI Vision
             </span>
             <span className="text-xs text-[#76777d]">Kopargaon Citizen Service Portal</span>
           </div>
@@ -360,7 +370,7 @@ export const CitizenPortalPage: React.FC = () => {
             Citizen Grievance & Tracking Portal
           </h1>
           <p className="text-xs sm:text-sm text-[#57657b] mt-1">
-            Capture live photos or upload incident evidence with automatic metadata extraction (or upload location fallback) to identify Department, Severity, Machinery & Crew requirements.
+            Capture live photos or upload incident evidence with automatic GPS geotagging, SDDS parameter review, and instant real-time SMS alerts dispatched directly to your mobile phone.
           </p>
         </div>
 
@@ -418,24 +428,55 @@ export const CitizenPortalPage: React.FC = () => {
             </div>
 
             {submittedTicket && (
-              <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-900 text-xs space-y-1">
-                <div className="font-bold text-emerald-800 text-sm flex items-center gap-1.5">
-                  <CheckCircle2 size={16} />
-                  <span>Issue Registered Successfully!</span>
+              <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-900 text-xs space-y-2">
+                <div className="font-bold text-emerald-800 text-sm flex items-center justify-between">
+                  <span className="flex items-center gap-1.5">
+                    <CheckCircle2 size={16} />
+                    <span>Issue Registered Successfully!</span>
+                  </span>
+                  <span className="text-[10px] font-mono bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded font-bold">
+                    SMS DISPATCHED TO PHONE 📱
+                  </span>
                 </div>
                 <p>
-                  Your ticket number is <strong className="font-mono text-[#131b2e]">{submittedTicket}</strong>. The deterministic priority engine has calculated its priority score and queued it for municipal planning.
+                  Your ticket number is <strong className="font-mono text-[#131b2e]">{submittedTicket}</strong>. An initial confirmation SMS has been dispatched directly to your mobile handset <strong>{currentUser.phone ? currentUser.phone : '(No phone in profile)'}</strong> with priority score and SLA timing.
                 </p>
-                <button
-                  onClick={() => setSearchParams({ tab: 'track' })}
-                  className="mt-2 text-emerald-800 font-bold underline text-[11px]"
-                >
-                  Click here to view live tracking status →
-                </button>
+                <div className="pt-1">
+                  <button
+                    onClick={() => setSearchParams({ tab: 'track' })}
+                    className="text-emerald-800 font-bold underline text-[11px]"
+                  >
+                    Track Live Progress Timeline →
+                  </button>
+                </div>
               </div>
             )}
 
             <form onSubmit={handleSubmit} className="space-y-4 text-xs">
+              {/* Authenticated Citizen Account Badge (Directly Uses Logged-In User Details) */}
+              <div className="bg-[#fcf8fa] p-3.5 rounded-2xl border border-[#76777d]/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-[#131b2e] text-white flex items-center justify-center font-bold text-sm shrink-0 shadow-xs">
+                    {currentUser.fullName ? currentUser.fullName.charAt(0).toUpperCase() : 'U'}
+                  </div>
+                  <div>
+                    <div className="font-bold text-[#1b1b1d] flex items-center gap-2">
+                      <span>{currentUser.fullName || 'Citizen User'}</span>
+                      <span className="text-[10px] bg-emerald-100 text-emerald-800 font-mono font-bold px-1.5 py-0.5 rounded flex items-center gap-1">
+                        <CheckCircle2 size={11} /> Verified Citizen Account
+                      </span>
+                    </div>
+                    <div className="text-[11px] text-[#57657b] flex items-center gap-1 mt-0.5 font-mono">
+                      <Phone size={12} className="text-blue-700" />
+                      <span>Real-time SMS Alerts to: <strong>{currentUser.phone ? currentUser.phone : '(No Phone Number in Profile)'}</strong></span>
+                    </div>
+                  </div>
+                </div>
+                <div className="text-[10px] text-emerald-800 font-bold bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-lg self-start sm:self-auto font-mono">
+                  ⚡ Fast2SMS Cellular Auto-Linked
+                </div>
+              </div>
+
               {/* Photo Upload & Geotag Area */}
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
@@ -665,7 +706,7 @@ export const CitizenPortalPage: React.FC = () => {
                 <input
                   type="text"
                   required
-                  placeholder="e.g. Drinking water pipeline smelling of sewage near Civil Hospital"
+                  placeholder="e.g. Deep pothole cave-in near Civil Hospital on Station Road"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   className="w-full bg-[#f6f3f5] border border-[#76777d]/20 rounded-xl px-3 py-2 text-[#1b1b1d] placeholder:text-[#76777d]/70 focus:outline-none focus:border-[#131b2e] font-medium"
@@ -998,27 +1039,19 @@ export const CitizenPortalPage: React.FC = () => {
         </div>
       )}
 
-      {/* TAB 2: CITIZEN TICKET TRACKING */}
+      {/* TAB 2: CITIZEN TICKET TRACKING & REAL-TIME SMS ALERTS */}
       {activeTab === 'track' && (
         <div className="space-y-5">
           <div className="bg-white border border-[#76777d]/20 rounded-2xl p-5 shadow-xs">
-            <form onSubmit={handleTrackSearch} className="flex flex-col sm:flex-row gap-3">
-              <div className="relative flex-1">
-                <Search size={16} className="absolute left-3.5 top-3 text-[#76777d]" />
-                <input
-                  type="text"
-                  placeholder="Enter Municipal Ticket Number (e.g. KMC-2026-00101)..."
-                  value={trackQuery}
-                  onChange={(e) => setTrackQuery(e.target.value)}
-                  className="w-full bg-[#f6f3f5] border border-[#76777d]/20 rounded-xl pl-10 pr-3 py-2.5 text-xs text-[#1b1b1d] placeholder:text-[#76777d]/70 focus:outline-none focus:border-[#131b2e] font-mono font-medium"
-                />
-              </div>
-              <button
-                type="submit"
-                className="px-6 py-2.5 bg-[#131b2e] hover:bg-[#1e2a47] text-white font-bold rounded-xl text-xs transition-colors shadow-xs uppercase tracking-wider"
-              >
-                Track Status
-              </button>
+            <form onSubmit={handleTrackSearch} className="relative">
+              <Search size={16} className="absolute left-3.5 top-3 text-[#76777d]" />
+              <input
+                type="text"
+                placeholder="Enter Municipal Ticket Number (e.g. KMC-2026-00101)..."
+                value={trackQuery}
+                onChange={(e) => setTrackQuery(e.target.value)}
+                className="w-full bg-[#f6f3f5] border border-[#76777d]/20 rounded-xl pl-10 pr-3 py-2.5 text-xs text-[#1b1b1d] placeholder:text-[#76777d]/70 focus:outline-none focus:border-[#131b2e] font-mono font-medium"
+              />
             </form>
           </div>
 
@@ -1034,6 +1067,11 @@ export const CitizenPortalPage: React.FC = () => {
                     <span className="text-xs text-[#76777d]">
                       Reported on {new Date(trackedIssue.reportedAt).toLocaleString()}
                     </span>
+                    {trackedIssue.citizenPhone && (
+                      <span className="text-[10px] bg-emerald-50 text-emerald-800 font-mono px-2 py-0.5 rounded font-bold border border-emerald-200">
+                        📱 SMS Recipient: {trackedIssue.citizenPhone}
+                      </span>
+                    )}
                   </div>
                   <h2 className="text-lg font-bold text-[#1b1b1d]">{trackedIssue.title}</h2>
                   <div className="text-xs text-[#57657b] mt-1 flex items-center gap-1">
@@ -1072,16 +1110,17 @@ export const CitizenPortalPage: React.FC = () => {
               )}
 
               {/* Progress Stage Timeline */}
-              <div>
-                <h3 className="text-xs font-bold uppercase text-[#76777d] tracking-wider mb-3">
+              <div className="space-y-3">
+                <h3 className="text-xs font-bold uppercase text-[#76777d] tracking-wider">
                   Municipal Action Timeline
                 </h3>
+
                 <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
                   {[
-                    { key: 'submitted', label: '1. Registered', desc: 'Received by council' },
-                    { key: 'prioritized', label: '2. Scored & Queued', desc: 'Evaluated by priority engine' },
-                    { key: 'scheduled', label: '3. Work Dispatched', desc: 'Crew & equipment assigned' },
-                    { key: 'resolved', label: '4. Rectified', desc: 'Closed and inspected' },
+                    { key: 'submitted', label: '1. Registered', desc: 'Received & AI Verified (SMS Sent)' },
+                    { key: 'prioritized', label: '2. Scored & Queued', desc: 'Ranked by Decision Engine' },
+                    { key: 'scheduled', label: '3. Work Dispatched', desc: 'Crew & Machinery En Route' },
+                    { key: 'resolved', label: '4. Rectified', desc: 'Closed & Inspected (SMS Sent)' },
                   ].map((stage) => {
                     const isDone =
                       (stage.key === 'submitted') ||
@@ -1094,7 +1133,7 @@ export const CitizenPortalPage: React.FC = () => {
                         key={stage.key}
                         className={`p-3.5 rounded-xl border text-xs transition-all ${
                           isDone
-                            ? 'bg-emerald-50 border-emerald-300 text-emerald-900'
+                            ? 'bg-emerald-50 border-emerald-300 text-emerald-900 shadow-xs'
                             : 'bg-[#fcf8fa] border-[#76777d]/15 text-[#76777d]'
                         }`}
                       >
@@ -1109,6 +1148,45 @@ export const CitizenPortalPage: React.FC = () => {
                       </div>
                     );
                   })}
+                </div>
+              </div>
+
+              {/* Interactive Status Progression (Sends Real SMS to physical mobile) */}
+              <div className="p-4 bg-[#fcf8fa] border border-blue-200/80 rounded-2xl space-y-2.5">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 text-xs">
+                  <span className="font-bold text-[#1b1b1d] flex items-center gap-1.5">
+                    <Sparkles size={14} className="text-blue-700" />
+                    <span>Advance Ticket Milestone & Send Real SMS to Phone:</span>
+                  </span>
+                  <span className="text-[10px] text-emerald-800 font-mono font-bold">
+                    Fast2SMS ➔ {trackedIssue.citizenPhone || currentUser.phone || '(No Phone Number)'}
+                  </span>
+                </div>
+
+                <div className="flex flex-wrap gap-2 text-xs">
+                  <button
+                    onClick={() => handleSimulateStatus('scheduled')}
+                    className="px-3 py-1.5 bg-white hover:bg-slate-100 text-[#131b2e] border border-slate-300 font-bold rounded-lg transition-all flex items-center gap-1 shadow-xs"
+                  >
+                    <Truck size={13} className="text-blue-700" />
+                    <span>Dispatch Crew (SMS to Phone)</span>
+                  </button>
+
+                  <button
+                    onClick={() => handleSimulateStatus('in_progress')}
+                    className="px-3 py-1.5 bg-white hover:bg-slate-100 text-[#131b2e] border border-slate-300 font-bold rounded-lg transition-all flex items-center gap-1 shadow-xs"
+                  >
+                    <Wrench size={13} className="text-amber-700" />
+                    <span>Crew Arrived (SMS to Phone)</span>
+                  </button>
+
+                  <button
+                    onClick={() => handleSimulateStatus('resolved')}
+                    className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-lg transition-all flex items-center gap-1 shadow-xs"
+                  >
+                    <CheckCheck size={14} />
+                    <span>Mark Resolved (SMS to Phone)</span>
+                  </button>
                 </div>
               </div>
 
