@@ -272,8 +272,8 @@ export const CitizenPortalPage: React.FC = () => {
         longitude: geoCoordinates?.longitude,
         photoUrls: photoDataUrl ? [photoDataUrl] : [],
         affectedPopulation: affectedPop,
-        citizenPhone: currentUser.phone || '+91 98224 11204',
-        citizenName: currentUser.fullName || 'Citizen User',
+        citizenPhone: currentUser.phone || '',
+        citizenName: currentUser.fullName || '',
       });
 
       setSubmittedTicket(newIssue.ticketNumber);
@@ -439,7 +439,7 @@ export const CitizenPortalPage: React.FC = () => {
                   </span>
                 </div>
                 <p>
-                  Your ticket number is <strong className="font-mono text-[#131b2e]">{submittedTicket}</strong>. An initial confirmation SMS has been dispatched directly to your mobile handset <strong>{currentUser.phone || '+91 98224 11204'}</strong> with priority score and SLA timing.
+                  Your ticket number is <strong className="font-mono text-[#131b2e]">{submittedTicket}</strong>. An initial confirmation SMS has been dispatched directly to your mobile handset <strong>{currentUser.phone ? currentUser.phone : '(No phone in profile)'}</strong> with priority score and SLA timing.
                 </p>
                 <div className="pt-1">
                   <button
@@ -461,14 +461,14 @@ export const CitizenPortalPage: React.FC = () => {
                   </div>
                   <div>
                     <div className="font-bold text-[#1b1b1d] flex items-center gap-2">
-                      <span>{currentUser.fullName || 'Rameshwar Kolhe'}</span>
+                      <span>{currentUser.fullName || 'Citizen User'}</span>
                       <span className="text-[10px] bg-emerald-100 text-emerald-800 font-mono font-bold px-1.5 py-0.5 rounded flex items-center gap-1">
                         <CheckCircle2 size={11} /> Verified Citizen Account
                       </span>
                     </div>
                     <div className="text-[11px] text-[#57657b] flex items-center gap-1 mt-0.5 font-mono">
                       <Phone size={12} className="text-blue-700" />
-                      <span>Real-time SMS Alerts to: <strong>{currentUser.phone || '+91 98224 11204'}</strong></span>
+                      <span>Real-time SMS Alerts to: <strong>{currentUser.phone ? currentUser.phone : '(No Phone Number in Profile)'}</strong></span>
                     </div>
                   </div>
                 </div>
@@ -1159,7 +1159,7 @@ export const CitizenPortalPage: React.FC = () => {
                     <span>Advance Ticket Milestone & Send Real SMS to Phone:</span>
                   </span>
                   <span className="text-[10px] text-emerald-800 font-mono font-bold">
-                    Fast2SMS ➔ {trackedIssue.citizenPhone || '+91 98224 11204'}
+                    Fast2SMS ➔ {trackedIssue.citizenPhone || currentUser.phone || '(No Phone Number)'}
                   </span>
                 </div>
 

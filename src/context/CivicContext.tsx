@@ -567,7 +567,7 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     // -------------------------------------------------------------
     const ticketNumber = `KMC-2026-${String(Math.floor(10000 + Math.random() * 90000)).slice(0, 5)}`;
     const slaDueAt = new Date(now.getTime() + cat.defaultSlaHours * 3600 * 1000).toISOString();
-    const effectivePhone = data.citizenPhone || currentUser.phone || '+91 98224 11204';
+    const effectivePhone = data.citizenPhone || currentUser.phone || '';
     const effectiveName = data.citizenName || currentUser.fullName || 'Citizen User';
 
     const newIssue: CivicIssue = {

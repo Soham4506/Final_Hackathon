@@ -85,7 +85,7 @@ export class SMSAlertService {
     phoneOverride?: string,
     language: 'en' | 'mr' = 'en'
   ): Promise<{ sms: SmsMessage; notification: NotificationItem }> {
-    const targetPhone = phoneOverride || issue.citizenPhone || '+91 98224 11204';
+    const targetPhone = phoneOverride || issue.citizenPhone || '';
     const smsBody = this.formatSmsText(
       stage,
       {
