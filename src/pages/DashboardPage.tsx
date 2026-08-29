@@ -1,7 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCivic } from '../context/CivicContext';
-import { StatCard } from '../components/common/StatCard';
 import { PriorityBadge } from '../components/common/PriorityBadge';
 import { StatusBadge } from '../components/common/StatusBadge';
 import {
@@ -18,6 +17,9 @@ import {
   Sparkles,
   ShieldCheck,
   Zap,
+  Activity,
+  Gavel,
+  Sliders,
 } from 'lucide-react';
 import {
   ResponsiveContainer,
@@ -35,12 +37,10 @@ export const DashboardPage: React.FC = () => {
   const navigate = useNavigate();
   const { issues, resources, departments, zones, activePlans } = useCivic();
 
-  // Metrics computation from real context data
   const totalIssues = issues.length;
   const activeIssues = issues.filter((i) => i.status !== 'resolved' && i.status !== 'rejected');
   const criticalIssues = issues.filter((i) => i.urgency === 'critical' && i.status !== 'resolved');
   const resolvedIssues = issues.filter((i) => i.status === 'resolved');
-  const scheduledIssues = issues.filter((i) => i.status === 'scheduled' || i.status === 'in_progress');
 
   const operationalResources = resources.filter((r) => r.isOperational);
   const allocatedResources = resources.filter((r) => r.currentStatus === 'allocated');
@@ -61,13 +61,6 @@ export const DashboardPage: React.FC = () => {
     };
   });
 
-  // Chart data: Issues per Zone/Ward
-  const zoneData = zones.map((z) => ({
-    name: z.code,
-    fullName: z.name,
-    issues: issues.filter((i) => i.zoneId === z.id).length,
-  }));
-
   // Highest priority critical queue
   const topCriticalQueue = [...issues]
     .sort((a, b) => (b.priorityScore?.finalScore ?? 0) - (a.priorityScore?.finalScore ?? 0))
@@ -76,278 +69,280 @@ export const DashboardPage: React.FC = () => {
   const COLORS = ['#059669', '#3b82f6', '#f59e0b', '#8b5cf6', '#ef4444'];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       {/* Top Banner / Welcome */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-sm">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white border border-[#76777d]/20 rounded-2xl p-5 sm:p-6 shadow-xs">
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <span className="bg-emerald-950 text-emerald-300 border border-emerald-800 text-[10px] font-mono uppercase font-bold px-2 py-0.5 rounded">
+            <span className="bg-slate-100 text-[#131b2e] border border-slate-300 text-[10px] font-mono uppercase font-bold px-2 py-0.5 rounded flex items-center gap-1">
+              <Activity size={12} className="text-emerald-600" />
               Shift 1 • Real-time Operations
             </span>
-            <span className="text-xs text-slate-400">Ahilyanagar District, Kopargaon</span>
+            <span className="text-xs text-[#76777d]">Ahilyanagar District, Kopargaon</span>
           </div>
-          <h1 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
-            Municipal Command & Decision Support Dashboard
+          <h1 className="text-xl sm:text-2xl font-bold text-[#1b1b1d] tracking-tight">
+            Municipal Command & Operational Intelligence
           </h1>
-          <p className="text-xs sm:text-sm text-slate-400 mt-1 max-w-2xl">
-            AI structured triage and deterministic prioritization for constrained municipal fleet, workforce, and departmental budgets.
+          <p className="text-xs sm:text-sm text-[#57657b] mt-1 max-w-2xl">
+            Deterministic prioritization and multi-strategy optimization for constrained municipal fleet, workforce, and departmental budgets.
           </p>
         </div>
 
         <div className="flex flex-wrap gap-2.5 shrink-0">
           <button
             onClick={() => navigate('/priority-engine')}
-            className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold px-4 py-2.5 rounded-lg shadow-md shadow-emerald-950/50 transition-all"
+            className="flex items-center gap-2 bg-[#131b2e] hover:bg-[#1e2a47] text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow-xs transition-all tracking-wider uppercase"
           >
-            <Cpu size={16} />
-            <span>Launch Allocation Engine</span>
+            <Gavel size={14} />
+            <span>Decision Workbench</span>
           </button>
           <button
-            onClick={() => navigate('/map')}
-            className="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold px-4 py-2.5 rounded-lg transition-all"
+            onClick={() => navigate('/citizen-portal')}
+            className="flex items-center gap-1.5 bg-white hover:bg-slate-50 text-[#131b2e] border border-[#76777d]/30 text-xs font-bold px-3.5 py-2.5 rounded-xl shadow-xs transition-all uppercase tracking-wider"
           >
-            <MapPin size={16} className="text-emerald-400" />
-            <span>Civic GIS Map</span>
+            <span>Citizen Portal</span>
           </button>
         </div>
       </div>
 
-      {/* KPI Stats Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard
-          title="Active Civic Queue"
-          value={activeIssues.length}
-          subtext="Under evaluation & rectification"
-          icon={AlertTriangle}
-          variant="amber"
-          trend={`${criticalIssues.length} Critical P0`}
-          trendPositive={false}
-        />
-        <StatCard
-          title="Critical Emergencies"
-          value={criticalIssues.length}
-          subtext="Public health & safety threats"
-          icon={Flame}
-          variant="crimson"
-          trend="Score >= 80"
-          trendPositive={false}
-        />
-        <StatCard
-          title="Fleet Utilization"
-          value={`${resourceUtilizationRate}%`}
-          subtext={`${allocatedResources.length} of ${operationalResources.length} units deployed`}
-          icon={Truck}
-          variant="blue"
-          trend="Jetting, Rollers, Bucket"
-        />
-        <StatCard
-          title="Action Plans Generated"
-          value={activePlans.length || '1'}
-          subtext="Resource-constrained work batches"
-          icon={CheckCircle2}
-          variant="emerald"
-          trend="Shift 1 Active"
-        />
+      {/* Top KPI Strip (6 Cards in KMC Visual Style) */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+        {/* KPI 1 */}
+        <div className="bg-white p-4 rounded-xl border border-[#76777d]/20 shadow-xs flex flex-col justify-between">
+          <span className="text-[11px] font-bold uppercase tracking-wider text-[#76777d] mb-2">
+            Active Issues
+          </span>
+          <div className="flex items-end justify-between">
+            <span className="text-2xl sm:text-3xl font-bold text-[#1b1b1d] tracking-tight font-mono">
+              {activeIssues.length}
+            </span>
+            <div className="p-1.5 rounded-lg bg-blue-50 text-blue-700">
+              <TrendingUp className="w-4 h-4" />
+            </div>
+          </div>
+        </div>
+
+        {/* KPI 2 - Critical Priority */}
+        <div className="bg-white p-4 rounded-xl border border-[#ba1a1a]/30 shadow-xs flex flex-col justify-between relative overflow-hidden">
+          <div className="absolute inset-0 bg-[#ba1a1a]/5 border-l-4 border-[#ba1a1a]"></div>
+          <div className="relative z-10 flex flex-col justify-between h-full">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-[#ba1a1a] mb-2">
+              Critical Urgency
+            </span>
+            <div className="flex items-end justify-between">
+              <span className="text-2xl sm:text-3xl font-bold text-[#ba1a1a] tracking-tight font-mono">
+                {criticalIssues.length}
+              </span>
+              <div className="p-1.5 rounded-lg bg-red-100 text-[#ba1a1a]">
+                <AlertTriangle className="w-4 h-4" />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* KPI 3 - Resources Deployed */}
+        <div className="bg-white p-4 rounded-xl border border-[#76777d]/20 shadow-xs flex flex-col justify-between">
+          <span className="text-[11px] font-bold uppercase tracking-wider text-[#76777d] mb-2">
+            Fleet Deployed
+          </span>
+          <div className="flex items-end justify-between">
+            <span className="text-2xl sm:text-3xl font-bold text-[#1b1b1d] tracking-tight font-mono">
+              {resourceUtilizationRate}%
+            </span>
+            <div className="w-12 h-2 bg-[#eae7e9] rounded-full overflow-hidden mb-2">
+              <div
+                className="h-full bg-[#131b2e] rounded-full transition-all"
+                style={{ width: `${resourceUtilizationRate}%` }}
+              ></div>
+            </div>
+          </div>
+        </div>
+
+        {/* KPI 4 */}
+        <div className="bg-white p-4 rounded-xl border border-[#76777d]/20 shadow-xs flex flex-col justify-between">
+          <span className="text-[11px] font-bold uppercase tracking-wider text-[#76777d] mb-2">
+            Workforce Units
+          </span>
+          <div className="flex items-end justify-between">
+            <span className="text-2xl sm:text-3xl font-bold text-[#1b1b1d] tracking-tight font-mono">
+              {operationalResources.length} / {resources.length}
+            </span>
+            <div className="p-1.5 rounded-lg bg-emerald-50 text-emerald-700">
+              <Truck className="w-4 h-4" />
+            </div>
+          </div>
+        </div>
+
+        {/* KPI 5 */}
+        <div className="bg-white p-4 rounded-xl border border-[#76777d]/20 shadow-xs flex flex-col justify-between">
+          <span className="text-[11px] font-bold uppercase tracking-wider text-[#76777d] mb-2">
+            Resolved Today
+          </span>
+          <div className="flex items-end justify-between">
+            <span className="text-2xl sm:text-3xl font-bold text-[#1b1b1d] tracking-tight font-mono">
+              {resolvedIssues.length}
+            </span>
+            <div className="p-1.5 rounded-lg bg-emerald-50 text-emerald-700">
+              <CheckCircle2 className="w-4 h-4" />
+            </div>
+          </div>
+        </div>
+
+        {/* KPI 6 */}
+        <div className="bg-white p-4 rounded-xl border border-[#76777d]/20 shadow-xs flex flex-col justify-between">
+          <span className="text-[11px] font-bold uppercase tracking-wider text-[#76777d] mb-2">
+            Shift Plans
+          </span>
+          <div className="flex items-end justify-between">
+            <span className="text-2xl sm:text-3xl font-bold text-[#1b1b1d] tracking-tight font-mono">
+              {activePlans.length > 0 ? activePlans.length : '1 Draft'}
+            </span>
+            <div className="p-1.5 rounded-lg bg-purple-50 text-purple-700">
+              <Layers className="w-4 h-4" />
+            </div>
+          </div>
+        </div>
       </div>
 
-      {/* Main Grid: Priority Queue + Fleet & Department Utilization */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left 2 Cols: Priority Queue */}
-        <div className="lg:col-span-2 bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-sm space-y-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2.5">
-              <div className="p-2 rounded-lg bg-red-950 border border-red-800 text-red-400">
-                <Flame size={18} />
+      {/* Main Grid: Priority Ranked Competing Issues + Department Allocations */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+        {/* Left 2 Cols: High-Priority Competing Issues */}
+        <div className="lg:col-span-2 bg-white border border-[#76777d]/20 rounded-2xl p-5 shadow-xs space-y-4">
+          <div className="flex items-center justify-between border-b border-[#76777d]/15 pb-3">
+            <div className="flex items-center gap-2">
+              <div className="p-1.5 rounded-lg bg-red-100 text-[#ba1a1a]">
+                <Flame size={16} />
               </div>
               <div>
-                <h2 className="font-bold text-white text-base">High-Priority Competing Issues</h2>
-                <p className="text-xs text-slate-400">Ranked by deterministic multi-factor mathematical formula</p>
+                <h2 className="font-bold text-sm text-[#1b1b1d] uppercase tracking-wider">
+                  Top Priority Ranked Competing Grievances
+                </h2>
+                <p className="text-[11px] text-[#76777d]">
+                  Prioritized by deterministic multi-factor algorithm
+                </p>
               </div>
             </div>
             <button
               onClick={() => navigate('/issues')}
-              className="text-xs font-semibold text-emerald-400 hover:text-emerald-300 flex items-center gap-1"
+              className="text-xs text-[#131b2e] font-bold hover:underline flex items-center gap-1"
             >
               <span>View All ({issues.length})</span>
-              <ArrowUpRight size={14} />
+              <ArrowUpRight size={13} />
             </button>
           </div>
 
-          {/* Queue List */}
-          <div className="space-y-3">
-            {topCriticalQueue.map((issue, idx) => {
-              const zone = zones.find((z) => z.id === issue.zoneId);
-              const dept = departments.find((d) => d.id === issue.departmentId);
-
-              return (
+          {topCriticalQueue.length === 0 ? (
+            <div className="p-12 text-center text-[#76777d] text-xs space-y-2">
+              <p>No civic issues currently queued in the system.</p>
+              <button
+                onClick={() => navigate('/citizen-portal')}
+                className="text-[#131b2e] font-bold underline"
+              >
+                Submit a new grievance to initiate engine →
+              </button>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {topCriticalQueue.map((issue, idx) => (
                 <div
                   key={issue.id}
-                  onClick={() => navigate(`/issues?selected=${issue.id}`)}
-                  className="p-3.5 bg-slate-950/70 hover:bg-slate-950 border border-slate-800 hover:border-slate-700 rounded-xl transition-all cursor-pointer flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+                  onClick={() => navigate('/issues')}
+                  className="p-3.5 bg-[#fcf8fa] hover:bg-slate-50 border border-[#76777d]/15 rounded-xl cursor-pointer transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3 group"
                 >
-                  <div className="flex items-start gap-3">
-                    <span className="w-6 h-6 rounded-full bg-slate-800 text-slate-300 flex items-center justify-center font-mono font-bold text-xs shrink-0 mt-0.5">
-                      #{idx + 1}
-                    </span>
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="text-[11px] font-mono text-emerald-400 font-bold">
-                          {issue.ticketNumber}
-                        </span>
-                        <span className="text-[11px] text-slate-500">•</span>
-                        <span className="text-[11px] font-medium text-slate-300 bg-slate-800/80 px-2 py-0.5 rounded">
-                          {dept?.code}
-                        </span>
-                        <span className="text-[11px] text-slate-400 flex items-center gap-1">
-                          <MapPin size={12} />
-                          {zone?.name || 'Kopargaon'}
-                        </span>
-                      </div>
-                      <h4 className="text-xs sm:text-sm font-semibold text-white group-hover:text-emerald-400 line-clamp-1">
-                        {issue.title}
-                      </h4>
-                      <p className="text-[11px] text-slate-400 line-clamp-1">
-                        {issue.rawDescription}
-                      </p>
+                  <div className="space-y-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono font-bold text-xs text-[#131b2e]">
+                        #{idx + 1} • {issue.ticketNumber}
+                      </span>
+                      <span className="text-[#76777d]">•</span>
+                      <span className="text-[11px] text-[#76777d] truncate">
+                        {issue.locationAddress}
+                      </span>
                     </div>
+                    <h3 className="font-bold text-xs text-[#1b1b1d] group-hover:text-blue-900 truncate">
+                      {issue.title}
+                    </h3>
                   </div>
 
-                  <div className="flex sm:flex-col items-center sm:items-end justify-between gap-2 shrink-0 border-t sm:border-t-0 border-slate-800/80 pt-2 sm:pt-0">
+                  <div className="flex items-center gap-2.5 shrink-0">
                     <PriorityBadge
                       score={issue.priorityScore?.finalScore}
                       confidence={issue.confidenceScore}
                       size="sm"
                     />
-                    <StatusBadge status={issue.status} size="sm" />
+                    <StatusBadge status={issue.status} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Right 1 Col: Department Daily Budgets & Readiness */}
+        <div className="bg-white border border-[#76777d]/20 rounded-2xl p-5 shadow-xs space-y-4">
+          <div className="border-b border-[#76777d]/15 pb-3">
+            <h2 className="font-bold text-sm text-[#1b1b1d] uppercase tracking-wider">
+              Department Daily Budgets
+            </h2>
+            <p className="text-[11px] text-[#76777d]">Shift 1 Financial & Resource Limits</p>
+          </div>
+
+          <div className="space-y-3 text-xs">
+            {departments.map((dept) => {
+              const deptIssues = issues.filter((i) => i.departmentId === dept.id);
+              const estBudgetSpent = deptIssues.reduce((acc, curr) => acc + (curr.estimatedCost || 0), 0);
+              const pct = Math.min(100, Math.round((estBudgetSpent / dept.dailyBudgetLimit) * 100));
+
+              return (
+                <div key={dept.id} className="space-y-1 p-2.5 bg-[#fcf8fa] rounded-xl border border-[#76777d]/10">
+                  <div className="flex justify-between items-center">
+                    <span className="font-bold text-[#1b1b1d]">{dept.name}</span>
+                    <span className="font-mono text-[11px] text-[#76777d]">
+                      ₹{estBudgetSpent.toLocaleString()} / ₹{dept.dailyBudgetLimit.toLocaleString()}
+                    </span>
+                  </div>
+                  <div className="w-full h-1.5 bg-[#eae7e9] rounded-full overflow-hidden">
+                    <div
+                      className={`h-full rounded-full transition-all ${
+                        pct > 80 ? 'bg-[#ba1a1a]' : 'bg-[#131b2e]'
+                      }`}
+                      style={{ width: `${pct}%` }}
+                    />
                   </div>
                 </div>
               );
             })}
           </div>
-        </div>
 
-        {/* Right 1 Col: Department Capacity & Resource Availability */}
-        <div className="space-y-6">
-          {/* Department Capacity */}
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-sm space-y-4">
-            <div className="flex items-center justify-between">
-              <h3 className="font-bold text-white text-sm">Department Daily Budgets</h3>
-              <span className="text-[11px] text-slate-400">Shift 1 Cap</span>
+          {/* Heavy Fleet Summary Card */}
+          <div className="pt-2 border-t border-[#76777d]/15">
+            <div className="flex justify-between items-center mb-2">
+              <span className="font-bold text-xs text-[#1b1b1d] uppercase tracking-wider">
+                Heavy Fleet Readiness
+              </span>
+              <span className="font-mono text-[11px] text-emerald-700 font-bold">
+                {operationalResources.length} Units Available
+              </span>
             </div>
-
-            <div className="space-y-3 text-xs">
-              {departments.map((dept) => {
-                const deptIssues = issues.filter(
-                  (i) => i.departmentId === dept.id && (i.status === 'scheduled' || i.status === 'in_progress')
-                );
-                const allocatedCost = deptIssues.reduce((sum, i) => sum + (i.estimatedCost || 0), 0);
-                const percent = Math.min(100, Math.round((allocatedCost / dept.dailyBudgetLimit) * 100));
-
-                return (
-                  <div key={dept.id} className="space-y-1">
-                    <div className="flex justify-between items-center text-slate-300">
-                      <span className="font-medium">{dept.name}</span>
-                      <span className="font-mono text-slate-400">
-                        ₹{allocatedCost.toLocaleString()} / ₹{dept.dailyBudgetLimit.toLocaleString()}
-                      </span>
-                    </div>
-                    <div className="w-full h-2 bg-slate-800 rounded-full overflow-hidden">
-                      <div
-                        className={`h-full rounded-full transition-all ${
-                          percent > 85
-                            ? 'bg-red-500'
-                            : percent > 60
-                            ? 'bg-amber-500'
-                            : 'bg-emerald-500'
-                        }`}
-                        style={{ width: `${percent}%` }}
-                      />
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Quick Equipment Readiness */}
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-sm space-y-3">
-            <div className="flex items-center justify-between">
-              <h3 className="font-bold text-white text-sm flex items-center gap-2">
-                <Truck size={16} className="text-emerald-400" />
-                <span>Heavy Fleet Readiness</span>
-              </h3>
-              <span className="text-[11px] text-slate-400">{resources.length} units</span>
-            </div>
-
-            <div className="divide-y divide-slate-800 text-xs">
-              {resources.slice(0, 4).map((r) => (
-                <div key={r.id} className="py-2 flex items-center justify-between">
-                  <div>
-                    <div className="font-medium text-slate-200">{r.name}</div>
-                    <div className="text-[10px] font-mono text-slate-500">{r.identifierCode}</div>
-                  </div>
+            <div className="space-y-1.5 text-xs">
+              {resources.map((r) => (
+                <div
+                  key={r.id}
+                  className="flex items-center justify-between p-2 bg-[#fcf8fa] rounded-lg border border-[#76777d]/10 text-[11px]"
+                >
+                  <span className="font-medium text-[#1b1b1d] truncate max-w-[180px]">{r.name}</span>
                   <span
-                    className={`text-[10px] font-mono px-2 py-0.5 rounded border capitalize ${
-                      r.currentStatus === 'available'
-                        ? 'bg-emerald-950 text-emerald-300 border-emerald-800'
-                        : r.currentStatus === 'allocated'
-                        ? 'bg-blue-950 text-blue-300 border-blue-800'
-                        : 'bg-amber-950 text-amber-300 border-amber-800'
+                    className={`px-2 py-0.5 rounded font-bold uppercase text-[9px] ${
+                      r.isOperational
+                        ? 'bg-emerald-100 text-emerald-800'
+                        : 'bg-red-100 text-red-800'
                     }`}
                   >
-                    {r.currentStatus}
+                    {r.isOperational ? 'Ready' : 'Maintenance'}
                   </span>
                 </div>
               ))}
             </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Analytics Breakdown Row: Ward & Department Distribution Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Ward Distribution */}
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-sm space-y-3">
-          <div className="flex items-center justify-between">
-            <h3 className="font-bold text-white text-sm">Issue Distribution by Kopargaon Ward</h3>
-            <span className="text-xs text-slate-400">Total 8 Wards</span>
-          </div>
-          <div className="h-56 w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={zoneData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                <XAxis dataKey="name" stroke="#64748b" fontSize={11} />
-                <YAxis stroke="#64748b" fontSize={11} />
-                <Tooltip
-                  contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', borderRadius: 8, fontSize: 12 }}
-                  formatter={(value: any, name: any, item: any) => [
-                    `${value} issues`,
-                    item.payload.fullName,
-                  ]}
-                />
-                <Bar dataKey="issues" fill="#059669" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-
-        {/* Department Workload */}
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-sm space-y-3">
-          <div className="flex items-center justify-between">
-            <h3 className="font-bold text-white text-sm">Active vs Resolved by Department</h3>
-            <span className="text-xs text-slate-400">5 Divisions</span>
-          </div>
-          <div className="h-56 w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={deptData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                <XAxis dataKey="name" stroke="#64748b" fontSize={11} />
-                <YAxis stroke="#64748b" fontSize={11} />
-                <Tooltip
-                  contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', borderRadius: 8, fontSize: 12 }}
-                />
-                <Bar dataKey="active" fill="#f59e0b" name="Active" stackId="a" radius={[0, 0, 0, 0]} />
-                <Bar dataKey="resolved" fill="#059669" name="Resolved" stackId="a" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
           </div>
         </div>
       </div>

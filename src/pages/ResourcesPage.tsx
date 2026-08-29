@@ -3,195 +3,153 @@ import { useCivic } from '../context/CivicContext';
 import { MunicipalResource, ResourceType } from '../types';
 import {
   Truck,
+  Users,
   Wrench,
   CheckCircle2,
-  AlertCircle,
+  AlertTriangle,
+  Clock,
   IndianRupee,
-  Users,
-  Plus,
-  RefreshCw,
-  Sliders,
-  Building2,
+  PlusCircle,
+  Activity,
+  Layers,
 } from 'lucide-react';
 
 export const ResourcesPage: React.FC = () => {
-  const { resources, departments, updateResource, userRole } = useCivic();
-  const [selectedDeptFilter, setSelectedDeptFilter] = useState<string>('all');
+  const { resources, departments, updateResource } = useCivic();
 
-  const filteredResources = resources.filter(
-    (r) => selectedDeptFilter === 'all' || r.departmentId === selectedDeptFilter
-  );
+  const [selectedDeptFilter, setSelectedDeptFilter] = useState<string>('all');
+  const [selectedTypeFilter, setSelectedTypeFilter] = useState<string>('all');
+
+  const filteredResources = resources.filter((res) => {
+    if (selectedDeptFilter !== 'all' && res.departmentId !== selectedDeptFilter) return false;
+    if (selectedTypeFilter !== 'all' && res.resourceType !== selectedTypeFilter) return false;
+    return true;
+  });
 
   const operationalCount = resources.filter((r) => r.isOperational).length;
-  const allocatedCount = resources.filter((r) => r.currentStatus === 'allocated').length;
-  const maintenanceCount = resources.filter((r) => !r.isOperational || r.currentStatus === 'maintenance').length;
-
-  const handleToggleOperational = (resource: MunicipalResource) => {
-    const nextOperational = !resource.isOperational;
-    updateResource(resource.id, {
-      isOperational: nextOperational,
-      currentStatus: nextOperational ? 'available' : 'maintenance',
-    });
-  };
-
-  const handleStatusChange = (resourceId: string, status: 'available' | 'allocated' | 'maintenance') => {
-    updateResource(resourceId, {
-      currentStatus: status,
-      isOperational: status !== 'maintenance',
-    });
-  };
+  const inUseCount = resources.filter((r) => r.currentStatus === 'allocated').length;
 
   return (
-    <div className="space-y-6">
-      {/* Header Banner */}
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <div className="space-y-5">
+      {/* Top Header */}
+      <div className="bg-white border border-[#76777d]/20 rounded-2xl p-5 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <span className="bg-blue-950 text-blue-300 border border-blue-800 text-[10px] font-mono uppercase font-bold px-2 py-0.5 rounded flex items-center gap-1">
-              <Truck size={12} /> Municipal Fleet & Assets
+            <span className="bg-blue-50 text-blue-800 border border-blue-200 text-[10px] font-mono uppercase font-bold px-2 py-0.5 rounded flex items-center gap-1">
+              <Truck size={12} /> Municipal Fleet Telematics
             </span>
-            <span className="text-xs text-slate-400">KMC Central Workshop & Depot</span>
+            <span className="text-xs text-[#76777d]">Shift 1 Inventory & Status</span>
           </div>
-          <h1 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
-            Municipal Resource & Equipment Inventory
+          <h1 className="text-xl sm:text-2xl font-bold text-[#1b1b1d] tracking-tight">
+            Fleet & Machinery Inventory
           </h1>
-          <p className="text-xs sm:text-sm text-slate-400 mt-1">
-            Track operational status of jetting machines, road rollers, tipper trucks, and technician shift capacity.
+          <p className="text-xs sm:text-sm text-[#57657b] mt-1">
+            Track operational readiness, daily deployment costs, and maintenance statuses of heavy civic machinery.
           </p>
         </div>
 
-        {/* Fleet Summary Stats */}
-        <div className="flex items-center gap-3 shrink-0">
-          <div className="bg-slate-950 border border-slate-800 px-3.5 py-2 rounded-xl text-xs">
-            <div className="text-slate-400 text-[10px]">Operational Fleet</div>
-            <div className="text-base font-mono font-bold text-emerald-400">
-              {operationalCount} / {resources.length}
+        <div className="flex items-center gap-2.5">
+          <span className="px-3 py-1.5 rounded-xl bg-emerald-50 text-emerald-800 border border-emerald-200 text-xs font-bold font-mono">
+            {operationalCount} / {resources.length} Units Ready
+          </span>
+        </div>
+      </div>
+
+      {/* KPI Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="bg-white p-4 rounded-xl border border-[#76777d]/20 shadow-xs flex items-center justify-between">
+          <div>
+            <span className="text-[11px] font-bold uppercase tracking-wider text-[#76777d]">Total Heavy Units</span>
+            <div className="text-2xl font-bold text-[#1b1b1d] font-mono mt-1">{resources.length} Vehicles</div>
+          </div>
+          <div className="p-2 rounded-xl bg-slate-100 text-[#131b2e]">
+            <Truck size={20} />
+          </div>
+        </div>
+
+        <div className="bg-white p-4 rounded-xl border border-[#76777d]/20 shadow-xs flex items-center justify-between">
+          <div>
+            <span className="text-[11px] font-bold uppercase tracking-wider text-[#76777d]">Operational Readiness</span>
+            <div className="text-2xl font-bold text-emerald-700 font-mono mt-1">
+              {Math.round((operationalCount / (resources.length || 1)) * 100)}%
             </div>
           </div>
-          <div className="bg-slate-950 border border-slate-800 px-3.5 py-2 rounded-xl text-xs">
-            <div className="text-slate-400 text-[10px]">In Maintenance</div>
-            <div className="text-base font-mono font-bold text-amber-400">{maintenanceCount}</div>
+          <div className="p-2 rounded-xl bg-emerald-50 text-emerald-700">
+            <CheckCircle2 size={20} />
+          </div>
+        </div>
+
+        <div className="bg-white p-4 rounded-xl border border-[#76777d]/20 shadow-xs flex items-center justify-between">
+          <div>
+            <span className="text-[11px] font-bold uppercase tracking-wider text-[#76777d]">Currently Dispatched</span>
+            <div className="text-2xl font-bold text-blue-700 font-mono mt-1">{inUseCount} Units</div>
+          </div>
+          <div className="p-2 rounded-xl bg-blue-50 text-blue-700">
+            <Activity size={20} />
           </div>
         </div>
       </div>
 
-      {/* Filter Tabs */}
-      <div className="flex items-center gap-2 overflow-x-auto text-xs pb-1">
-        <button
-          onClick={() => setSelectedDeptFilter('all')}
-          className={`px-3 py-2 rounded-xl font-semibold transition-all ${
-            selectedDeptFilter === 'all'
-              ? 'bg-emerald-600 text-white shadow-md'
-              : 'bg-slate-900 text-slate-400 hover:text-white border border-slate-800'
-          }`}
-        >
-          All Departments ({resources.length})
-        </button>
-        {departments.map((d) => (
-          <button
-            key={d.id}
-            onClick={() => setSelectedDeptFilter(d.id)}
-            className={`px-3 py-2 rounded-xl font-semibold transition-all ${
-              selectedDeptFilter === d.id
-                ? 'bg-emerald-600 text-white shadow-md'
-                : 'bg-slate-900 text-slate-400 hover:text-white border border-slate-800'
-            }`}
-          >
-            {d.code} ({resources.filter((r) => r.departmentId === d.id).length})
-          </button>
-        ))}
-      </div>
-
-      {/* Resource Cards Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-        {filteredResources.map((res) => {
-          const dept = departments.find((d) => d.id === res.departmentId);
-
-          return (
-            <div
-              key={res.id}
-              className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-sm space-y-4 hover:border-slate-700 transition-all"
+      {/* Resources Table */}
+      <div className="bg-white border border-[#76777d]/20 rounded-2xl overflow-hidden shadow-xs">
+        <div className="p-4 border-b border-[#76777d]/15 flex justify-between items-center bg-[#fcf8fa]">
+          <h2 className="font-bold text-xs uppercase tracking-wider text-[#1b1b1d]">
+            Municipal Equipment Register
+          </h2>
+          <div className="flex gap-2 text-xs">
+            <select
+              value={selectedDeptFilter}
+              onChange={(e) => setSelectedDeptFilter(e.target.value)}
+              className="bg-white border border-[#76777d]/20 rounded-lg px-2.5 py-1 text-[#1b1b1d] font-medium"
             >
-              <div className="flex items-start justify-between gap-2">
-                <div>
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="font-mono text-xs font-bold text-emerald-400 bg-slate-950 px-2 py-0.5 rounded border border-slate-800">
-                      {res.identifierCode}
-                    </span>
-                    <span className="text-[11px] text-slate-400 font-medium">{dept?.code}</span>
+              <option value="all">All Departments</option>
+              {departments.map((d) => (
+                <option key={d.id} value={d.id}>{d.code}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        <div className="divide-y divide-[#76777d]/15">
+          {filteredResources.map((res) => {
+            const dept = departments.find((d) => d.id === res.departmentId);
+
+            return (
+              <div
+                key={res.id}
+                className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-slate-50 transition-colors text-xs"
+              >
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <span className="font-mono font-bold text-[#131b2e]">{res.identifierCode}</span>
+                    <span className="text-[#76777d]">•</span>
+                    <span className="text-blue-700 font-bold">{dept?.code || 'KMC'}</span>
                   </div>
-                  <h3 className="font-bold text-white text-sm">{res.name}</h3>
+                  <h3 className="font-bold text-sm text-[#1b1b1d]">{res.name}</h3>
+                  <p className="text-[#57657b] text-xs">{res.capacityDescription}</p>
                 </div>
 
-                <div className="shrink-0">
-                  <span
-                    className={`inline-flex items-center gap-1 text-[10px] font-mono font-bold px-2 py-0.5 rounded-full border capitalize ${
-                      res.currentStatus === 'available'
-                        ? 'bg-emerald-950 text-emerald-300 border-emerald-800'
-                        : res.currentStatus === 'allocated'
-                        ? 'bg-blue-950 text-blue-300 border-blue-800'
-                        : 'bg-amber-950 text-amber-300 border-amber-800'
-                    }`}
-                  >
-                    <span
-                      className={`w-1.5 h-1.5 rounded-full ${
-                        res.currentStatus === 'available'
-                          ? 'bg-emerald-400'
-                          : res.currentStatus === 'allocated'
-                          ? 'bg-blue-400'
-                          : 'bg-amber-400'
-                      }`}
-                    />
-                    {res.currentStatus}
-                  </span>
-                </div>
-              </div>
-
-              <p className="text-xs text-slate-400 leading-relaxed bg-slate-950/60 p-2.5 rounded-xl border border-slate-800">
-                {res.capacityDescription}
-              </p>
-
-              <div className="grid grid-cols-2 gap-2 text-xs border-t border-slate-800/80 pt-3">
-                <div>
-                  <span className="text-[10px] text-slate-500 block">Daily Cost Rate:</span>
-                  <span className="font-mono font-semibold text-white">₹{res.dailyCostRate.toLocaleString()}</span>
-                </div>
-                <div>
-                  <span className="text-[10px] text-slate-500 block">Health / Readiness:</span>
-                  <span className={`font-semibold ${res.isOperational ? 'text-emerald-400' : 'text-rose-400'}`}>
-                    {res.isOperational ? 'Ready for Dispatch' : 'Workshop Repair'}
-                  </span>
-                </div>
-              </div>
-
-              {/* Status Controls for Officers & Admins */}
-              {(userRole === 'officer' || userRole === 'admin') && (
-                <div className="pt-2 border-t border-slate-800 flex items-center justify-between gap-2 text-xs">
-                  <select
-                    value={res.currentStatus}
-                    onChange={(e) => handleStatusChange(res.id, e.target.value as any)}
-                    className="bg-slate-950 border border-slate-700 text-slate-200 text-xs rounded-lg px-2.5 py-1.5 font-medium focus:ring-1 focus:ring-emerald-500"
-                  >
-                    <option value="available">Available in Depot</option>
-                    <option value="allocated">Allocated to Shift</option>
-                    <option value="maintenance">Under Maintenance</option>
-                  </select>
+                <div className="flex items-center gap-4 shrink-0 font-mono">
+                  <div className="text-right">
+                    <div className="font-bold text-[#1b1b1d]">₹{res.dailyCostRate.toLocaleString()}</div>
+                    <div className="text-[10px] text-[#76777d]">daily rate</div>
+                  </div>
 
                   <button
-                    onClick={() => handleToggleOperational(res)}
-                    className={`px-2.5 py-1.5 rounded-lg font-medium text-[11px] transition-colors ${
+                    onClick={() => updateResource(res.id, { isOperational: !res.isOperational })}
+                    className={`px-3 py-1.5 rounded-lg font-bold uppercase text-[10px] transition-colors ${
                       res.isOperational
-                        ? 'bg-slate-800 hover:bg-slate-700 text-slate-300'
-                        : 'bg-emerald-600 hover:bg-emerald-500 text-white'
+                        ? 'bg-emerald-100 hover:bg-emerald-200 text-emerald-800'
+                        : 'bg-red-100 hover:bg-red-200 text-red-800'
                     }`}
                   >
-                    {res.isOperational ? 'Mark Down' : 'Mark Ready'}
+                    {res.isOperational ? 'Operational' : 'In Maintenance'}
                   </button>
                 </div>
-              )}
-            </div>
-          );
-        })}
+              </div>
+            );
+          })}
+        </div>
       </div>
     </div>
   );

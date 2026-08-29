@@ -68,276 +68,225 @@ export const SettingsPage: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       {/* Header */}
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="bg-white border border-[#76777d]/20 rounded-2xl p-5 sm:p-6 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <span className="bg-emerald-950 text-emerald-300 border border-emerald-800 text-[10px] font-mono uppercase font-bold px-2 py-0.5 rounded flex items-center gap-1">
+            <span className="bg-slate-100 text-[#131b2e] border border-slate-300 text-[10px] font-mono uppercase font-bold px-2 py-0.5 rounded flex items-center gap-1">
               <Settings size={12} /> Council Administration
             </span>
-            <span className="text-xs text-slate-400">Deterministic Engine Tuning & Ledger</span>
+            <span className="text-xs text-[#76777d]">Deterministic Engine Tuning & Ledger</span>
           </div>
-          <h1 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
+          <h1 className="text-xl sm:text-2xl font-bold text-[#1b1b1d] tracking-tight">
             Settings, Priority Weights & Audit Ledger
           </h1>
-          <p className="text-xs sm:text-sm text-slate-400 mt-1">
+          <p className="text-xs sm:text-sm text-[#57657b] mt-1">
             Configure mathematical formula weighting parameters and inspect the permanent municipal audit ledger.
           </p>
         </div>
 
         {/* Tab Switcher */}
-        <div className="bg-slate-950 p-1 rounded-xl border border-slate-800 flex items-center text-xs shrink-0">
+        <div className="bg-[#f0edef] p-1 rounded-xl border border-[#76777d]/15 flex items-center text-xs shrink-0">
           <button
             onClick={() => setActiveTab('weights')}
-            className={`px-4 py-2 rounded-lg font-semibold transition-all flex items-center gap-1.5 ${
+            className={`px-4 py-2 rounded-lg font-bold uppercase text-[11px] tracking-wider transition-all flex items-center gap-1.5 ${
               activeTab === 'weights'
-                ? 'bg-emerald-600 text-white shadow-sm'
-                : 'text-slate-400 hover:text-slate-200'
+                ? 'bg-[#131b2e] text-white shadow-xs'
+                : 'text-[#57657b] hover:text-[#1b1b1d]'
             }`}
           >
             <Sliders size={14} />
-            <span>Priority Formula Weights</span>
+            <span>Formula Weights</span>
           </button>
           <button
             onClick={() => setActiveTab('audit')}
-            className={`px-4 py-2 rounded-lg font-semibold transition-all flex items-center gap-1.5 ${
+            className={`px-4 py-2 rounded-lg font-bold uppercase text-[11px] tracking-wider transition-all flex items-center gap-1.5 ${
               activeTab === 'audit'
-                ? 'bg-purple-600 text-white shadow-sm'
-                : 'text-slate-400 hover:text-slate-200'
+                ? 'bg-[#131b2e] text-white shadow-xs'
+                : 'text-[#57657b] hover:text-[#1b1b1d]'
             }`}
           >
             <History size={14} />
-            <span>Audit Ledger ({auditLogs.length})</span>
+            <span>Audit Ledger</span>
           </button>
         </div>
       </div>
 
-      {/* TAB 1: FORMULA WEIGHTS */}
       {activeTab === 'weights' && (
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-sm space-y-6">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800 pb-4">
-            <div>
-              <h2 className="font-bold text-white text-base">Deterministic Formula Parameter Tuning</h2>
-              <p className="text-xs text-slate-400">
-                Formula: S = w_sev*S_sev + w_urg*S_urg + w_pop*S_pop + w_loc*S_loc + w_esc*S_esc - Penalty
-              </p>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-slate-400">Weights Sum:</span>
-              <span
-                className={`font-mono font-bold text-sm px-2.5 py-1 rounded-lg border ${
-                  isValidSum
-                    ? 'bg-emerald-950 text-emerald-300 border-emerald-800'
-                    : 'bg-red-950 text-red-300 border-red-800'
-                }`}
-              >
-                {(totalWeight * 100).toFixed(0)}% / 100%
-              </span>
-            </div>
-          </div>
-
-          {saveSuccess && (
-            <div className="p-3 bg-emerald-950/60 border border-emerald-800 rounded-xl text-emerald-200 text-xs flex items-center gap-2">
-              <CheckCircle2 size={16} className="text-emerald-400" />
-              <span>
-                Weights updated successfully! Deterministic priority scores recomputed across all active issues.
-              </span>
-            </div>
-          )}
-
-          <form onSubmit={handleSaveWeights} className="space-y-6 text-xs">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Severity Weight */}
-              <div className="bg-slate-950/60 p-4 rounded-xl border border-slate-800 space-y-2">
-                <div className="flex justify-between items-center">
-                  <span className="font-semibold text-slate-200">Severity / Public Risk (w_sev):</span>
-                  <span className="font-mono text-emerald-400 font-bold text-sm">{(sev * 100).toFixed(0)}%</span>
-                </div>
-                <input
-                  type="range"
-                  min="0.05"
-                  max="0.70"
-                  step="0.05"
-                  value={sev}
-                  onChange={(e) => setSev(Number(e.target.value))}
-                  className="w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-emerald-500"
-                />
-                <p className="text-[10px] text-slate-500">
-                  Relative importance of health, life-threatening, or structural risks.
-                </p>
-              </div>
-
-              {/* Urgency Weight */}
-              <div className="bg-slate-950/60 p-4 rounded-xl border border-slate-800 space-y-2">
-                <div className="flex justify-between items-center">
-                  <span className="font-semibold text-slate-200">SLA Urgency Time Decay (w_urg):</span>
-                  <span className="font-mono text-amber-400 font-bold text-sm">{(urg * 100).toFixed(0)}%</span>
-                </div>
-                <input
-                  type="range"
-                  min="0.05"
-                  max="0.50"
-                  step="0.05"
-                  value={urg}
-                  onChange={(e) => setUrg(Number(e.target.value))}
-                  className="w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-amber-500"
-                />
-                <p className="text-[10px] text-slate-500">
-                  Rate at which priority accelerates as departmental SLA deadline nears.
-                </p>
-              </div>
-
-              {/* Population Weight */}
-              <div className="bg-slate-950/60 p-4 rounded-xl border border-slate-800 space-y-2">
-                <div className="flex justify-between items-center">
-                  <span className="font-semibold text-slate-200">Affected Population Spread (w_pop):</span>
-                  <span className="font-mono text-blue-400 font-bold text-sm">{(pop * 100).toFixed(0)}%</span>
-                </div>
-                <input
-                  type="range"
-                  min="0.05"
-                  max="0.40"
-                  step="0.05"
-                  value={pop}
-                  onChange={(e) => setPop(Number(e.target.value))}
-                  className="w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-blue-500"
-                />
-                <p className="text-[10px] text-slate-500">
-                  Logarithmic scaling factor based on number of residents impacted.
-                </p>
-              </div>
-
-              {/* Zone Risk Multiplier */}
-              <div className="bg-slate-950/60 p-4 rounded-xl border border-slate-800 space-y-2">
-                <div className="flex justify-between items-center">
-                  <span className="font-semibold text-slate-200">Ward Critical Multiplier (w_loc):</span>
-                  <span className="font-mono text-purple-400 font-bold text-sm">{(loc * 100).toFixed(0)}%</span>
-                </div>
-                <input
-                  type="range"
-                  min="0.05"
-                  max="0.30"
-                  step="0.05"
-                  value={loc}
-                  onChange={(e) => setLoc(Number(e.target.value))}
-                  className="w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-purple-500"
-                />
-                <p className="text-[10px] text-slate-500">
-                  Weight given to critical hospital, school, market, and temple zones.
-                </p>
-              </div>
-
-              {/* Escalation Weight */}
-              <div className="bg-slate-950/60 p-4 rounded-xl border border-slate-800 space-y-2">
-                <div className="flex justify-between items-center">
-                  <span className="font-semibold text-slate-200">Repeat Escalation Reports (w_esc):</span>
-                  <span className="font-mono text-orange-400 font-bold text-sm">{(esc * 100).toFixed(0)}%</span>
-                </div>
-                <input
-                  type="range"
-                  min="0.05"
-                  max="0.30"
-                  step="0.05"
-                  value={esc}
-                  onChange={(e) => setEsc(Number(e.target.value))}
-                  className="w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-orange-500"
-                />
-                <p className="text-[10px] text-slate-500">
-                  Boost applied when multiple unique citizen complaints are logged in same cluster.
-                </p>
-              </div>
-
-              {/* Confidence Penalty Max */}
-              <div className="bg-slate-950/60 p-4 rounded-xl border border-red-950/50 space-y-2">
-                <div className="flex justify-between items-center">
-                  <span className="font-semibold text-slate-200">Max Confidence Deduction (pts):</span>
-                  <span className="font-mono text-red-400 font-bold text-sm">-{penaltyMax} pts</span>
-                </div>
-                <input
-                  type="range"
-                  min="5"
-                  max="35"
-                  step="5"
-                  value={penaltyMax}
-                  onChange={(e) => setPenaltyMax(Number(e.target.value))}
-                  className="w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-red-500"
-                />
-                <p className="text-[10px] text-slate-500">
-                  Penalty deducted when citizen submission lacks photos or exact GPS coordinates.
-                </p>
-              </div>
-            </div>
-
-            {/* Action Bar */}
-            <div className="flex justify-between items-center pt-4 border-t border-slate-800">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+          {/* Form Controls (2 Cols) */}
+          <div className="lg:col-span-2 bg-white border border-[#76777d]/20 rounded-2xl p-5 sm:p-6 shadow-xs space-y-4">
+            <div className="flex items-center justify-between border-b border-[#76777d]/15 pb-3">
+              <h2 className="font-bold text-sm uppercase tracking-wider text-[#1b1b1d]">
+                Mathematical Factor Weight Configuration
+              </h2>
               <button
                 type="button"
                 onClick={handleResetDefaults}
-                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl font-medium transition-colors flex items-center gap-1.5"
+                className="text-xs text-blue-700 font-bold hover:underline flex items-center gap-1"
               >
-                <RotateCcw size={14} />
-                <span>Reset Standard Defaults</span>
-              </button>
-
-              <button
-                type="submit"
-                disabled={!isValidSum}
-                className={`px-6 py-2.5 rounded-xl font-bold transition-all flex items-center gap-2 shadow-lg ${
-                  isValidSum
-                    ? 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-950'
-                    : 'bg-slate-800 text-slate-500 cursor-not-allowed'
-                }`}
-              >
-                <Save size={15} />
-                <span>Save & Recalculate Live Scores</span>
+                <RotateCcw size={13} />
+                <span>Reset Standard Model</span>
               </button>
             </div>
-          </form>
+
+            {saveSuccess && (
+              <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-800 text-xs font-bold flex items-center gap-2">
+                <CheckCircle2 size={16} />
+                <span>Priority formula weights updated and all civic scores recalculated!</span>
+              </div>
+            )}
+
+            <form onSubmit={handleSaveWeights} className="space-y-4 text-xs">
+              {/* Sliders */}
+              <div className="space-y-3">
+                <div className="space-y-1">
+                  <div className="flex justify-between font-bold">
+                    <span className="text-[#1b1b1d]">1. Base Severity Weight (\(W_{sev}\)):</span>
+                    <span className="font-mono text-blue-800 font-bold">{(sev * 100).toFixed(0)}%</span>
+                  </div>
+                  <input
+                    type="range"
+                    min={0.1}
+                    max={0.7}
+                    step={0.05}
+                    value={sev}
+                    onChange={(e) => setSev(Number(e.target.value))}
+                    className="w-full h-1.5 bg-[#eae7e9] rounded-lg cursor-pointer accent-[#131b2e]"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <div className="flex justify-between font-bold">
+                    <span className="text-[#1b1b1d]">2. SLA Urgency Weight (\(W_{urg}\)):</span>
+                    <span className="font-mono text-blue-800 font-bold">{(urg * 100).toFixed(0)}%</span>
+                  </div>
+                  <input
+                    type="range"
+                    min={0.1}
+                    max={0.6}
+                    step={0.05}
+                    value={urg}
+                    onChange={(e) => setUrg(Number(e.target.value))}
+                    className="w-full h-1.5 bg-[#eae7e9] rounded-lg cursor-pointer accent-[#131b2e]"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <div className="flex justify-between font-bold">
+                    <span className="text-[#1b1b1d]">3. Population Impact Weight (\(W_{pop}\)):</span>
+                    <span className="font-mono text-blue-800 font-bold">{(pop * 100).toFixed(0)}%</span>
+                  </div>
+                  <input
+                    type="range"
+                    min={0.05}
+                    max={0.5}
+                    step={0.05}
+                    value={pop}
+                    onChange={(e) => setPop(Number(e.target.value))}
+                    className="w-full h-1.5 bg-[#eae7e9] rounded-lg cursor-pointer accent-[#131b2e]"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <div className="flex justify-between font-bold">
+                    <span className="text-[#1b1b1d]">4. Location Vulnerability Weight (\(W_{loc}\)):</span>
+                    <span className="font-mono text-blue-800 font-bold">{(loc * 100).toFixed(0)}%</span>
+                  </div>
+                  <input
+                    type="range"
+                    min={0.05}
+                    max={0.4}
+                    step={0.05}
+                    value={loc}
+                    onChange={(e) => setLoc(Number(e.target.value))}
+                    className="w-full h-1.5 bg-[#eae7e9] rounded-lg cursor-pointer accent-[#131b2e]"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <div className="flex justify-between font-bold">
+                    <span className="text-[#1b1b1d]">5. Citizen Escalation Multiplier Weight (\(W_{esc}\)):</span>
+                    <span className="font-mono text-blue-800 font-bold">{(esc * 100).toFixed(0)}%</span>
+                  </div>
+                  <input
+                    type="range"
+                    min={0.05}
+                    max={0.4}
+                    step={0.05}
+                    value={esc}
+                    onChange={(e) => setEsc(Number(e.target.value))}
+                    className="w-full h-1.5 bg-[#eae7e9] rounded-lg cursor-pointer accent-[#131b2e]"
+                  />
+                </div>
+              </div>
+
+              {/* Total Sum Validator */}
+              <div className={`p-3 rounded-xl border flex items-center justify-between ${
+                isValidSum
+                  ? 'bg-emerald-50 border-emerald-200 text-emerald-900 font-bold'
+                  : 'bg-red-50 border-red-200 text-red-900 font-bold'
+              }`}>
+                <span>Total Factor Weight Sum:</span>
+                <span className="font-mono">{totalWeight.toFixed(2)} / 1.00</span>
+              </div>
+
+              <div className="pt-2 flex justify-end">
+                <button
+                  type="submit"
+                  disabled={!isValidSum}
+                  className="px-6 py-2.5 bg-[#131b2e] hover:bg-[#1e2a47] disabled:opacity-50 text-white rounded-xl font-bold text-xs shadow-xs transition-all uppercase tracking-wider flex items-center gap-2"
+                >
+                  <Save size={14} />
+                  <span>Save Formula & Recalculate</span>
+                </button>
+              </div>
+            </form>
+          </div>
+
+          {/* Formula Reference Card (1 Col) */}
+          <div className="bg-white border border-[#76777d]/20 rounded-2xl p-5 shadow-xs space-y-4">
+            <h3 className="font-bold text-xs uppercase tracking-wider text-[#1b1b1d] border-b border-[#76777d]/15 pb-3">
+              Mathematical Formula Model
+            </h3>
+            <div className="p-3 bg-[#fcf8fa] border border-[#76777d]/15 rounded-xl text-xs space-y-2 font-mono text-[#1b1b1d]">
+              <div className="text-[11px] font-bold text-blue-800">
+                Score = W_sev·Sev + W_urg·Urg + W_pop·Pop + W_loc·Loc + W_esc·Esc - Penalty
+              </div>
+              <p className="text-[10px] text-[#57657b] font-sans">
+                Every ticket's priority score is strictly computed via this transparent linear combination formula.
+              </p>
+            </div>
+          </div>
         </div>
       )}
 
-      {/* TAB 2: AUDIT LOGS LEDGER */}
+      {/* Audit Ledger Tab */}
       {activeTab === 'audit' && (
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-sm space-y-4 p-6">
-          <div className="flex items-center justify-between border-b border-slate-800 pb-4">
-            <div>
-              <h2 className="font-bold text-white text-base flex items-center gap-2">
-                <Lock size={16} className="text-purple-400" />
-                <span>Immutable Municipal Audit Trail</span>
-              </h2>
-              <p className="text-xs text-slate-400">
-                Permanent ledger recording every priority override, allocation plan authorization, and system action.
-              </p>
-            </div>
-            <span className="text-xs font-mono text-slate-400 bg-slate-950 px-2.5 py-1 rounded border border-slate-800">
-              {auditLogs.length} Events
-            </span>
+        <div className="bg-white border border-[#76777d]/20 rounded-2xl overflow-hidden shadow-xs">
+          <div className="p-4 border-b border-[#76777d]/15 bg-[#fcf8fa]">
+            <h2 className="font-bold text-xs uppercase tracking-wider text-[#1b1b1d]">
+              Permanent Municipal Audit Trail
+            </h2>
           </div>
 
-          <div className="divide-y divide-slate-800/80 max-h-[650px] overflow-y-auto text-xs">
-            {auditLogs.map((log) => (
-              <div key={log.id} className="py-3.5 space-y-1 hover:bg-slate-850 px-2 rounded-lg transition-colors">
-                <div className="flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="font-mono text-purple-400 font-bold bg-purple-950/60 border border-purple-900/60 px-2 py-0.5 rounded text-[10px]">
-                      {log.action}
-                    </span>
-                    <span className="text-slate-500">•</span>
-                    <span className="font-semibold text-slate-200">{log.actorName}</span>
-                    <span className="text-slate-400 capitalize">({log.actorRole})</span>
+          <div className="divide-y divide-[#76777d]/15 text-xs">
+            {auditLogs.length === 0 ? (
+              <div className="p-10 text-center text-[#76777d]">No audit records logged yet.</div>
+            ) : (
+              auditLogs.map((log) => (
+                <div key={log.id} className="p-4 flex items-center justify-between hover:bg-slate-50 transition-colors">
+                  <div className="space-y-0.5">
+                    <span className="font-bold text-[#1b1b1d]">{log.action}</span>
+                    <p className="text-[#57657b] text-[11px]">{log.entityType} • {log.actorName}</p>
                   </div>
-                  <span className="text-[11px] text-slate-500 font-mono">
+                  <span className="text-[10px] text-[#76777d] font-mono">
                     {new Date(log.createdAt).toLocaleString()}
                   </span>
                 </div>
-
-                <div className="bg-slate-950/80 p-2.5 rounded-lg border border-slate-800/60 font-mono text-[11px] text-slate-300 overflow-x-auto">
-                  {JSON.stringify(log.details, null, 2)}
-                </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         </div>
       )}

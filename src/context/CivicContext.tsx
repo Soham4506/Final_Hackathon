@@ -12,6 +12,17 @@ import {
   AuditLog, 
   NotificationItem,
   IssueStatus,
+  TreatmentPlant,
+  WasteStreamSource,
+  AgriculturalCommandZone,
+  WastewaterBatch,
+  QualityCheckSample,
+  FarmerBooking,
+  WaterReusePlan,
+  CircularEconomyMetrics,
+  WastewaterWorkflowStage,
+  WaterQualityParameters,
+  DistributionMethod,
 } from '../types';
 import { 
   INITIAL_ZONES, 
@@ -23,12 +34,25 @@ import {
   INITIAL_AUDIT_LOGS,
   INITIAL_NOTIFICATIONS
 } from '../data/mockData';
+import {
+  INITIAL_TREATMENT_PLANTS,
+  INITIAL_WASTE_SOURCES,
+  INITIAL_COMMAND_ZONES,
+  INITIAL_WASTEWATER_BATCHES,
+  INITIAL_QUALITY_SAMPLES,
+  INITIAL_FARMER_BOOKINGS,
+  INITIAL_WATER_REUSE_PLANS,
+  INITIAL_CIRCULAR_METRICS,
+} from '../data/wastewaterMockData';
 import { PriorityEngine } from '../services/priorityEngine';
 import { AllocationEngine, ResourceDeficitReport } from '../services/allocationEngine';
 import { AIIntakeParser } from '../services/aiIntakeParser';
 import { MultiStrategyEngine, AllocationStrategy, StrategyComparisonMetric } from '../services/multiStrategyEngine';
+import { WaterQualityEngine } from '../services/waterQualityEngine';
+import { ReuseAllocationEngine } from '../services/reuseAllocationEngine';
 import { Language, DICTIONARY, Translations } from '../services/localizationService';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
+
 
 const DEFAULT_GUEST_USER: UserProfile = {
   id: 'usr-guest',
@@ -55,6 +79,25 @@ interface CivicContextType {
 
   // Supabase Live Status
   isSupabaseLive: boolean;
+
+  // Circular Wastewater-to-Agriculture State
+  treatmentPlants: TreatmentPlant[];
+  wasteSources: WasteStreamSource[];
+  commandZones: AgriculturalCommandZone[];
+  wastewaterBatches: WastewaterBatch[];
+  qualitySamples: QualityCheckSample[];
+  farmerBookings: FarmerBooking[];
+  waterReusePlans: WaterReusePlan[];
+  circularMetrics: CircularEconomyMetrics;
+
+  // Circular Wastewater Actions
+  advanceWastewaterStage: (batchId: string, nextStage?: WastewaterWorkflowStage) => void;
+  recordQualityCheck: (batchId: string, customParams?: Partial<WaterQualityParameters>) => QualityCheckSample;
+  generateWaterReusePlan: (batchId: string, preferredDistribution?: DistributionMethod) => WaterReusePlan;
+  approveWaterReusePlan: (planId: string, officerNotes?: string) => void;
+  submitFarmerBooking: (booking: Omit<FarmerBooking, 'id' | 'bookingNumber' | 'status' | 'submittedAt'>) => FarmerBooking;
+  reprocessBatch: (batchId: string) => void;
+  createWastewaterBatch: (wardIds: string[], volumeKLD: number, plantId: string) => WastewaterBatch;
 
   // Master Data
   zones: Zone[];
@@ -172,32 +215,55 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [resources, setResources] = useState<MunicipalResource[]>(() =>
     getStored('resources', INITIAL_RESOURCES)
   );
-  const [auditLogs, setAuditLogs] = useState<AuditLog[]>(() => {
-    const stored = getStored<AuditLog[] | null>('audit_logs', null);
-    if (!stored || !Array.isArray(stored)) return [];
-    return stored.filter((l) => !l.details?.mock);
-  });
-  const [notifications, setNotifications] = useState<NotificationItem[]>(() => {
-    const stored = getStored<NotificationItem[] | null>('notifications', null);
-    if (!stored || !Array.isArray(stored)) return [];
-    return stored.filter((n) => !n.ticketNumber?.startsWith('KMC-2026-0010'));
-  });
-  const [activePlans, setActivePlans] = useState<AllocationPlan[]>(() => {
-    const stored = getStored<AllocationPlan[] | null>('active_plans', null);
-    if (!stored || !Array.isArray(stored)) return [];
-    return stored.filter((p) => !p.planCode?.startsWith('PLAN-2026-001'));
-  });
+  const [auditLogs, setAuditLogs] = useState<AuditLog[]>(() =>
+    getStored('audit_logs', INITIAL_AUDIT_LOGS)
+  );
+  const [notifications, setNotifications] = useState<NotificationItem[]>(() =>
+    getStored('notifications', INITIAL_NOTIFICATIONS)
+  );
+  const [activePlans, setActivePlans] = useState<AllocationPlan[]>(() =>
+    getStored('active_plans', [])
+  );
 
-  // Issues start clean - filter out any legacy mock tickets
+  // Circular Wastewater State
+  const [treatmentPlants, setTreatmentPlants] = useState<TreatmentPlant[]>(() =>
+    getStored('treatment_plants', INITIAL_TREATMENT_PLANTS)
+  );
+  const [wasteSources, setWasteSources] = useState<WasteStreamSource[]>(() =>
+    getStored('waste_sources', INITIAL_WASTE_SOURCES)
+  );
+  const [commandZones, setCommandZones] = useState<AgriculturalCommandZone[]>(() =>
+    getStored('command_zones', INITIAL_COMMAND_ZONES)
+  );
+  const [wastewaterBatches, setWastewaterBatches] = useState<WastewaterBatch[]>(() =>
+    getStored('wastewater_batches', INITIAL_WASTEWATER_BATCHES)
+  );
+  const [qualitySamples, setQualitySamples] = useState<QualityCheckSample[]>(() =>
+    getStored('quality_samples', INITIAL_QUALITY_SAMPLES)
+  );
+  const [farmerBookings, setFarmerBookings] = useState<FarmerBooking[]>(() =>
+    getStored('farmer_bookings', INITIAL_FARMER_BOOKINGS)
+  );
+  const [waterReusePlans, setWaterReusePlans] = useState<WaterReusePlan[]>(() =>
+    getStored('water_reuse_plans', INITIAL_WATER_REUSE_PLANS)
+  );
+  const [circularMetrics, setCircularMetrics] = useState<CircularEconomyMetrics>(() =>
+    getStored('circular_metrics', INITIAL_CIRCULAR_METRICS)
+  );
+
+  // Issues start clean
   const [issues, setIssues] = useState<CivicIssue[]>(() => {
     const stored = getStored<CivicIssue[] | null>('issues', null);
-    if (!stored || !Array.isArray(stored)) return [];
-    const realOnly = stored.filter((i) => !i.ticketNumber?.startsWith('KMC-2026-0010'));
-    if (realOnly.length !== stored.length) {
-      localStorage.setItem('civicpulse_issues', JSON.stringify(realOnly));
-      return realOnly;
-    }
-    return stored;
+    const baseIssues = stored || INITIAL_ISSUES;
+    return baseIssues.map((issue) => {
+      const cat = INITIAL_CATEGORIES.find((c) => c.id === issue.categoryId) || INITIAL_CATEGORIES[0];
+      const zone = INITIAL_ZONES.find((z) => z.id === issue.zoneId) || INITIAL_ZONES[0];
+      const score = PriorityEngine.calculateScore(issue, cat, zone, INITIAL_WEIGHT_CONFIG);
+      return {
+        ...issue,
+        priorityScore: issue.priorityScore || score,
+      };
+    });
   });
 
   // Login method: Sets actual user profile immediately and persists session
@@ -224,75 +290,64 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       const loadSupabaseData = async () => {
         try {
           const { data: dbIssues, error: issuesErr } = await supabase.from('issues').select('*');
-          if (!issuesErr) {
-            if (dbIssues && dbIssues.length > 0) {
-              setIssues(
-                dbIssues.map((dbIss: any) => {
-                  const cat = categories.find((c) => c.id === dbIss.category_id) || categories[0];
-                  const zone = zones.find((z) => z.id === dbIss.zone_id) || zones[0];
-                  const issueObj: CivicIssue = {
-                    id: dbIss.id,
-                    ticketNumber: dbIss.ticket_number,
-                    citizenId: dbIss.citizen_id,
-                    categoryId: dbIss.category_id,
-                    departmentId: dbIss.department_id,
-                    zoneId: dbIss.zone_id,
-                    title: dbIss.title,
-                    rawDescription: dbIss.raw_description,
-                    locationAddress: dbIss.location_address,
-                    latitude: Number(dbIss.latitude),
-                    longitude: Number(dbIss.longitude),
-                    photoUrls: dbIss.photo_urls || [],
-                    structuredData: dbIss.structured_data || {},
-                    affectedPopulationEstimate: dbIss.affected_population_estimate,
-                    confidenceScore: Number(dbIss.confidence_score),
-                    missingAttributes: dbIss.missing_attributes || [],
-                    status: dbIss.status,
-                    urgency: dbIss.urgency,
-                    estimatedCost: Number(dbIss.estimated_cost),
-                    estimatedHours: Number(dbIss.estimated_hours),
-                    requiredStaffCount: dbIss.required_staff_count,
-                    requiredEquipment: dbIss.required_equipment,
-                    reportedAt: dbIss.reported_at,
-                    slaDueAt: dbIss.sla_due_at,
-                    resolvedAt: dbIss.resolved_at,
-                    escalationCount: dbIss.escalation_count,
-                  };
-                  issueObj.priorityScore = PriorityEngine.calculateScore(issueObj, cat, zone, weightConfig);
-                  return issueObj;
-                })
-              );
-            } else {
-              // Database is clean (0 rows)
-              setIssues([]);
-              localStorage.setItem('civicpulse_issues', JSON.stringify([]));
-            }
+          if (!issuesErr && dbIssues && dbIssues.length > 0) {
+            setIssues(
+              dbIssues.map((dbIss: any) => {
+                const cat = categories.find((c) => c.id === dbIss.category_id) || categories[0];
+                const zone = zones.find((z) => z.id === dbIss.zone_id) || zones[0];
+                const issueObj: CivicIssue = {
+                  id: dbIss.id,
+                  ticketNumber: dbIss.ticket_number,
+                  citizenId: dbIss.citizen_id,
+                  categoryId: dbIss.category_id,
+                  departmentId: dbIss.department_id,
+                  zoneId: dbIss.zone_id,
+                  title: dbIss.title,
+                  rawDescription: dbIss.raw_description,
+                  locationAddress: dbIss.location_address,
+                  latitude: Number(dbIss.latitude),
+                  longitude: Number(dbIss.longitude),
+                  photoUrls: dbIss.photo_urls || [],
+                  structuredData: dbIss.structured_data || {},
+                  affectedPopulationEstimate: dbIss.affected_population_estimate,
+                  confidenceScore: Number(dbIss.confidence_score),
+                  missingAttributes: dbIss.missing_attributes || [],
+                  status: dbIss.status,
+                  urgency: dbIss.urgency,
+                  estimatedCost: Number(dbIss.estimated_cost),
+                  estimatedHours: Number(dbIss.estimated_hours),
+                  requiredStaffCount: dbIss.required_staff_count,
+                  requiredEquipment: dbIss.required_equipment,
+                  reportedAt: dbIss.reported_at,
+                  slaDueAt: dbIss.sla_due_at,
+                  resolvedAt: dbIss.resolved_at,
+                  escalationCount: dbIss.escalation_count,
+                };
+                issueObj.priorityScore = PriorityEngine.calculateScore(issueObj, cat, zone, weightConfig);
+                return issueObj;
+              })
+            );
             setIsSupabaseLive(true);
           }
 
-          const { data: dbLogs, error: logsErr } = await supabase.from('audit_logs').select('*').order('created_at', { ascending: false });
-          if (!logsErr) {
-            if (dbLogs && dbLogs.length > 0) {
-              setAuditLogs(
-                dbLogs.map((l: any) => ({
-                  id: l.id,
-                  actorId: l.actor_id,
-                  actorName: l.actor_id || 'Officer',
-                  actorRole: l.actor_role || 'officer',
-                  action: l.action,
-                  entityType: l.entity_type,
-                  entityId: l.entity_id,
-                  details: l.details || {},
-                  createdAt: l.created_at,
-                }))
-              );
-            } else {
-              setAuditLogs([]);
-              localStorage.setItem('civicpulse_audit_logs', JSON.stringify([]));
-            }
+          const { data: dbLogs } = await supabase.from('audit_logs').select('*').order('created_at', { ascending: false });
+          if (dbLogs && dbLogs.length > 0) {
+            setAuditLogs(
+              dbLogs.map((l: any) => ({
+                id: l.id,
+                actorId: l.actor_id,
+                actorName: l.actor_id || 'Officer',
+                actorRole: l.actor_role || 'officer',
+                action: l.action,
+                entityType: l.entity_type,
+                entityId: l.entity_id,
+                details: l.details || {},
+                createdAt: l.created_at,
+              }))
+            );
           }
         } catch (err) {
-          console.warn('Supabase fetch failed, operating in clean local mode:', err);
+          console.warn('Supabase fetch failed, operating in local mode:', err);
           setIsSupabaseLive(false);
         }
       };
@@ -314,10 +369,37 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       localStorage.setItem('civicpulse_notifications', JSON.stringify(notifications));
       localStorage.setItem('civicpulse_active_plans', JSON.stringify(activePlans));
       localStorage.setItem('civicpulse_weight_config', JSON.stringify(weightConfig));
+      localStorage.setItem('civicpulse_treatment_plants', JSON.stringify(treatmentPlants));
+      localStorage.setItem('civicpulse_waste_sources', JSON.stringify(wasteSources));
+      localStorage.setItem('civicpulse_command_zones', JSON.stringify(commandZones));
+      localStorage.setItem('civicpulse_wastewater_batches', JSON.stringify(wastewaterBatches));
+      localStorage.setItem('civicpulse_quality_samples', JSON.stringify(qualitySamples));
+      localStorage.setItem('civicpulse_farmer_bookings', JSON.stringify(farmerBookings));
+      localStorage.setItem('civicpulse_water_reuse_plans', JSON.stringify(waterReusePlans));
+      localStorage.setItem('civicpulse_circular_metrics', JSON.stringify(circularMetrics));
     } catch {
       // ignore
     }
-  }, [language, isAuthenticated, userRole, currentUser, issues, resources, auditLogs, notifications, activePlans, weightConfig]);
+  }, [
+    language,
+    isAuthenticated,
+    userRole,
+    currentUser,
+    issues,
+    resources,
+    auditLogs,
+    notifications,
+    activePlans,
+    weightConfig,
+    treatmentPlants,
+    wasteSources,
+    commandZones,
+    wastewaterBatches,
+    qualitySamples,
+    farmerBookings,
+    waterReusePlans,
+    circularMetrics,
+  ]);
 
   // Recalculate all scores
   const recalculateAllPriorities = () => {
@@ -858,6 +940,436 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setAuditLogs((prev) => [log, ...prev]);
   };
 
+  // ---------------------------------------------------------------------------
+  // CIRCULAR WASTEWATER-TO-AGRICULTURE ACTIONS
+  // ---------------------------------------------------------------------------
+
+  const advanceWastewaterStage = (batchId: string, nextStage?: WastewaterWorkflowStage) => {
+    const stageSequence: WastewaterWorkflowStage[] = [
+      'municipal_waste',
+      'wastewater_intake',
+      'treatment',
+      'quality_check',
+      'reuse_plan',
+      'agriculture',
+    ];
+
+    const progressMap: Record<WastewaterWorkflowStage, number> = {
+      municipal_waste: 15,
+      wastewater_intake: 35,
+      treatment: 60,
+      quality_check: 80,
+      reuse_plan: 90,
+      agriculture: 100,
+    };
+
+    setWastewaterBatches((prev) =>
+      prev.map((batch) => {
+        if (batch.id !== batchId) return batch;
+
+        let targetStage = nextStage;
+        if (!targetStage) {
+          const currentIndex = stageSequence.indexOf(batch.currentStage);
+          if (currentIndex < stageSequence.length - 1) {
+            targetStage = stageSequence[currentIndex + 1];
+          } else {
+            targetStage = 'agriculture';
+          }
+        }
+
+        const isCompleted = targetStage === 'agriculture';
+        return {
+          ...batch,
+          currentStage: targetStage,
+          currentProgressPercent: progressMap[targetStage],
+          status: isCompleted ? 'completed' : 'active',
+          notes: `Batch advanced to ${targetStage.replace('_', ' ').toUpperCase()} stage by ${currentUser.fullName}`,
+        };
+      })
+    );
+
+    const targetBatch = wastewaterBatches.find((b) => b.id === batchId);
+    const log: AuditLog = {
+      id: `log-ww-${Date.now()}`,
+      actorName: currentUser.fullName,
+      actorRole: currentUser.role,
+      action: 'WASTEWATER_STAGE_ADVANCED',
+      entityType: 'wastewater_batch',
+      entityId: batchId,
+      details: {
+        batchNumber: targetBatch?.batchNumber,
+        newStage: nextStage,
+      },
+      createdAt: new Date().toISOString(),
+    };
+    setAuditLogs((prev) => [log, ...prev]);
+  };
+
+  const recordQualityCheck = (
+    batchId: string,
+    customParams?: Partial<WaterQualityParameters>
+  ): QualityCheckSample => {
+    const targetBatch = wastewaterBatches.find((b) => b.id === batchId) || wastewaterBatches[0];
+    const defaultParams: WaterQualityParameters = {
+      ph: 7.4,
+      electricalConductivity: 1.1,
+      sodiumAdsorptionRatio: 3.5,
+      bod: 8.5,
+      cod: 42.0,
+      tss: 7.0,
+      fecalColiforms: 60,
+      heavyMetalsPpb: {
+        lead: 5.0,
+        cadmium: 0.9,
+        arsenic: 1.2,
+      },
+      nutrientsMgL: {
+        nitrogen: 24.0,
+        phosphorus: 9.5,
+        potassium: 18.0,
+      },
+    };
+
+    const finalParams: WaterQualityParameters = {
+      ...defaultParams,
+      ...(customParams || {}),
+      heavyMetalsPpb: {
+        ...defaultParams.heavyMetalsPpb,
+        ...(customParams?.heavyMetalsPpb || {}),
+      },
+      nutrientsMgL: {
+        ...defaultParams.nutrientsMgL,
+        ...(customParams?.nutrientsMgL || {}),
+      },
+    };
+
+    const evalResult = WaterQualityEngine.evaluateWaterQuality(finalParams);
+    const sampleId = `sample-${Date.now()}`;
+    const now = new Date().toISOString();
+    const qrHash = WaterQualityEngine.generateVerificationHash(
+      targetBatch.batchNumber,
+      now.slice(0, 10),
+      evalResult.grade
+    );
+
+    const sample: QualityCheckSample = {
+      id: sampleId,
+      batchId,
+      batchNumber: targetBatch.batchNumber,
+      testedAt: now,
+      labTechnicianName: `${currentUser.fullName} (Govt Certified Chemist)`,
+      certifiedOfficerName: 'Er. Rahul Deshmukh (WSS Head)',
+      parameters: finalParams,
+      grade: evalResult.grade,
+      cpcbCompliance: evalResult.cpcbCompliance,
+      waterQualityIndex: evalResult.waterQualityIndex,
+      suitableCrops: evalResult.suitableCrops,
+      restrictionNotes: evalResult.restrictionNotes,
+      qrVerificationHash: qrHash,
+      isRetreatmentRecommended: evalResult.isRetreatmentRecommended,
+      routingAssessment: evalResult.routingAssessment,
+    };
+
+    setQualitySamples((prev) => [sample, ...prev]);
+
+    setWastewaterBatches((prev) =>
+      prev.map((b) => {
+        if (b.id !== batchId) return b;
+        return {
+          ...b,
+          qualityGrade: evalResult.grade,
+          qualitySampleId: sampleId,
+          status: evalResult.isRetreatmentRecommended ? 'rejected_for_retreatment' : 'active',
+          currentStage: evalResult.isRetreatmentRecommended ? 'treatment' : 'quality_check',
+          currentProgressPercent: evalResult.isRetreatmentRecommended ? 35 : 80,
+          notes: evalResult.restrictionNotes,
+        };
+      })
+    );
+
+    const log: AuditLog = {
+      id: `log-qc-${Date.now()}`,
+      actorName: currentUser.fullName,
+      actorRole: currentUser.role,
+      action: 'QUALITY_CHECK_COMPLETED',
+      entityType: 'quality_sample',
+      entityId: sampleId,
+      details: {
+        batchNumber: targetBatch.batchNumber,
+        grade: evalResult.grade,
+        cpcbCompliance: evalResult.cpcbCompliance,
+        wqi: evalResult.waterQualityIndex,
+      },
+      createdAt: now,
+    };
+    setAuditLogs((prev) => [log, ...prev]);
+
+    const notif: NotificationItem = {
+      id: `notif-qc-${Date.now()}`,
+      recipientId: currentUser.id,
+      title: `Water Quality Certificate Issued (${sample.batchNumber})`,
+      message: `Batch ${sample.batchNumber} tested: ${evalResult.grade.toUpperCase()} (WQI: ${evalResult.waterQualityIndex}/100). CPCB Compliant: ${evalResult.cpcbCompliance ? 'YES' : 'NO'}.`,
+      channel: 'app',
+      isRead: false,
+      createdAt: now,
+    };
+    setNotifications((prev) => [notif, ...prev]);
+
+    return sample;
+  };
+
+  const generateWaterReusePlan = (
+    batchId: string,
+    preferredDistribution: DistributionMethod = 'gravity_canal'
+  ): WaterReusePlan => {
+    const targetBatch = wastewaterBatches.find((b) => b.id === batchId) || wastewaterBatches[0];
+    const plan = ReuseAllocationEngine.generatePlan({
+      batch: targetBatch,
+      commandZones,
+      pendingBookings: farmerBookings,
+      preferredDistribution,
+      officerName: currentUser.fullName,
+    });
+
+    setWaterReusePlans((prev) => [plan, ...prev.filter((p) => p.batchId !== batchId)]);
+
+    setWastewaterBatches((prev) =>
+      prev.map((b) => {
+        if (b.id !== batchId) return b;
+        return {
+          ...b,
+          reusePlanId: plan.id,
+          currentStage: 'reuse_plan',
+          currentProgressPercent: 90,
+        };
+      })
+    );
+
+    const log: AuditLog = {
+      id: `log-wrp-${Date.now()}`,
+      actorName: currentUser.fullName,
+      actorRole: currentUser.role,
+      action: 'WATER_REUSE_PLAN_GENERATED',
+      entityType: 'reuse_plan',
+      entityId: plan.id,
+      details: {
+        planCode: plan.planCode,
+        batchNumber: targetBatch.batchNumber,
+        beneficiaries: plan.totalFarmerBeneficiaries,
+        allocatedKLD: plan.totalVolumeAllocatedKLD,
+      },
+      createdAt: new Date().toISOString(),
+    };
+    setAuditLogs((prev) => [log, ...prev]);
+
+    return plan;
+  };
+
+  const approveWaterReusePlan = (planId: string, officerNotes?: string) => {
+    const targetPlan = waterReusePlans.find((p) => p.id === planId);
+    if (!targetPlan) return;
+
+    setWaterReusePlans((prev) =>
+      prev.map((p) => {
+        if (p.id !== planId) return p;
+        return {
+          ...p,
+          status: 'approved',
+          approvedBy: currentUser.fullName,
+          approvedAt: new Date().toISOString(),
+          items: p.items.map((item) => ({ ...item, deliveredStatus: 'dispatched' })),
+        };
+      })
+    );
+
+    // Update farmer bookings
+    const allocatedBookingIds = targetPlan.items
+      .map((item) => item.bookingId)
+      .filter(Boolean) as string[];
+
+    setFarmerBookings((prev) =>
+      prev.map((b) => {
+        if (allocatedBookingIds.includes(b.id)) {
+          return { ...b, status: 'allocated', allocatedPlanId: planId };
+        }
+        return b;
+      })
+    );
+
+    // Update batch to agriculture stage & completed
+    setWastewaterBatches((prev) =>
+      prev.map((b) => {
+        if (b.id !== targetPlan.batchId) return b;
+        return {
+          ...b,
+          currentStage: 'agriculture',
+          status: 'completed',
+          currentProgressPercent: 100,
+          notes: `Batch approved and dispatched for agricultural irrigation. Plan: ${targetPlan.planCode}. Notes: ${officerNotes || 'Canal/Pipeline released'}`,
+        };
+      })
+    );
+
+    // Update Circular Economy metrics
+    setCircularMetrics((prev) => ({
+      ...prev,
+      totalWastewaterTreatedMLD: Number((prev.totalWastewaterTreatedMLD + (targetPlan.totalVolumeAllocatedKLD / 1000)).toFixed(2)),
+      totalAgriculturalReuseKLD: prev.totalAgriculturalReuseKLD + targetPlan.totalVolumeAllocatedKLD,
+      totalGroundwaterSavedLiters: prev.totalGroundwaterSavedLiters + (targetPlan.totalVolumeAllocatedKLD * 1000),
+      totalFarmerFertilizerSavingsInr: prev.totalFarmerFertilizerSavingsInr + Math.round(targetPlan.totalVolumeAllocatedKLD * 28),
+      totalFarmersBenefited: prev.totalFarmersBenefited + targetPlan.totalFarmerBeneficiaries,
+    }));
+
+    const log: AuditLog = {
+      id: `log-wrp-appr-${Date.now()}`,
+      actorName: currentUser.fullName,
+      actorRole: currentUser.role,
+      action: 'WATER_REUSE_PLAN_APPROVED',
+      entityType: 'reuse_plan',
+      entityId: planId,
+      details: {
+        planCode: targetPlan.planCode,
+        allocatedKLD: targetPlan.totalVolumeAllocatedKLD,
+        farmersCount: targetPlan.totalFarmerBeneficiaries,
+      },
+      createdAt: new Date().toISOString(),
+    };
+    setAuditLogs((prev) => [log, ...prev]);
+
+    targetPlan.items.forEach((item) => {
+      const notif: NotificationItem = {
+        id: `notif-wrp-${Date.now()}-${item.id}`,
+        recipientId: 'farmer-recipient',
+        title: `Irrigation Water Dispatched (${item.cropType.toUpperCase()})`,
+        message: `Treated Water Allocation Approved: ${item.allocatedVolumeKLD} KL dispatched to ${item.farmerName} (${item.commandZoneName}) via ${item.distributionMethod.replace('_', ' ')}. Subsidized Savings: ₹${item.commercialSavingsInr.toLocaleString()}.`,
+        channel: 'app',
+        isRead: false,
+        createdAt: new Date().toISOString(),
+      };
+      setNotifications((prev) => [notif, ...prev]);
+    });
+  };
+
+  const submitFarmerBooking = (
+    bookingData: Omit<FarmerBooking, 'id' | 'bookingNumber' | 'status' | 'submittedAt'>
+  ): FarmerBooking => {
+    const bookingNumber = `AGR-BK-2026-${String(Math.floor(100 + Math.random() * 900))}`;
+    const newBooking: FarmerBooking = {
+      ...bookingData,
+      id: `bk-${Date.now()}`,
+      bookingNumber,
+      status: 'pending',
+      submittedAt: new Date().toISOString(),
+    };
+
+    setFarmerBookings((prev) => [newBooking, ...prev]);
+
+    const log: AuditLog = {
+      id: `log-fbk-${Date.now()}`,
+      actorName: bookingData.farmerName,
+      actorRole: 'citizen',
+      action: 'FARMER_WATER_QUOTA_BOOKED',
+      entityType: 'issue',
+      details: {
+        bookingNumber,
+        crop: bookingData.cropType,
+        acreage: bookingData.farmAcreage,
+        requestedKLD: bookingData.requestedVolumeKLD,
+      },
+      createdAt: new Date().toISOString(),
+    };
+    setAuditLogs((prev) => [log, ...prev]);
+
+    const notif: NotificationItem = {
+      id: `notif-fbk-${Date.now()}`,
+      recipientId: currentUser.id,
+      title: `Water Quota Request Registered (${bookingNumber})`,
+      message: `Your request for ${bookingData.requestedVolumeKLD} KL treated water for ${bookingData.farmAcreage} acres of ${bookingData.cropType} has been placed in the municipal allocation queue.`,
+      channel: 'app',
+      isRead: false,
+      createdAt: new Date().toISOString(),
+    };
+    setNotifications((prev) => [notif, ...prev]);
+
+    return newBooking;
+  };
+
+  const reprocessBatch = (batchId: string) => {
+    setWastewaterBatches((prev) =>
+      prev.map((b) => {
+        if (b.id !== batchId) return b;
+        return {
+          ...b,
+          currentStage: 'treatment',
+          status: 'active',
+          currentProgressPercent: 40,
+          qualityGrade: undefined,
+          qualitySampleId: undefined,
+          notes: 'Batch returned to Secondary Biological MBBR Reactor tank for intensive aeration and carbon polishing.',
+        };
+      })
+    );
+
+    const log: AuditLog = {
+      id: `log-repr-${Date.now()}`,
+      actorName: currentUser.fullName,
+      actorRole: currentUser.role,
+      action: 'WASTEWATER_BATCH_REPROCESSED',
+      entityType: 'wastewater_batch',
+      entityId: batchId,
+      details: { batchId },
+      createdAt: new Date().toISOString(),
+    };
+    setAuditLogs((prev) => [log, ...prev]);
+  };
+
+  const createWastewaterBatch = (
+    wardIds: string[],
+    volumeKLD: number,
+    plantId: string
+  ): WastewaterBatch => {
+    const batchNumber = `WW-KMC-2026-B${String(Math.floor(100 + Math.random() * 900))}`;
+    const newBatch: WastewaterBatch = {
+      id: `ww-batch-${Date.now()}`,
+      batchNumber,
+      sourceWardIds: wardIds,
+      intakeVolumeKLD: volumeKLD,
+      currentStage: 'municipal_waste',
+      intakeTimestamp: new Date().toISOString(),
+      treatmentPlantId: plantId,
+      status: 'active',
+      initialParameters: {
+        bod: 350,
+        cod: 720,
+        tss: 230,
+        turbidity: 260,
+        ph: 7.2,
+      },
+      currentProgressPercent: 15,
+      notes: `Raw waste collected from ${wardIds.length} municipal wards. Ready for screening.`,
+    };
+
+    setWastewaterBatches((prev) => [newBatch, ...prev]);
+
+    const log: AuditLog = {
+      id: `log-wwc-${Date.now()}`,
+      actorName: currentUser.fullName,
+      actorRole: currentUser.role,
+      action: 'WASTEWATER_BATCH_INTAKE_CREATED',
+      entityType: 'wastewater_batch',
+      entityId: newBatch.id,
+      details: {
+        batchNumber,
+        volumeKLD,
+        plantId,
+      },
+      createdAt: new Date().toISOString(),
+    };
+    setAuditLogs((prev) => [log, ...prev]);
+
+    return newBatch;
+  };
+
   const markNotificationAsRead = (notificationId: string) => {
     setNotifications((prev) =>
       prev.map((n) => (n.id === notificationId ? { ...n, isRead: true } : n))
@@ -873,6 +1385,14 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setNotifications([]);
     setActivePlans([]);
     setWeightConfig(INITIAL_WEIGHT_CONFIG);
+    setTreatmentPlants(INITIAL_TREATMENT_PLANTS);
+    setWasteSources(INITIAL_WASTE_SOURCES);
+    setCommandZones(INITIAL_COMMAND_ZONES);
+    setWastewaterBatches(INITIAL_WASTEWATER_BATCHES);
+    setQualitySamples(INITIAL_QUALITY_SAMPLES);
+    setFarmerBookings(INITIAL_FARMER_BOOKINGS);
+    setWaterReusePlans(INITIAL_WATER_REUSE_PLANS);
+    setCircularMetrics(INITIAL_CIRCULAR_METRICS);
     setIsAuthenticated(false);
     setUserRole('citizen');
     setCurrentUser(DEFAULT_GUEST_USER);
@@ -902,6 +1422,14 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         activePlans,
         auditLogs,
         notifications,
+        treatmentPlants,
+        wasteSources,
+        commandZones,
+        wastewaterBatches,
+        qualitySamples,
+        farmerBookings,
+        waterReusePlans,
+        circularMetrics,
         submitIssue,
         updateIssueStatus,
         overridePriority,
@@ -911,6 +1439,13 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         updateResource,
         recalculateAllPriorities,
         markNotificationAsRead,
+        advanceWastewaterStage,
+        recordQualityCheck,
+        generateWaterReusePlan,
+        approveWaterReusePlan,
+        submitFarmerBooking,
+        reprocessBatch,
+        createWastewaterBatch,
         resetAllDataToDefaults,
       }}
     >

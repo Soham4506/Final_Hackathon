@@ -1,18 +1,22 @@
 import React from 'react';
-import { NavLink } from 'react-router-dom';
-import { useCivic } from '../../context/CivicContext';
+import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard,
-  AlertTriangle,
-  Cpu,
-  Truck,
+  Gavel,
   MapPin,
-  Users,
-  Bell,
+  ListTodo,
+  Truck,
   BarChart3,
   Settings,
-  PlusCircle,
+  Building2,
+  ChevronRight,
+  Radio,
+  Bell,
+  HeartHandshake,
+  Recycle,
+  Droplets,
 } from 'lucide-react';
+import { useCivic } from '../../context/CivicContext';
 
 interface SidebarProps {
   sidebarOpen: boolean;
@@ -20,159 +24,182 @@ interface SidebarProps {
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({ sidebarOpen, setSidebarOpen }) => {
-  const { userRole, issues, notifications, t } = useCivic();
+  const { userRole, issues, resources, notifications } = useCivic();
+  const location = useLocation();
+  const navigate = useNavigate();
 
-  const activeIssuesCount = issues.filter((i) => i.status !== 'resolved' && i.status !== 'rejected').length;
-  const criticalCount = issues.filter((i) => i.urgency === 'critical' && i.status !== 'resolved').length;
-  const unreadNotifs = notifications.filter((n) => !n.isRead).length;
+  const criticalCount = issues.filter(
+    (i) => i.urgency === 'critical' && i.status !== 'resolved' && i.status !== 'rejected'
+  ).length;
 
-  const navItems = [
+  const activeFleetCount = resources.filter((r) => r.isOperational).length;
+  const unreadNotifCount = notifications.filter((n) => !n.isRead).length;
+
+  const NAV_ITEMS = [
     {
       to: '/',
-      label: t.dashboard,
-      icon: LayoutDashboard,
-      roles: ['officer', 'admin'],
-    },
-    {
-      to: '/issues',
-      label: t.civicIssues,
-      icon: AlertTriangle,
-      roles: ['officer', 'admin', 'citizen'],
-      badge: activeIssuesCount > 0 ? activeIssuesCount : undefined,
-      badgeColor: criticalCount > 0 ? 'bg-red-500' : 'bg-slate-700',
+      label: 'Overview',
+      icon: <LayoutDashboard className="w-4 h-4" />,
+      allowedRoles: ['officer', 'admin'],
     },
     {
       to: '/priority-engine',
-      label: t.priorityEngine,
-      icon: Cpu,
-      roles: ['officer', 'admin'],
-      highlight: true,
+      label: 'Decision',
+      icon: <Gavel className="w-4 h-4" />,
+      badge: criticalCount > 0 ? criticalCount : undefined,
+      badgeColor: 'bg-[#ba1a1a] text-white',
+      allowedRoles: ['officer', 'admin'],
     },
     {
-      to: '/resources',
-      label: t.resources,
-      icon: Truck,
-      roles: ['officer', 'admin'],
+      to: '/wastewater-reuse',
+      label: 'Circular Waste & Agri',
+      icon: <Recycle className="w-4 h-4" />,
+      badge: 'AGRI',
+      badgeColor: 'bg-teal-700 text-white',
+      allowedRoles: ['citizen', 'officer', 'admin'],
+    },
+    {
+      to: '/issues',
+      label: 'Issues Queue',
+      icon: <ListTodo className="w-4 h-4" />,
+      badge: issues.length > 0 ? issues.length : undefined,
+      badgeColor: 'bg-[#3f465c] text-white',
+      allowedRoles: ['citizen', 'officer', 'admin'],
     },
     {
       to: '/map',
-      label: t.civicMap,
-      icon: MapPin,
-      roles: ['officer', 'admin', 'citizen'],
+      label: 'Map (GIS)',
+      icon: <MapPin className="w-4 h-4" />,
+      allowedRoles: ['citizen', 'officer', 'admin'],
+    },
+    {
+      to: '/resources',
+      label: 'Fleet & Crews',
+      icon: <Truck className="w-4 h-4" />,
+      badge: activeFleetCount > 0 ? `${activeFleetCount} Active` : undefined,
+      badgeColor: 'bg-sky-700 text-white',
+      allowedRoles: ['officer', 'admin'],
     },
     {
       to: '/citizen-portal',
-      label: t.citizens,
-      icon: Users,
-      roles: ['citizen', 'officer', 'admin'],
+      label: 'Citizen Portal',
+      icon: <HeartHandshake className="w-4 h-4" />,
+      badge: 'LIVE',
+      badgeColor: 'bg-emerald-600 text-white',
+      allowedRoles: ['citizen', 'officer', 'admin'],
     },
     {
       to: '/notifications',
-      label: t.notifications,
-      icon: Bell,
-      roles: ['officer', 'admin', 'citizen'],
-      badge: unreadNotifs > 0 ? unreadNotifs : undefined,
-      badgeColor: 'bg-emerald-600',
+      label: 'Alerts',
+      icon: <Bell className="w-4 h-4" />,
+      badge: unreadNotifCount > 0 ? unreadNotifCount : undefined,
+      badgeColor: 'bg-amber-500 text-black',
+      allowedRoles: ['citizen', 'officer', 'admin'],
     },
     {
       to: '/analytics',
-      label: t.analytics,
-      icon: BarChart3,
-      roles: ['officer', 'admin'],
-    },
-    {
-      to: '/settings',
-      label: t.settings,
-      icon: Settings,
-      roles: ['admin', 'officer'],
+      label: 'Analytics',
+      icon: <BarChart3 className="w-4 h-4" />,
+      allowedRoles: ['officer', 'admin'],
     },
   ];
+
+  const visibleItems = NAV_ITEMS.filter((item) => item.allowedRoles.includes(userRole));
 
   return (
     <>
       {/* Mobile Backdrop */}
       {sidebarOpen && (
         <div
-          className="fixed inset-0 z-30 bg-slate-900/60 backdrop-blur-sm md:hidden"
           onClick={() => setSidebarOpen(false)}
+          className="fixed inset-0 bg-black/60 z-40 md:hidden backdrop-blur-xs transition-opacity duration-200"
         />
       )}
 
-      {/* Sidebar Container */}
+      {/* Sidebar Container - Extends Full Height on Desktop */}
       <aside
-        className={`fixed md:static inset-y-0 left-0 z-30 w-64 bg-slate-900 border-r border-slate-800 flex flex-col justify-between transition-transform duration-300 ease-in-out md:translate-x-0 ${
-          sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+        className={`fixed md:static top-0 left-0 h-full w-64 bg-[#131b2e] border-r border-white/10 flex flex-col py-5 px-3.5 z-50 shrink-0 transition-transform duration-300 ease-in-out md:translate-x-0 ${
+          sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
         }`}
       >
-        <div className="p-4 space-y-6">
-          {/* Quick Citizen Action */}
-          <div className="pt-2">
+        {/* Municipal Crest Header */}
+        <div
+          className="flex items-center gap-3 mb-6 px-2.5 cursor-pointer select-none"
+          onClick={() => navigate(userRole === 'citizen' ? '/citizen-portal' : '/')}
+        >
+          <div className="w-10 h-10 rounded-lg bg-white flex items-center justify-center border border-white/20 shadow-md shrink-0 p-1">
+            <Building2 className="w-6 h-6 text-[#131b2e]" />
+          </div>
+          <div className="min-w-0">
+            <h2 className="text-base font-bold text-white tracking-tight truncate">
+              Kopargaon MC
+            </h2>
+            <p className="text-[11px] font-bold uppercase tracking-wider text-[#7c839b]">
+              Municipal Command
+            </p>
+          </div>
+        </div>
+
+        {/* Navigation Items List */}
+        <nav className="flex-1 flex flex-col gap-1 overflow-y-auto pr-1">
+          {visibleItems.map((item) => {
+            const isActive = location.pathname === item.to;
+            return (
+              <NavLink
+                key={item.to}
+                to={item.to}
+                onClick={() => setSidebarOpen(false)}
+                className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-xs font-bold tracking-wider uppercase transition-all duration-150 group ${
+                  isActive
+                    ? 'bg-[#3f465c] text-white shadow-sm ring-1 ring-white/20'
+                    : 'text-[#7c839b] hover:bg-[#3f465c]/40 hover:text-white'
+                }`}
+              >
+                <div className="flex items-center gap-3 min-w-0">
+                  <span
+                    className={`transition-colors ${
+                      isActive ? 'text-white' : 'text-[#7c839b] group-hover:text-white'
+                    }`}
+                  >
+                    {item.icon}
+                  </span>
+                  <span className="truncate">{item.label}</span>
+                </div>
+
+                {item.badge !== undefined && (
+                  <span
+                    className={`text-[10px] font-bold px-2 py-0.5 rounded-md shrink-0 ${
+                      item.badgeColor || 'bg-white/20 text-white'
+                    }`}
+                  >
+                    {item.badge}
+                  </span>
+                )}
+              </NavLink>
+            );
+          })}
+        </nav>
+
+        {/* Bottom Settings Link */}
+        {userRole === 'admin' && (
+          <div className="pt-3 border-t border-white/10 mt-auto">
             <NavLink
-              to="/citizen-portal?tab=submit"
+              to="/settings"
               onClick={() => setSidebarOpen(false)}
-              className="w-full flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold py-2.5 px-3 rounded-lg shadow-md shadow-emerald-950/40 transition-all"
+              className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-xs font-bold tracking-wider uppercase transition-all duration-150 ${
+                location.pathname === '/settings'
+                  ? 'bg-[#3f465c] text-white'
+                  : 'text-[#7c839b] hover:bg-[#3f465c]/40 hover:text-white'
+              }`}
             >
-              <PlusCircle size={16} />
-              <span>{t.reportIssue}</span>
+              <div className="flex items-center gap-3">
+                <Settings className="w-4 h-4" />
+                <span>Settings</span>
+              </div>
+              <ChevronRight className="w-3.5 h-3.5 opacity-50" />
             </NavLink>
           </div>
-
-          {/* Navigation Links */}
-          <nav className="space-y-1 text-xs">
-            <div className="px-3 pb-2 text-[11px] font-bold uppercase tracking-wider text-slate-500">
-              Navigation
-            </div>
-
-            {navItems
-              .filter((item) => item.roles.includes(userRole))
-              .map((item) => {
-                const Icon = item.icon;
-                return (
-                  <NavLink
-                    key={item.to}
-                    to={item.to}
-                    end={item.to === '/'}
-                    onClick={() => setSidebarOpen(false)}
-                    className={({ isActive }) =>
-                      `flex items-center justify-between px-3 py-2.5 rounded-lg font-medium transition-all ${
-                        isActive
-                          ? 'bg-emerald-600/15 text-emerald-400 border border-emerald-500/30'
-                          : 'text-slate-300 hover:bg-slate-800/80 hover:text-white'
-                      } ${item.highlight && !isActive ? 'border border-amber-500/20 text-amber-200/90' : ''}`
-                    }
-                  >
-                    <div className="flex items-center gap-2.5">
-                      <Icon size={17} className={item.highlight ? 'text-amber-400' : ''} />
-                      <span>{item.label}</span>
-                    </div>
-                    {item.badge !== undefined && (
-                      <span
-                        className={`text-[10px] text-white font-bold px-1.5 py-0.5 rounded-full ${item.badgeColor}`}
-                      >
-                        {item.badge}
-                      </span>
-                    )}
-                  </NavLink>
-                );
-              })}
-          </nav>
-        </div>
-
-        {/* Bottom Council Info Widget */}
-        <div className="p-4 border-t border-slate-800 text-slate-400 text-[11px] space-y-2 bg-slate-950/40">
-          <div className="flex items-center justify-between text-slate-300">
-            <span className="font-semibold">KMC System Status</span>
-            <span className="flex items-center gap-1 text-emerald-400 font-mono">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span>
-              ONLINE
-            </span>
-          </div>
-          <div className="text-slate-500 leading-tight">
-            Deterministic Engine Active
-            <br />
-            Council Server: Node 1 (Ahilyanagar)
-          </div>
-        </div>
+        )}
       </aside>
     </>
   );

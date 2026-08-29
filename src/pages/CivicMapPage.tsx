@@ -19,6 +19,7 @@ import {
   Shield,
   Truck,
   Bus,
+  Search,
 } from 'lucide-react';
 import { MapContainer, TileLayer, Marker, Popup, Circle, Polygon, Tooltip as LeafletTooltip } from 'react-leaflet';
 import L from 'leaflet';
@@ -26,7 +27,7 @@ import L from 'leaflet';
 // Custom Marker Icons
 const createCustomIcon = (score: number, urgency: string) => {
   let color = '#22c55e'; // green
-  if (score >= 80 || urgency === 'critical') color = '#ef4444'; // red
+  if (score >= 80 || urgency === 'critical') color = '#ba1a1a'; // red
   else if (score >= 65 || urgency === 'high') color = '#f59e0b'; // amber
   else if (score < 45) color = '#3b82f6'; // blue
 
@@ -47,14 +48,14 @@ const createCustomIcon = (score: number, urgency: string) => {
 
 const createPOIIcon = (emoji: string) => {
   return L.divIcon({
-    html: `<div style="background-color: #0f172a; border: 2px solid #38bdf8; border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; font-size: 14px; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.5);">${emoji}</div>`,
+    html: `<div style="background-color: #131b2e; border: 2px solid #38bdf8; border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; font-size: 14px; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.3);">${emoji}</div>`,
     className: 'custom-leaflet-poi',
     iconSize: [28, 28],
     iconAnchor: [14, 14],
   });
 };
 
-// Authentic Geographic Boundaries for Kopargaon Wards 1 to 8
+// Geographic Boundaries for Kopargaon Wards 1 to 8
 const KOPARGAON_WARD_POLYGONS: { id: string; name: string; ward: string; coords: [number, number][]; color: string }[] = [
   {
     id: 'z-01',
@@ -96,303 +97,323 @@ const KOPARGAON_WARD_POLYGONS: { id: string; name: string; ward: string; coords:
     id: 'z-04',
     ward: 'Ward 4',
     name: 'Civil Hospital & Station Road Corridor',
-    color: '#ef4444',
+    color: '#ba1a1a',
     coords: [
       [19.8900, 74.4880],
-      [19.8930, 74.4940],
-      [19.8840, 74.4950],
-      [19.8830, 74.4870],
+      [19.8940, 74.4920],
+      [19.8860, 74.4930],
+      [19.8840, 74.4870],
     ],
   },
   {
     id: 'z-05',
     ward: 'Ward 5',
-    name: 'Indira Nagar & School Cluster',
+    name: 'Indira Nagar & School Zone',
     color: '#8b5cf6',
     coords: [
-      [19.8960, 74.4890],
-      [19.9010, 74.4960],
-      [19.8940, 74.4980],
-      [19.8930, 74.4910],
+      [19.8940, 74.4920],
+      [19.8980, 74.4970],
+      [19.8920, 74.4980],
+      [19.8890, 74.4940],
+    ],
+  },
+  {
+    id: 'z-06',
+    ward: 'Ward 6',
+    name: 'Mahatma Phule Colony',
+    color: '#06b6d4',
+    coords: [
+      [19.8860, 74.4770],
+      [19.8900, 74.4830],
+      [19.8840, 74.4840],
+      [19.8810, 74.4790],
+    ],
+  },
+  {
+    id: 'z-07',
+    ward: 'Ward 7',
+    name: 'Kopargaon Railway Colony',
+    color: '#ec4899',
+    coords: [
+      [19.8840, 74.4890],
+      [19.8880, 74.4960],
+      [19.8800, 74.4970],
+      [19.8780, 74.4910],
     ],
   },
   {
     id: 'z-08',
     ward: 'Ward 8',
-    name: 'Gautam Nagar & Bus Terminal Route',
-    color: '#ec4899',
+    name: 'Gautam Nagar & Bus Stand Approach',
+    color: '#eab308',
     coords: [
-      [19.8880, 74.4780],
-      [19.8910, 74.4840],
-      [19.8850, 74.4860],
-      [19.8830, 74.4800],
+      [19.8910, 74.4780],
+      [19.8940, 74.4840],
+      [19.8870, 74.4830],
+      [19.8850, 74.4790],
     ],
   },
 ];
 
-const CRITICAL_POIS = [
-  { name: 'Kopargaon Civil Hospital & Maternity Unit', type: 'Hospital', coords: [19.8878, 74.4891] as [number, number], emoji: '🏥' },
-  { name: 'Shri Balaji Mandir & Godavari Ghats', type: 'Temple', coords: [19.8948, 74.4789] as [number, number], emoji: '🛕' },
-  { name: 'Subhash Chowk Central Market Yard', type: 'Market', coords: [19.8915, 74.4849] as [number, number], emoji: '🛒' },
-  { name: 'Kopargaon MSRTC Bus Terminal', type: 'Transit', coords: [19.8898, 74.4816] as [number, number], emoji: '🚌' },
-  { name: 'Kopargaon Railway Junction', type: 'Station', coords: [19.8824, 74.4942] as [number, number], emoji: '🚆' },
+// Critical Infrastructure POIs in Kopargaon
+const KOPARGAON_POIS = [
+  { id: 'poi-1', name: 'Kopargaon Rural Hospital (Civil)', type: 'hospital', coords: [19.8878, 74.4891] as [number, number], emoji: '🏥' },
+  { id: 'poi-2', name: 'KMC Municipal Council HQ', type: 'admin', coords: [19.8915, 74.4849] as [number, number], emoji: '🏛️' },
+  { id: 'poi-3', name: 'Kopargaon MSRTC Central Bus Station', type: 'transit', coords: [19.8898, 74.4816] as [number, number], emoji: '🚌' },
+  { id: 'poi-4', name: 'Kopargaon Railway Station (CR)', type: 'transit', coords: [19.8824, 74.4942] as [number, number], emoji: '🚆' },
+  { id: 'poi-5', name: 'Godavari Water Pumping Station', type: 'water', coords: [19.8948, 74.4789] as [number, number], emoji: '💧' },
 ];
 
 export const CivicMapPage: React.FC = () => {
-  const { issues, zones, departments, resources, t } = useCivic();
-  const [selectedDeptFilter, setSelectedDeptFilter] = useState<string>('all');
-  const [showBoundaries, setShowBoundaries] = useState<boolean>(true);
-  const [showPOIs, setShowPOIs] = useState<boolean>(true);
+  const { issues, zones } = useCivic();
+
   const [selectedIssue, setSelectedIssue] = useState<CivicIssue | null>(null);
   const [explainIssue, setExplainIssue] = useState<CivicIssue | null>(null);
+  const [mapSearch, setMapSearch] = useState('');
 
-  const KOPARGAON_CENTER: [number, number] = [19.8920, 74.4850];
+  // Layer toggles matching KMC Operational Intelligence UI
+  const [showIncidents, setShowIncidents] = useState(true);
+  const [showWaterSCADA, setShowWaterSCADA] = useState(true);
+  const [showWasteHotspots, setShowWasteHotspots] = useState(true);
+  const [showLiveFleet, setShowLiveFleet] = useState(true);
+  const [showEmergencyHubs, setShowEmergencyHubs] = useState(true);
 
-  const filteredIssues = issues.filter(
-    (i) => selectedDeptFilter === 'all' || i.departmentId === selectedDeptFilter
-  );
+  const kopargaonCenter: [number, number] = [19.8915, 74.4849];
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <div className="space-y-5">
+      {/* Top Header */}
+      <div className="bg-white border border-[#76777d]/20 rounded-2xl p-5 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <span className="bg-emerald-950 text-emerald-300 border border-emerald-800 text-[10px] font-mono uppercase font-bold px-2 py-0.5 rounded flex items-center gap-1">
-              <MapPin size={12} /> GIS Spatial Layer
+            <span className="bg-emerald-50 text-emerald-800 border border-emerald-200 text-[10px] font-mono uppercase font-bold px-2 py-0.5 rounded flex items-center gap-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+              GIS Spatial Node #08
             </span>
-            <span className="text-xs text-slate-400">Kopargaon Municipal Boundaries</span>
+            <span className="text-xs text-[#76777d]">EPSG:4326 Sensor Infrastructure</span>
           </div>
-          <h1 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
-            {t.civicMap}
+          <h1 className="text-xl sm:text-2xl font-bold text-[#1b1b1d] tracking-tight">
+            GIS Command Map
           </h1>
-          <p className="text-xs sm:text-sm text-slate-400 mt-1">
-            Geo-spatial mapping of competing civic emergencies overlaid on hospital, school, and flood risk zones.
+          <p className="text-xs sm:text-sm text-[#57657b] mt-1">
+            Spatial telemetry & municipal sensor infrastructure with live SCADA overlays and defect hot-spots.
           </p>
         </div>
 
-        {/* Layer Controls */}
-        <div className="flex flex-wrap items-center gap-2">
-          <button
-            onClick={() => setShowBoundaries(!showBoundaries)}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all ${
-              showBoundaries
-                ? 'bg-blue-950 text-blue-300 border-blue-800'
-                : 'bg-slate-950 text-slate-400 border-slate-800'
-            }`}
-          >
-            Ward Polygons
-          </button>
-          <button
-            onClick={() => setShowPOIs(!showPOIs)}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all ${
-              showPOIs
-                ? 'bg-purple-950 text-purple-300 border-purple-800'
-                : 'bg-slate-950 text-slate-400 border-slate-800'
-            }`}
-          >
-            Landmarks & POIs
-          </button>
-          <select
-            value={selectedDeptFilter}
-            onChange={(e) => setSelectedDeptFilter(e.target.value)}
-            className="bg-slate-950 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-200 focus:ring-1 focus:ring-emerald-500 font-medium"
-          >
-            <option value="all">All Departments ({issues.length})</option>
-            {departments.map((d) => (
-              <option key={d.id} value={d.id}>
-                {d.code} ({issues.filter((i) => i.departmentId === d.id).length})
-              </option>
-            ))}
-          </select>
+        {/* Search Bar in Map Header */}
+        <div className="relative w-full md:w-72">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[#76777d] w-4 h-4" />
+          <input
+            type="text"
+            value={mapSearch}
+            onChange={(e) => setMapSearch(e.target.value)}
+            placeholder="Search Ward, Pipeline, Unit..."
+            className="w-full bg-[#f6f3f5] border border-[#76777d]/20 rounded-xl pl-9 pr-3 py-2 text-xs text-[#1b1b1d] placeholder:text-[#76777d]/70 focus:outline-none focus:border-[#131b2e] font-medium"
+          />
         </div>
       </div>
 
-      {/* Map + Sidebar Layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Leaflet Map (2 Cols) */}
-        <div className="lg:col-span-2 bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-sm h-[600px] relative">
-          <MapContainer
-            center={KOPARGAON_CENTER}
-            zoom={14}
-            scrollWheelZoom={true}
-            style={{ height: '100%', width: '100%', backgroundColor: '#020617' }}
-          >
-            <TileLayer
-              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-            />
+      {/* Main Map Container & Overlay Controls */}
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-5">
+        {/* Left Sidebar: Active Overlays & Sensors */}
+        <div className="bg-white border border-[#76777d]/20 rounded-2xl p-5 shadow-xs space-y-4">
+          <div className="border-b border-[#76777d]/15 pb-3">
+            <h3 className="font-bold text-xs uppercase tracking-wider text-[#1b1b1d] flex items-center gap-2">
+              <Layers size={14} className="text-[#131b2e]" />
+              <span>Active Overlays & Sensors</span>
+            </h3>
+          </div>
 
-            {/* Ward Geographic Boundaries */}
-            {showBoundaries &&
-              KOPARGAON_WARD_POLYGONS.map((wp) => (
+          <div className="space-y-3 text-xs">
+            <label className="flex items-center justify-between p-2 rounded-xl bg-[#fcf8fa] hover:bg-slate-100 cursor-pointer transition-colors border border-[#76777d]/10">
+              <span className="flex items-center gap-2 font-medium text-[#1b1b1d]">
+                <span className="w-2.5 h-2.5 rounded-full bg-[#ba1a1a]"></span>
+                <span>Critical Incidents</span>
+              </span>
+              <input
+                type="checkbox"
+                checked={showIncidents}
+                onChange={(e) => setShowIncidents(e.target.checked)}
+                className="w-4 h-4 text-[#131b2e] rounded focus:ring-0"
+              />
+            </label>
+
+            <label className="flex items-center justify-between p-2 rounded-xl bg-[#fcf8fa] hover:bg-slate-100 cursor-pointer transition-colors border border-[#76777d]/10">
+              <span className="flex items-center gap-2 font-medium text-[#1b1b1d]">
+                <span className="w-2.5 h-2.5 rounded-full bg-blue-600"></span>
+                <span>Water Pipeline SCADA</span>
+              </span>
+              <input
+                type="checkbox"
+                checked={showWaterSCADA}
+                onChange={(e) => setShowWaterSCADA(e.target.checked)}
+                className="w-4 h-4 text-[#131b2e] rounded focus:ring-0"
+              />
+            </label>
+
+            <label className="flex items-center justify-between p-2 rounded-xl bg-[#fcf8fa] hover:bg-slate-100 cursor-pointer transition-colors border border-[#76777d]/10">
+              <span className="flex items-center gap-2 font-medium text-[#1b1b1d]">
+                <span className="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
+                <span>Waste Hotspots</span>
+              </span>
+              <input
+                type="checkbox"
+                checked={showWasteHotspots}
+                onChange={(e) => setShowWasteHotspots(e.target.checked)}
+                className="w-4 h-4 text-[#131b2e] rounded focus:ring-0"
+              />
+            </label>
+
+            <label className="flex items-center justify-between p-2 rounded-xl bg-[#fcf8fa] hover:bg-slate-100 cursor-pointer transition-colors border border-[#76777d]/10">
+              <span className="flex items-center gap-2 font-medium text-[#1b1b1d]">
+                <span className="w-2.5 h-2.5 rounded-full bg-emerald-600"></span>
+                <span>Live Fleet Units</span>
+              </span>
+              <input
+                type="checkbox"
+                checked={showLiveFleet}
+                onChange={(e) => setShowLiveFleet(e.target.checked)}
+                className="w-4 h-4 text-[#131b2e] rounded focus:ring-0"
+              />
+            </label>
+
+            <label className="flex items-center justify-between p-2 rounded-xl bg-[#fcf8fa] hover:bg-slate-100 cursor-pointer transition-colors border border-[#76777d]/10">
+              <span className="flex items-center gap-2 font-medium text-[#1b1b1d]">
+                <span className="w-2.5 h-2.5 rounded-full bg-purple-600"></span>
+                <span>Hospitals & Hubs</span>
+              </span>
+              <input
+                type="checkbox"
+                checked={showEmergencyHubs}
+                onChange={(e) => setShowEmergencyHubs(e.target.checked)}
+                className="w-4 h-4 text-[#131b2e] rounded focus:ring-0"
+              />
+            </label>
+          </div>
+
+          {/* Selected Incident Drawer on Left */}
+          {selectedIssue && (
+            <div className="pt-3 border-t border-[#76777d]/15 space-y-2 text-xs">
+              <span className="font-bold text-[10px] uppercase text-[#76777d] tracking-wider block">
+                Selected Incident Telemetry
+              </span>
+              <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-1.5">
+                <span className="font-mono font-bold text-xs text-[#131b2e]">
+                  {selectedIssue.ticketNumber}
+                </span>
+                <h4 className="font-bold text-xs text-[#1b1b1d]">{selectedIssue.title}</h4>
+                <p className="text-[11px] text-[#57657b]">{selectedIssue.locationAddress}</p>
+                <div className="pt-1 flex justify-between items-center">
+                  <PriorityBadge score={selectedIssue.priorityScore?.finalScore} size="sm" />
+                  <button
+                    onClick={() => setExplainIssue(selectedIssue)}
+                    className="text-blue-700 font-bold underline text-[11px]"
+                  >
+                    Explain Score →
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Right 3 Cols: Interactive GIS Map Canvas */}
+        <div className="lg:col-span-3 bg-white border border-[#76777d]/20 rounded-2xl overflow-hidden shadow-xs flex flex-col min-h-[550px]">
+          <div className="flex-1 relative z-0">
+            <MapContainer
+              center={kopargaonCenter}
+              zoom={14}
+              scrollWheelZoom={true}
+              style={{ height: '100%', minHeight: '520px', width: '100%' }}
+            >
+              <TileLayer
+                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+              />
+
+              {/* Ward Polygons */}
+              {KOPARGAON_WARD_POLYGONS.map((wp) => (
                 <Polygon
                   key={wp.id}
                   positions={wp.coords}
                   pathOptions={{
                     color: wp.color,
                     weight: 2,
-                    fillColor: wp.color,
-                    fillOpacity: 0.12,
-                    dashArray: '3, 6',
+                    fillOpacity: 0.1,
+                    dashArray: '4, 4',
                   }}
                 >
-                  <LeafletTooltip sticky direction="center">
-                    <div className="text-[11px] font-bold text-slate-900">
+                  <LeafletTooltip sticky>
+                    <div className="text-xs font-bold font-sans">
                       {wp.ward}: {wp.name}
                     </div>
                   </LeafletTooltip>
                 </Polygon>
               ))}
 
-            {/* Critical Landmark POIs */}
-            {showPOIs &&
-              CRITICAL_POIS.map((poi, idx) => (
-                <Marker key={idx} position={poi.coords} icon={createPOIIcon(poi.emoji)}>
-                  <Popup>
-                    <div className="p-1 text-slate-900 text-xs font-bold">
-                      {poi.emoji} {poi.name}
-                      <span className="block text-[10px] text-slate-500 font-normal">
-                        Critical Municipal Landmark Anchor
-                      </span>
-                    </div>
-                  </Popup>
-                </Marker>
-              ))}
-
-            {/* Issue Markers */}
-            {filteredIssues.map((issue) => {
-              const score = issue.priorityScore?.finalScore ?? 50;
-              const icon = createCustomIcon(score, issue.urgency);
-
-              return (
-                <Marker
-                  key={issue.id}
-                  position={[issue.latitude, issue.longitude]}
-                  icon={icon}
-                  eventHandlers={{
-                    click: () => setSelectedIssue(issue),
-                  }}
-                >
-                  <Popup>
-                    <div className="p-2 space-y-1 text-slate-900 text-xs">
-                      <div className="font-mono text-xs font-bold text-emerald-800">
-                        {issue.ticketNumber}
+              {/* POI Markers */}
+              {showEmergencyHubs &&
+                KOPARGAON_POIS.map((poi) => (
+                  <Marker
+                    key={poi.id}
+                    position={poi.coords}
+                    icon={createPOIIcon(poi.emoji)}
+                  >
+                    <Popup>
+                      <div className="p-1 font-sans text-xs">
+                        <strong>{poi.name}</strong>
+                        <div className="text-[10px] text-slate-500 capitalize">Critical POI ({poi.type})</div>
                       </div>
-                      <div className="font-bold text-xs leading-snug">{issue.title}</div>
-                      <div className="text-[11px] text-slate-600">{issue.locationAddress}</div>
-                      <div className="pt-1 flex items-center justify-between">
-                        <span className="font-mono text-xs font-bold">
-                          Score: {score.toFixed(1)}/100
-                        </span>
-                        <span className="text-[10px] uppercase font-semibold text-slate-500">
-                          {issue.urgency}
-                        </span>
-                      </div>
-                    </div>
-                  </Popup>
-                </Marker>
-              );
-            })}
-          </MapContainer>
+                    </Popup>
+                  </Marker>
+                ))}
 
-          {/* Map Legend */}
-          <div className="absolute bottom-4 left-4 z-[1000] bg-slate-950/90 border border-slate-800 p-3 rounded-xl shadow-xl text-[11px] text-slate-300 space-y-1.5 backdrop-blur-sm">
-            <div className="font-bold text-white uppercase text-[10px] tracking-wider mb-1">
-              GIS Layer Map Legend
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="w-2.5 h-2.5 rounded-full bg-red-500"></span>
-              <span>Critical Emergency (P0 ≥ 80)</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
-              <span>High Priority (P1 65-79)</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
-              <span>Medium Scheduled (P2 45-64)</span>
-            </div>
-          </div>
-        </div>
+              {/* Civic Incidents */}
+              {showIncidents &&
+                issues.map((issue) => {
+                  const lat = issue.latitude || 19.8915;
+                  const lng = issue.longitude || 74.4849;
+                  const score = issue.priorityScore?.finalScore || 50;
 
-        {/* Selected Point Inspector (1 Col) */}
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-sm space-y-4">
-          <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-            <h3 className="font-bold text-white text-sm flex items-center gap-2">
-              <MapPin size={16} className="text-emerald-400" />
-              <span>Spatial Point Inspector</span>
-            </h3>
-            {selectedIssue && (
-              <span className="text-xs font-mono text-emerald-400 font-bold">
-                {selectedIssue.ticketNumber}
-              </span>
-            )}
+                  return (
+                    <Marker
+                      key={issue.id}
+                      position={[lat, lng]}
+                      icon={createCustomIcon(score, issue.urgency)}
+                      eventHandlers={{
+                        click: () => setSelectedIssue(issue),
+                      }}
+                    >
+                      <Popup>
+                        <div className="p-1 font-sans text-xs space-y-1">
+                          <div className="font-mono font-bold text-slate-900">{issue.ticketNumber}</div>
+                          <div className="font-bold text-slate-800">{issue.title}</div>
+                          <div className="text-[10px] text-slate-500">{issue.locationAddress}</div>
+                          <div className="text-red-700 font-bold text-[11px]">
+                            Priority Score: {score.toFixed(1)} / 100
+                          </div>
+                        </div>
+                      </Popup>
+                    </Marker>
+                  );
+                })}
+            </MapContainer>
           </div>
 
-          {selectedIssue ? (
-            <div className="space-y-4 text-xs">
-              <div>
-                <span className="text-[10px] font-mono text-slate-400 uppercase tracking-wider block">
-                  Location & Ward
-                </span>
-                <div className="font-semibold text-white mt-0.5">{selectedIssue.locationAddress}</div>
-                <div className="font-mono text-[11px] text-slate-400">
-                  {selectedIssue.latitude.toFixed(4)}° N, {selectedIssue.longitude.toFixed(4)}° E
-                </div>
-              </div>
-
-              <div>
-                <span className="text-[10px] font-mono text-slate-400 uppercase tracking-wider block">
-                  Issue Title
-                </span>
-                <div className="font-bold text-white text-sm mt-0.5">{selectedIssue.title}</div>
-                <p className="text-slate-400 text-xs mt-1 leading-relaxed">
-                  {selectedIssue.rawDescription}
-                </p>
-              </div>
-
-              <div className="bg-slate-950/70 p-3 rounded-xl border border-slate-800 space-y-2">
-                <div className="flex justify-between items-center">
-                  <span className="text-slate-400">Priority Score:</span>
-                  <PriorityBadge
-                    score={selectedIssue.priorityScore?.finalScore}
-                    confidence={selectedIssue.confidenceScore}
-                    size="sm"
-                  />
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-slate-400">Current Status:</span>
-                  <StatusBadge status={selectedIssue.status} size="sm" />
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-slate-400">Estimated Cost:</span>
-                  <span className="font-mono font-semibold text-white">
-                    ₹{selectedIssue.estimatedCost.toLocaleString()}
-                  </span>
-                </div>
-              </div>
-
-              <button
-                onClick={() => setExplainIssue(selectedIssue)}
-                className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-semibold text-xs shadow-md shadow-emerald-950 flex items-center justify-center gap-1.5 transition-colors"
-              >
-                <Eye size={14} />
-                <span>Inspect Deterministic Formula Breakdown</span>
-              </button>
-            </div>
-          ) : (
-            <div className="p-12 text-center text-slate-500 text-xs space-y-2">
-              <Navigation size={28} className="mx-auto text-slate-600 opacity-60" />
-              <p>Click any map marker pin to view spatial risk analysis and ticket details.</p>
-            </div>
-          )}
+          {/* Bottom Telemetry Status Bar */}
+          <div className="px-5 py-3 bg-[#fcf8fa] border-t border-[#76777d]/15 flex items-center justify-between text-[11px] text-[#76777d] font-mono">
+            <span>Kopargaon GIS Node #08</span>
+            <span>EPSG:4326 • SCADA Grid Active</span>
+          </div>
         </div>
       </div>
 
-      {/* Modal */}
+      {/* Explainability Modal */}
       {explainIssue && (
-        <ExplainabilityModal issue={explainIssue} onClose={() => setExplainIssue(null)} />
+        <ExplainabilityModal
+          issue={explainIssue}
+          onClose={() => setExplainIssue(null)}
+        />
       )}
     </div>
   );

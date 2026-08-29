@@ -7,6 +7,7 @@ import { LoginPage } from './pages/LoginPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { IssuesQueuePage } from './pages/IssuesQueuePage';
 import { PriorityEnginePage } from './pages/PriorityEnginePage';
+import { WastewaterReusePage } from './pages/WastewaterReusePage';
 import { ResourcesPage } from './pages/ResourcesPage';
 import { CivicMapPage } from './pages/CivicMapPage';
 import { CitizenPortalPage } from './pages/CitizenPortalPage';
@@ -39,6 +40,7 @@ export const App: React.FC = () => {
               </Route>
 
               {/* Shared Routes (Citizen, Officer, Admin) */}
+              <Route path="wastewater-reuse" element={<WastewaterReusePage />} />
               <Route path="issues" element={<IssuesQueuePage />} />
               <Route path="map" element={<CivicMapPage />} />
               <Route path="citizen-portal" element={<CitizenPortalPage />} />

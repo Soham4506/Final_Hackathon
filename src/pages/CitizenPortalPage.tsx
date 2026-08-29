@@ -75,7 +75,7 @@ export const CitizenPortalPage: React.FC = () => {
   const [trackQuery, setTrackQuery] = useState<string>('');
   const [trackedIssue, setTrackedIssue] = useState<any>(null);
 
-  // Trigger Multimodal Vision & Text Analysis whenever an image or text is provided
+  // Trigger Multimodal Vision & Text Analysis
   useEffect(() => {
     let active = true;
     const runAnalysis = async () => {
@@ -97,7 +97,7 @@ export const CitizenPortalPage: React.FC = () => {
         if (!active) return;
         setAiResult(result);
 
-        // Auto-populate fields that the user hasn't manually overridden yet
+        // Auto-populate fields that haven't been manually overridden
         if (!isCategoryOverridden && result.categoryIdSuggested) {
           setSelectedCategoryId(result.categoryIdSuggested);
           const matchedCat = categories.find((c) => c.id === result.categoryIdSuggested);
@@ -154,8 +154,8 @@ export const CitizenPortalPage: React.FC = () => {
           const fileExt = file.name.split('.').pop();
           const filePath = `grievances/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
           await supabase.storage.from('issue-attachments').upload(filePath, file);
-        } catch (err) {
-          console.warn('Storage upload error:', err);
+        } catch {
+          // Silent catch for storage upload
         }
       }
     };
@@ -245,46 +245,46 @@ export const CitizenPortalPage: React.FC = () => {
   const filteredCategories = categories.filter((c) => c.departmentId === selectedDeptId);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       {/* Header Banner */}
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="bg-white border border-[#76777d]/20 rounded-2xl p-5 sm:p-6 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <span className="bg-blue-950 text-blue-300 border border-blue-800 text-[10px] font-mono uppercase font-bold px-2 py-0.5 rounded flex items-center gap-1">
-              <Cpu size={12} /> Multimodal AI Intake
+            <span className="bg-emerald-50 text-emerald-800 border border-emerald-200 text-[10px] font-mono uppercase font-bold px-2 py-0.5 rounded flex items-center gap-1">
+              <Cpu size={12} /> Multimodal AI Gateway
             </span>
-            <span className="text-xs text-slate-400">Gemini Vision Recognition with SDDS Parameter Correction</span>
+            <span className="text-xs text-[#76777d]">Kopargaon Citizen Service Portal</span>
           </div>
-          <h1 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
-            {t.citizens}
+          <h1 className="text-xl sm:text-2xl font-bold text-[#1b1b1d] tracking-tight">
+            Citizen Grievance & Tracking Portal
           </h1>
-          <p className="text-xs sm:text-sm text-slate-400 mt-1">
+          <p className="text-xs sm:text-sm text-[#57657b] mt-1">
             Upload incident photos to auto-detect Department, Severity, Machine & Crew requirements, with full freedom to review and correct.
           </p>
         </div>
 
         {/* Tab Switcher */}
-        <div className="bg-slate-950 p-1 rounded-xl border border-slate-800 flex items-center text-xs shrink-0">
+        <div className="bg-[#f0edef] p-1 rounded-xl border border-[#76777d]/15 flex items-center text-xs shrink-0">
           <button
             onClick={() => setSearchParams({ tab: 'submit' })}
-            className={`px-4 py-2 rounded-lg font-semibold transition-all flex items-center gap-1.5 ${
+            className={`px-4 py-2 rounded-lg font-bold uppercase text-[11px] tracking-wider transition-all flex items-center gap-1.5 ${
               activeTab === 'submit'
-                ? 'bg-emerald-600 text-white shadow-sm'
-                : 'text-slate-400 hover:text-slate-200'
+                ? 'bg-[#131b2e] text-white shadow-xs'
+                : 'text-[#57657b] hover:text-[#1b1b1d]'
             }`}
           >
-            <PlusCircle size={15} />
+            <PlusCircle size={14} />
             <span>{t.reportIssue}</span>
           </button>
           <button
             onClick={() => setSearchParams({ tab: 'track' })}
-            className={`px-4 py-2 rounded-lg font-semibold transition-all flex items-center gap-1.5 ${
+            className={`px-4 py-2 rounded-lg font-bold uppercase text-[11px] tracking-wider transition-all flex items-center gap-1.5 ${
               activeTab === 'track'
-                ? 'bg-blue-600 text-white shadow-sm'
-                : 'text-slate-400 hover:text-slate-200'
+                ? 'bg-[#131b2e] text-white shadow-xs'
+                : 'text-[#57657b] hover:text-[#1b1b1d]'
             }`}
           >
-            <Search size={15} />
+            <Search size={14} />
             <span>{t.trackTicket}</span>
           </button>
         </div>
@@ -292,12 +292,12 @@ export const CitizenPortalPage: React.FC = () => {
 
       {/* TAB 1: SUBMISSION & INTERACTIVE SDDS CORRECTION WIZARD */}
       {activeTab === 'submit' && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
           {/* Main Form (2 Cols) */}
-          <div className="lg:col-span-2 bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-sm space-y-5">
-            <div className="flex items-center justify-between">
-              <h2 className="font-bold text-white text-base flex items-center gap-2">
-                <PlusCircle size={18} className="text-emerald-400" />
+          <div className="lg:col-span-2 bg-white border border-[#76777d]/20 rounded-2xl p-5 sm:p-6 shadow-xs space-y-4">
+            <div className="flex items-center justify-between border-b border-[#76777d]/15 pb-3">
+              <h2 className="font-bold text-[#1b1b1d] text-sm uppercase tracking-wider flex items-center gap-2">
+                <PlusCircle size={16} className="text-[#131b2e]" />
                 <span>{t.reportIssue}</span>
               </h2>
 
@@ -305,45 +305,45 @@ export const CitizenPortalPage: React.FC = () => {
               <button
                 type="button"
                 onClick={handleVoiceIntake}
-                className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 border transition-all ${
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 border transition-all ${
                   isRecording
-                    ? 'bg-red-950 text-red-300 border-red-800 animate-pulse'
-                    : 'bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-700'
+                    ? 'bg-red-100 text-red-800 border-red-300 animate-pulse'
+                    : 'bg-[#f6f3f5] hover:bg-slate-100 text-[#131b2e] border-[#76777d]/20'
                 }`}
               >
-                {isRecording ? <MicOff size={14} className="text-red-400" /> : <Mic size={14} className="text-emerald-400" />}
+                {isRecording ? <MicOff size={14} className="text-red-600" /> : <Mic size={14} className="text-[#131b2e]" />}
                 <span>{isRecording ? 'Listening...' : 'Voice Complaint (AI)'}</span>
               </button>
             </div>
 
             {submittedTicket && (
-              <div className="p-4 bg-emerald-950/60 border border-emerald-800 rounded-xl text-emerald-200 text-xs space-y-1">
-                <div className="font-bold text-emerald-300 text-sm flex items-center gap-1.5">
+              <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-900 text-xs space-y-1">
+                <div className="font-bold text-emerald-800 text-sm flex items-center gap-1.5">
                   <CheckCircle2 size={16} />
                   <span>Issue Registered Successfully!</span>
                 </div>
                 <p>
-                  Your ticket number is <strong className="font-mono text-white">{submittedTicket}</strong>. The deterministic priority engine has calculated its priority score and queued it for municipal planning.
+                  Your ticket number is <strong className="font-mono text-[#131b2e]">{submittedTicket}</strong>. The deterministic priority engine has calculated its priority score and queued it for municipal planning.
                 </p>
                 <button
                   onClick={() => setSearchParams({ tab: 'track' })}
-                  className="mt-2 text-emerald-400 font-semibold underline text-[11px]"
+                  className="mt-2 text-emerald-800 font-bold underline text-[11px]"
                 >
                   Click here to view live tracking status →
                 </button>
               </div>
             )}
 
-            <form onSubmit={handleSubmit} className="space-y-5 text-xs">
+            <form onSubmit={handleSubmit} className="space-y-4 text-xs">
               {/* Photo Upload Area First */}
               <div className="space-y-2">
-                <label className="block text-slate-300 font-semibold flex items-center justify-between">
+                <label className="block text-[#1b1b1d] font-bold flex items-center justify-between">
                   <span className="flex items-center gap-1.5">
-                    <Camera size={14} className="text-emerald-400" />
+                    <Camera size={14} className="text-[#131b2e]" />
                     <span>Upload Site Photo (AI Vision Auto-Assessment)</span>
                   </span>
                   {photoDataUrl && (
-                    <span className="text-[10px] text-emerald-400 font-mono font-bold flex items-center gap-1">
+                    <span className="text-[10px] text-emerald-700 font-mono font-bold flex items-center gap-1">
                       <CheckCircle2 size={12} /> Image Attached (100% Confidence)
                     </span>
                   )}
@@ -360,31 +360,31 @@ export const CitizenPortalPage: React.FC = () => {
                 {!photoDataUrl ? (
                   <div
                     onClick={() => fileInputRef.current?.click()}
-                    className="border-2 border-dashed border-slate-700 hover:border-emerald-500/80 bg-slate-950/60 hover:bg-slate-950 p-6 rounded-2xl text-center cursor-pointer transition-all space-y-2"
+                    className="border-2 border-dashed border-[#76777d]/30 hover:border-[#131b2e] bg-[#fcf8fa] hover:bg-slate-50 p-6 rounded-2xl text-center cursor-pointer transition-all space-y-2"
                   >
-                    <div className="w-10 h-10 rounded-xl bg-slate-900 border border-slate-800 text-slate-400 flex items-center justify-center mx-auto">
-                      <UploadCloud size={20} className="text-emerald-400" />
+                    <div className="w-10 h-10 rounded-xl bg-slate-100 border border-slate-200 text-[#131b2e] flex items-center justify-center mx-auto">
+                      <UploadCloud size={20} />
                     </div>
-                    <div className="text-xs font-semibold text-slate-200">
+                    <div className="text-xs font-bold text-[#1b1b1d]">
                       Click to upload photo from camera / gallery
                     </div>
-                    <p className="text-[10px] text-slate-500">
+                    <p className="text-[10px] text-[#76777d]">
                       Gemini Vision will automatically identify the defect, department, machinery, and crew size.
                     </p>
                   </div>
                 ) : (
-                  <div className="relative bg-slate-950 border border-slate-800 rounded-2xl p-3 flex items-center justify-between gap-4">
+                  <div className="relative bg-[#fcf8fa] border border-[#76777d]/20 rounded-2xl p-3 flex items-center justify-between gap-4">
                     <div className="flex items-center gap-3">
                       <img
                         src={photoDataUrl}
                         alt="Uploaded preview"
-                        className="w-16 h-16 object-cover rounded-xl border border-slate-700"
+                        className="w-16 h-16 object-cover rounded-xl border border-slate-300"
                       />
                       <div>
-                        <div className="font-semibold text-white truncate max-w-[220px] text-xs">
+                        <div className="font-bold text-[#1b1b1d] truncate max-w-[220px] text-xs">
                           {photoFileName || 'Attached Site Photo'}
                         </div>
-                        <div className="text-[10px] text-emerald-400 flex items-center gap-1 mt-0.5">
+                        <div className="text-[10px] text-emerald-700 flex items-center gap-1 mt-0.5 font-bold">
                           <CheckCircle2 size={11} /> Photo Loaded • Vision Assessment Ready
                         </div>
                       </div>
@@ -392,7 +392,7 @@ export const CitizenPortalPage: React.FC = () => {
                     <button
                       type="button"
                       onClick={removePhoto}
-                      className="p-1.5 rounded-lg bg-slate-900 hover:bg-red-950 text-slate-400 hover:text-red-400 border border-slate-800 transition-colors"
+                      className="p-1.5 rounded-lg bg-white hover:bg-red-50 text-slate-500 hover:text-red-700 border border-slate-200 transition-colors"
                       title="Remove Photo"
                     >
                       <X size={16} />
@@ -403,8 +403,8 @@ export const CitizenPortalPage: React.FC = () => {
 
               {/* Title */}
               <div>
-                <label className="block text-slate-300 font-semibold mb-1">
-                  Issue Summary / Title <span className="text-red-400">*</span>
+                <label className="block text-[#1b1b1d] font-bold mb-1">
+                  Issue Summary / Title <span className="text-red-600">*</span>
                 </label>
                 <input
                   type="text"
@@ -412,14 +412,14 @@ export const CitizenPortalPage: React.FC = () => {
                   placeholder="e.g. Drinking water pipeline smelling of sewage near Civil Hospital"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2.5 text-white placeholder-slate-500 focus:ring-1 focus:ring-emerald-500 text-xs"
+                  className="w-full bg-[#f6f3f5] border border-[#76777d]/20 rounded-xl px-3 py-2 text-[#1b1b1d] placeholder:text-[#76777d]/70 focus:outline-none focus:border-[#131b2e] font-medium"
                 />
               </div>
 
               {/* Description */}
               <div>
-                <label className="block text-slate-300 font-semibold mb-1">
-                  Detailed Description <span className="text-red-400">*</span>
+                <label className="block text-[#1b1b1d] font-bold mb-1">
+                  Detailed Description <span className="text-red-600">*</span>
                 </label>
                 <textarea
                   required
@@ -427,20 +427,20 @@ export const CitizenPortalPage: React.FC = () => {
                   placeholder="Describe the problem, nearby landmarks (school, hospital), and risk to residents..."
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-700 rounded-xl p-3 text-white placeholder-slate-500 focus:ring-1 focus:ring-emerald-500 text-xs leading-relaxed"
+                  className="w-full bg-[#f6f3f5] border border-[#76777d]/20 rounded-xl p-3 text-[#1b1b1d] placeholder:text-[#76777d]/70 focus:outline-none focus:border-[#131b2e] font-medium leading-relaxed"
                 />
               </div>
 
               {/* Ward & Address Grid */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-slate-300 font-semibold mb-1">
-                    Kopargaon Ward / Zone <span className="text-red-400">*</span>
+                  <label className="block text-[#1b1b1d] font-bold mb-1">
+                    Kopargaon Ward / Zone <span className="text-red-600">*</span>
                   </label>
                   <select
                     value={selectedZoneId}
                     onChange={(e) => setSelectedZoneId(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2.5 text-white text-xs focus:ring-1 focus:ring-emerald-500"
+                    className="w-full bg-[#f6f3f5] border border-[#76777d]/20 rounded-xl px-3 py-2 text-[#1b1b1d] focus:outline-none focus:border-[#131b2e] font-semibold"
                   >
                     {zones.map((z) => (
                       <option key={z.id} value={z.id}>
@@ -451,8 +451,8 @@ export const CitizenPortalPage: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="block text-slate-300 font-semibold mb-1">
-                    Street / Landmark Address <span className="text-red-400">*</span>
+                  <label className="block text-[#1b1b1d] font-bold mb-1">
+                    Street / Landmark Address <span className="text-red-600">*</span>
                   </label>
                   <input
                     type="text"
@@ -460,36 +460,34 @@ export const CitizenPortalPage: React.FC = () => {
                     placeholder="e.g. Lane 3, Behind Kopargaon Civil Hospital"
                     value={address}
                     onChange={(e) => setAddress(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2.5 text-white placeholder-slate-500 text-xs focus:ring-1 focus:ring-emerald-500"
+                    className="w-full bg-[#f6f3f5] border border-[#76777d]/20 rounded-xl px-3 py-2 text-[#1b1b1d] placeholder:text-[#76777d]/70 focus:outline-none focus:border-[#131b2e] font-medium"
                   />
                 </div>
               </div>
 
-              {/* ========================================================================= */}
-              {/* INTERACTIVE SDDS PARAMETER CORRECTION CARD (AI AUTO-FILL + MANUAL OVERRIDE) */}
-              {/* ========================================================================= */}
-              <div className="bg-slate-950/90 border border-emerald-500/30 rounded-2xl p-5 space-y-4 shadow-inner">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800 pb-3">
+              {/* SDDS Interactive Review & Correction Card */}
+              <div className="bg-[#fcf8fa] border border-blue-200 rounded-2xl p-5 space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[#76777d]/15 pb-3">
                   <div className="flex items-center gap-2">
-                    <Sliders size={16} className="text-emerald-400" />
-                    <span className="font-bold text-white text-xs uppercase tracking-wider">
+                    <Sliders size={16} className="text-[#131b2e]" />
+                    <span className="font-bold text-[#1b1b1d] text-xs uppercase tracking-wider">
                       Municipal Parameter Review & Manual Correction (SDDS)
                     </span>
                   </div>
-                  <span className="text-[10px] text-emerald-400 bg-emerald-950/80 border border-emerald-800 px-2 py-0.5 rounded font-mono">
+                  <span className="text-[10px] text-blue-800 bg-blue-50 border border-blue-200 px-2 py-0.5 rounded font-mono font-bold">
                     ⚡ Auto-Filled by AI • Click to edit
                   </span>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {/* Department Selector */}
+                  {/* Department */}
                   <div>
-                    <label className="block text-slate-300 font-semibold mb-1 flex items-center justify-between">
+                    <label className="block text-[#1b1b1d] font-bold mb-1 flex items-center justify-between">
                       <span>Target Department</span>
                       {isDeptOverridden ? (
-                        <span className="text-[10px] text-amber-400 font-mono">(User Adjusted)</span>
+                        <span className="text-[10px] text-amber-700 font-mono font-bold">(User Adjusted)</span>
                       ) : (
-                        <span className="text-[10px] text-emerald-400 font-mono">(AI Detected)</span>
+                        <span className="text-[10px] text-emerald-700 font-mono font-bold">(AI Detected)</span>
                       )}
                     </label>
                     <select
@@ -500,7 +498,7 @@ export const CitizenPortalPage: React.FC = () => {
                         const firstCat = categories.find((c) => c.departmentId === e.target.value);
                         if (firstCat) setSelectedCategoryId(firstCat.id);
                       }}
-                      className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white text-xs focus:ring-1 focus:ring-emerald-500 font-medium"
+                      className="w-full bg-white border border-[#76777d]/20 rounded-xl px-3 py-2 text-[#1b1b1d] font-bold text-xs focus:outline-none focus:border-[#131b2e]"
                     >
                       {departments.map((d) => (
                         <option key={d.id} value={d.id}>
@@ -510,14 +508,14 @@ export const CitizenPortalPage: React.FC = () => {
                     </select>
                   </div>
 
-                  {/* Category Selector */}
+                  {/* Category */}
                   <div>
-                    <label className="block text-slate-300 font-semibold mb-1 flex items-center justify-between">
+                    <label className="block text-[#1b1b1d] font-bold mb-1 flex items-center justify-between">
                       <span>Hazard Category</span>
                       {isCategoryOverridden ? (
-                        <span className="text-[10px] text-amber-400 font-mono">(User Adjusted)</span>
+                        <span className="text-[10px] text-amber-700 font-mono font-bold">(User Adjusted)</span>
                       ) : (
-                        <span className="text-[10px] text-emerald-400 font-mono">(AI Detected)</span>
+                        <span className="text-[10px] text-emerald-700 font-mono font-bold">(AI Detected)</span>
                       )}
                     </label>
                     <select
@@ -526,24 +524,24 @@ export const CitizenPortalPage: React.FC = () => {
                         setSelectedCategoryId(e.target.value);
                         setIsCategoryOverridden(true);
                       }}
-                      className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white text-xs focus:ring-1 focus:ring-emerald-500 font-medium"
+                      className="w-full bg-white border border-[#76777d]/20 rounded-xl px-3 py-2 text-[#1b1b1d] font-bold text-xs focus:outline-none focus:border-[#131b2e]"
                     >
                       {filteredCategories.map((c) => (
                         <option key={c.id} value={c.id}>
-                          {c.name} (Base: {c.baseSeverityScore})
+                          {c.name}
                         </option>
                       ))}
                     </select>
                   </div>
 
-                  {/* Severity / Urgency Buttons */}
+                  {/* Severity */}
                   <div>
-                    <label className="block text-slate-300 font-semibold mb-1.5 flex items-center justify-between">
+                    <label className="block text-[#1b1b1d] font-bold mb-1.5 flex items-center justify-between">
                       <span>Severity / Urgency Level</span>
                       {isUrgencyOverridden ? (
-                        <span className="text-[10px] text-amber-400 font-mono">(User Adjusted)</span>
+                        <span className="text-[10px] text-amber-700 font-mono font-bold">(User Adjusted)</span>
                       ) : (
-                        <span className="text-[10px] text-emerald-400 font-mono">(AI Detected)</span>
+                        <span className="text-[10px] text-emerald-700 font-mono font-bold">(AI Detected)</span>
                       )}
                     </label>
                     <div className="grid grid-cols-4 gap-1.5 text-xs">
@@ -558,13 +556,13 @@ export const CitizenPortalPage: React.FC = () => {
                           className={`py-1.5 rounded-lg font-bold uppercase text-[10px] transition-all ${
                             selectedUrgency === lvl
                               ? lvl === 'critical'
-                                ? 'bg-red-600 text-white shadow'
+                                ? 'bg-[#ba1a1a] text-white shadow-xs'
                                 : lvl === 'high'
-                                ? 'bg-amber-600 text-white shadow'
+                                ? 'bg-amber-600 text-white shadow-xs'
                                 : lvl === 'medium'
-                                ? 'bg-blue-600 text-white shadow'
-                                : 'bg-slate-700 text-white shadow'
-                              : 'bg-slate-900 text-slate-400 border border-slate-800 hover:text-slate-200'
+                                ? 'bg-blue-700 text-white shadow-xs'
+                                : 'bg-slate-700 text-white shadow-xs'
+                              : 'bg-white text-[#57657b] border border-[#76777d]/20 hover:border-[#131b2e]'
                           }`}
                         >
                           {lvl}
@@ -573,14 +571,14 @@ export const CitizenPortalPage: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* Required Machinery */}
+                  {/* Machinery */}
                   <div>
-                    <label className="block text-slate-300 font-semibold mb-1 flex items-center justify-between">
-                      <span>Required Heavy Machinery</span>
+                    <label className="block text-[#1b1b1d] font-bold mb-1 flex items-center justify-between">
+                      <span>Required Fleet Machinery</span>
                       {isEquipmentOverridden ? (
-                        <span className="text-[10px] text-amber-400 font-mono">(User Adjusted)</span>
+                        <span className="text-[10px] text-amber-700 font-mono font-bold">(User Adjusted)</span>
                       ) : (
-                        <span className="text-[10px] text-emerald-400 font-mono">(AI Detected)</span>
+                        <span className="text-[10px] text-emerald-700 font-mono font-bold">(AI Detected)</span>
                       )}
                     </label>
                     <select
@@ -589,7 +587,7 @@ export const CitizenPortalPage: React.FC = () => {
                         setRequiredEquipment(e.target.value as ResourceType);
                         setIsEquipmentOverridden(true);
                       }}
-                      className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white text-xs focus:ring-1 focus:ring-emerald-500 font-medium capitalize"
+                      className="w-full bg-white border border-[#76777d]/20 rounded-xl px-3 py-2 text-[#1b1b1d] font-bold text-xs focus:outline-none focus:border-[#131b2e] capitalize"
                     >
                       <option value="jetting_machine">Jetting Machine (Suction Vacuum)</option>
                       <option value="road_roller">Road Roller (Asphalt Compactor)</option>
@@ -602,12 +600,12 @@ export const CitizenPortalPage: React.FC = () => {
 
                   {/* Crew Needed */}
                   <div>
-                    <label className="block text-slate-300 font-semibold mb-1 flex items-center justify-between">
+                    <label className="block text-[#1b1b1d] font-bold mb-1 flex items-center justify-between">
                       <span>Crew Size (Technicians)</span>
                       {isStaffOverridden ? (
-                        <span className="text-[10px] text-amber-400 font-mono">(User Adjusted)</span>
+                        <span className="text-[10px] text-amber-700 font-mono font-bold">(User Adjusted)</span>
                       ) : (
-                        <span className="text-[10px] text-emerald-400 font-mono">(AI Detected)</span>
+                        <span className="text-[10px] text-emerald-700 font-mono font-bold">(AI Detected)</span>
                       )}
                     </label>
                     <div className="flex items-center gap-2">
@@ -620,15 +618,15 @@ export const CitizenPortalPage: React.FC = () => {
                           setRequiredStaffCount(Number(e.target.value));
                           setIsStaffOverridden(true);
                         }}
-                        className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white font-mono text-xs focus:ring-1 focus:ring-emerald-500 font-bold"
+                        className="w-full bg-white border border-[#76777d]/20 rounded-xl px-3 py-2 text-[#1b1b1d] font-mono text-xs focus:outline-none focus:border-[#131b2e] font-bold"
                       />
-                      <span className="text-slate-400 text-xs shrink-0">Staff</span>
+                      <span className="text-[#76777d] text-xs shrink-0">Staff</span>
                     </div>
                   </div>
 
                   {/* Affected Population */}
                   <div>
-                    <label className="block text-slate-300 font-semibold mb-1">
+                    <label className="block text-[#1b1b1d] font-bold mb-1">
                       Estimated Affected Residents
                     </label>
                     <input
@@ -637,7 +635,7 @@ export const CitizenPortalPage: React.FC = () => {
                       max={20000}
                       value={affectedPop}
                       onChange={(e) => setAffectedPop(Number(e.target.value))}
-                      className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white font-mono text-xs focus:ring-1 focus:ring-emerald-500 font-bold"
+                      className="w-full bg-white border border-[#76777d]/20 rounded-xl px-3 py-2 text-[#1b1b1d] font-mono text-xs focus:outline-none focus:border-[#131b2e] font-bold"
                     />
                   </div>
                 </div>
@@ -648,7 +646,7 @@ export const CitizenPortalPage: React.FC = () => {
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="px-6 py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-bold text-xs shadow-lg shadow-emerald-950/60 flex items-center gap-2 transition-all"
+                  className="px-6 py-3 bg-[#131b2e] hover:bg-[#1e2a47] text-white rounded-xl font-bold text-xs shadow-md flex items-center gap-2 transition-all uppercase tracking-wider"
                 >
                   <Send size={15} />
                   <span>{isSubmitting ? 'Submitting...' : 'Submit to Municipal Decision Engine'}</span>
@@ -658,18 +656,18 @@ export const CitizenPortalPage: React.FC = () => {
           </div>
 
           {/* AI Multimodal Vision Analysis Output (1 Col) */}
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-sm space-y-4">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-              <h3 className="font-bold text-white text-xs uppercase tracking-wider flex items-center gap-1.5">
-                <Sparkles size={14} className="text-amber-400" />
+          <div className="bg-white border border-[#76777d]/20 rounded-2xl p-5 shadow-xs space-y-4">
+            <div className="flex items-center justify-between border-b border-[#76777d]/15 pb-3">
+              <h3 className="font-bold text-[#1b1b1d] text-xs uppercase tracking-wider flex items-center gap-1.5">
+                <Sparkles size={14} className="text-[#131b2e]" />
                 <span>AI Vision & Defect Recognition</span>
               </h3>
               {isAnalyzingImage ? (
-                <span className="text-[10px] bg-amber-950 text-amber-300 border border-amber-800 px-2 py-0.5 rounded font-mono animate-pulse">
+                <span className="text-[10px] bg-amber-50 text-amber-800 border border-amber-200 px-2 py-0.5 rounded font-mono font-bold animate-pulse">
                   Analyzing...
                 </span>
               ) : (
-                <span className="text-[10px] bg-slate-800 text-slate-400 px-2 py-0.5 rounded font-mono">
+                <span className="text-[10px] bg-slate-100 text-slate-700 px-2 py-0.5 rounded font-mono font-bold">
                   {aiResult?.modelUsed || 'Gemini Vision'}
                 </span>
               )}
@@ -678,70 +676,65 @@ export const CitizenPortalPage: React.FC = () => {
             {aiResult ? (
               <div className="space-y-3 text-xs">
                 {/* Confidence Bar */}
-                <div className="bg-slate-950/80 p-3 rounded-xl border border-slate-800 space-y-1.5">
+                <div className="bg-[#fcf8fa] p-3 rounded-xl border border-[#76777d]/15 space-y-1.5">
                   <div className="flex justify-between items-center">
-                    <span className="text-slate-400">Vision Verification Confidence:</span>
-                    <span className="font-mono text-emerald-400 font-bold">
+                    <span className="text-[#57657b]">Vision Verification Confidence:</span>
+                    <span className="font-mono text-emerald-700 font-bold">
                       {(aiResult.confidenceScore * 100).toFixed(0)}%
                     </span>
                   </div>
-                  <div className="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden">
+                  <div className="w-full h-1.5 bg-[#eae7e9] rounded-full overflow-hidden">
                     <div
-                      className="h-full bg-emerald-500 rounded-full"
+                      className="h-full bg-emerald-600 rounded-full"
                       style={{ width: `${aiResult.confidenceScore * 100}%` }}
                     />
                   </div>
-                  <p className="text-[10px] text-slate-500 leading-tight">
-                    {photoDataUrl
-                      ? 'Visual evidence verified via Gemini Vision recognition.'
-                      : 'Lacks photo evidence; attaching a photo eliminates confidence penalty.'}
-                  </p>
                 </div>
 
                 {/* Visual Findings Rationale */}
                 {aiResult.visualFindings && (
-                  <div className="bg-slate-950/80 p-3 rounded-xl border border-slate-800 space-y-1">
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                  <div className="bg-[#fcf8fa] p-3 rounded-xl border border-[#76777d]/15 space-y-1">
+                    <span className="text-[10px] font-bold text-[#76777d] uppercase tracking-wider block">
                       Visual Findings
                     </span>
-                    <p className="text-slate-200 text-xs leading-relaxed">
+                    <p className="text-[#1b1b1d] text-xs leading-relaxed">
                       {aiResult.visualFindings}
                     </p>
                   </div>
                 )}
 
                 {/* Auto-detected Breakdown Cards */}
-                <div className="bg-slate-950/80 p-3 rounded-xl border border-slate-800 space-y-2">
+                <div className="bg-[#fcf8fa] p-3 rounded-xl border border-[#76777d]/15 space-y-2">
                   <div className="flex justify-between">
-                    <span className="text-slate-400">Auto Department:</span>
-                    <span className="font-mono font-bold text-white">
+                    <span className="text-[#57657b]">Auto Department:</span>
+                    <span className="font-mono font-bold text-[#1b1b1d]">
                       {aiResult.departmentCodeSuggested}
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-slate-400">Assessed Urgency:</span>
-                    <span className="font-mono text-amber-300 font-bold uppercase">
+                    <span className="text-[#57657b]">Assessed Urgency:</span>
+                    <span className="font-mono text-amber-700 font-bold uppercase">
                       {aiResult.suggestedUrgency}
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-slate-400">Fleet Machinery:</span>
-                    <span className="font-mono text-slate-200 capitalize">
+                    <span className="text-[#57657b]">Fleet Machinery:</span>
+                    <span className="font-mono text-[#1b1b1d] capitalize">
                       {aiResult.requiredEquipment?.replace('_', ' ') || 'Standard Toolset'}
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-slate-400">Crew Deployment:</span>
-                    <span className="font-mono text-slate-200">{aiResult.requiredStaffCount} staff</span>
+                    <span className="text-[#57657b]">Crew Deployment:</span>
+                    <span className="font-mono text-[#1b1b1d]">{aiResult.requiredStaffCount} staff</span>
                   </div>
                 </div>
 
-                <div className="text-[11px] text-emerald-300 bg-emerald-950/30 p-2.5 rounded-xl border border-emerald-800/40 leading-relaxed">
-                  💡 <strong>SDDS Dynamic Override:</strong> All detected parameters above are pre-selected in the form. You can adjust any parameter on the left if municipal conditions require it.
+                <div className="text-[11px] text-blue-900 bg-blue-50 p-2.5 rounded-xl border border-blue-200 leading-relaxed">
+                  💡 <strong>SDDS Dynamic Override:</strong> All detected parameters above are pre-selected in the form. You can adjust any parameter on the left if conditions require it.
                 </div>
               </div>
             ) : (
-              <div className="p-8 text-center text-slate-500 text-xs leading-relaxed">
+              <div className="p-8 text-center text-[#76777d] text-xs leading-relaxed">
                 Upload a site photo or write a description. Gemini Vision will analyze physical damage and auto-fill Department, Category, Severity, Machinery, and Crew requirements.
               </div>
             )}
@@ -751,22 +744,22 @@ export const CitizenPortalPage: React.FC = () => {
 
       {/* TAB 2: CITIZEN TICKET TRACKING */}
       {activeTab === 'track' && (
-        <div className="space-y-6">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-sm">
+        <div className="space-y-5">
+          <div className="bg-white border border-[#76777d]/20 rounded-2xl p-5 shadow-xs">
             <form onSubmit={handleTrackSearch} className="flex flex-col sm:flex-row gap-3">
               <div className="relative flex-1">
-                <Search size={16} className="absolute left-3.5 top-3 text-slate-400" />
+                <Search size={16} className="absolute left-3.5 top-3 text-[#76777d]" />
                 <input
                   type="text"
                   placeholder="Enter Municipal Ticket Number (e.g. KMC-2026-00101)..."
                   value={trackQuery}
                   onChange={(e) => setTrackQuery(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-700 rounded-xl pl-10 pr-3 py-2.5 text-xs text-white placeholder-slate-500 focus:ring-1 focus:ring-blue-500 font-mono"
+                  className="w-full bg-[#f6f3f5] border border-[#76777d]/20 rounded-xl pl-10 pr-3 py-2.5 text-xs text-[#1b1b1d] placeholder:text-[#76777d]/70 focus:outline-none focus:border-[#131b2e] font-mono font-medium"
                 />
               </div>
               <button
                 type="submit"
-                className="px-6 py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl text-xs transition-colors shadow-md shadow-blue-950"
+                className="px-6 py-2.5 bg-[#131b2e] hover:bg-[#1e2a47] text-white font-bold rounded-xl text-xs transition-colors shadow-xs uppercase tracking-wider"
               >
                 Track Status
               </button>
@@ -774,21 +767,21 @@ export const CitizenPortalPage: React.FC = () => {
           </div>
 
           {trackedIssue ? (
-            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-sm space-y-6">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800 pb-5">
+            <div className="bg-white border border-[#76777d]/20 rounded-2xl p-6 shadow-xs space-y-6">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#76777d]/15 pb-5">
                 <div>
                   <div className="flex items-center gap-2 mb-1">
-                    <span className="font-mono text-emerald-400 font-bold text-sm">
+                    <span className="font-mono text-[#131b2e] font-bold text-sm">
                       {trackedIssue.ticketNumber}
                     </span>
-                    <span className="text-slate-500">•</span>
-                    <span className="text-xs text-slate-400">
+                    <span className="text-[#76777d]">•</span>
+                    <span className="text-xs text-[#76777d]">
                       Reported on {new Date(trackedIssue.reportedAt).toLocaleString()}
                     </span>
                   </div>
-                  <h2 className="text-lg font-bold text-white">{trackedIssue.title}</h2>
-                  <div className="text-xs text-slate-400 mt-1 flex items-center gap-1">
-                    <MapPin size={13} className="text-emerald-400" />
+                  <h2 className="text-lg font-bold text-[#1b1b1d]">{trackedIssue.title}</h2>
+                  <div className="text-xs text-[#57657b] mt-1 flex items-center gap-1">
+                    <MapPin size={13} className="text-[#131b2e]" />
                     <span>{trackedIssue.locationAddress}</span>
                   </div>
                 </div>
@@ -803,10 +796,10 @@ export const CitizenPortalPage: React.FC = () => {
                 </div>
               </div>
 
-              {/* Photo Evidence if uploaded */}
+              {/* Photo Evidence */}
               {trackedIssue.photoUrls && trackedIssue.photoUrls.length > 0 && (
                 <div className="space-y-1.5">
-                  <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">
+                  <span className="text-[11px] font-bold text-[#76777d] uppercase tracking-wider block">
                     Citizen Photo Evidence
                   </span>
                   <div className="flex gap-2">
@@ -815,7 +808,7 @@ export const CitizenPortalPage: React.FC = () => {
                         key={idx}
                         src={url}
                         alt="Evidence"
-                        className="w-24 h-24 object-cover rounded-xl border border-slate-700"
+                        className="w-24 h-24 object-cover rounded-xl border border-slate-200"
                       />
                     ))}
                   </div>
@@ -824,7 +817,7 @@ export const CitizenPortalPage: React.FC = () => {
 
               {/* Progress Stage Timeline */}
               <div>
-                <h3 className="text-xs font-bold uppercase text-slate-400 tracking-wider mb-4">
+                <h3 className="text-xs font-bold uppercase text-[#76777d] tracking-wider mb-3">
                   Municipal Action Timeline
                 </h3>
                 <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
@@ -845,14 +838,14 @@ export const CitizenPortalPage: React.FC = () => {
                         key={stage.key}
                         className={`p-3.5 rounded-xl border text-xs transition-all ${
                           isDone
-                            ? 'bg-emerald-950/40 border-emerald-800 text-emerald-200'
-                            : 'bg-slate-950/40 border-slate-800 text-slate-500'
+                            ? 'bg-emerald-50 border-emerald-300 text-emerald-900'
+                            : 'bg-[#fcf8fa] border-[#76777d]/15 text-[#76777d]'
                         }`}
                       >
-                        <div className="font-bold text-white flex items-center gap-1.5 mb-1">
+                        <div className="font-bold flex items-center gap-1.5 mb-1 text-[#1b1b1d]">
                           <CheckCircle2
                             size={14}
-                            className={isDone ? 'text-emerald-400' : 'text-slate-600'}
+                            className={isDone ? 'text-emerald-700' : 'text-slate-400'}
                           />
                           <span>{stage.label}</span>
                         </div>
@@ -867,13 +860,13 @@ export const CitizenPortalPage: React.FC = () => {
               {(() => {
                 const expl = ExplainabilityService.generateCitizenExplanation(trackedIssue);
                 return (
-                  <div className="bg-slate-950/80 border border-slate-800 rounded-xl p-4 text-xs space-y-2">
-                    <div className="font-bold text-emerald-400 text-sm flex items-center gap-2">
+                  <div className="bg-[#fcf8fa] border border-[#76777d]/20 rounded-xl p-4 text-xs space-y-2">
+                    <div className="font-bold text-emerald-800 text-sm flex items-center gap-2">
                       <ShieldCheck size={16} />
                       <span>{expl.statusHeadline}</span>
                     </div>
-                    <p className="text-slate-300 leading-relaxed">{expl.detail}</p>
-                    <div className="text-[11px] text-amber-300 font-medium">
+                    <p className="text-[#1b1b1d] leading-relaxed">{expl.detail}</p>
+                    <div className="text-[11px] text-amber-800 font-bold">
                       Next Step: {expl.expectedAction}
                     </div>
                   </div>
@@ -881,7 +874,7 @@ export const CitizenPortalPage: React.FC = () => {
               })()}
             </div>
           ) : (
-            <div className="p-12 text-center text-slate-500 text-xs bg-slate-900 border border-slate-800 rounded-2xl">
+            <div className="p-12 text-center text-[#76777d] text-xs bg-white border border-[#76777d]/20 rounded-2xl">
               No tickets found. Submit an issue to view real-time stage progression.
             </div>
           )}

@@ -275,9 +275,11 @@ export interface AuditLog {
   actorName: string;
   actorRole: UserRole;
   action: string;
-  entityType: 'issue' | 'plan' | 'resource' | 'weight_config' | 'decision';
+  entityType: 'issue' | 'plan' | 'resource' | 'weight_config' | 'decision' | 'wastewater_batch' | 'reuse_plan' | 'quality_sample';
   entityId?: string;
   details: Record<string, any>;
   ipAddress?: string;
   createdAt: string;
 }
+
+export * from './wastewater';

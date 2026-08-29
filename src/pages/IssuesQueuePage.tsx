@@ -32,7 +32,7 @@ export const IssuesQueuePage: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
 
   // Filters state
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || '');
   const [selectedDept, setSelectedDept] = useState<string>('all');
   const [selectedZone, setSelectedZone] = useState<string>('all');
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
@@ -91,66 +91,67 @@ export const IssuesQueuePage: React.FC = () => {
   const activeIssue = issues.find((i) => i.id === activeIssueId);
 
   return (
-    <div className="space-y-6">
-      {/* Page Title */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <div className="space-y-5">
+      {/* Top Header */}
+      <div className="bg-white border border-[#76777d]/20 rounded-2xl p-5 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
-              Civic Issues Queue
-            </h1>
-            <span className="bg-slate-800 text-slate-300 border border-slate-700 text-xs px-2.5 py-0.5 rounded-full font-mono font-semibold">
-              {filteredIssues.length} of {issues.length} Records
+          <div className="flex items-center gap-2 mb-1">
+            <span className="bg-slate-100 text-[#131b2e] border border-slate-300 text-[10px] font-mono uppercase font-bold px-2 py-0.5 rounded">
+              Triage & Dispatch Stream
             </span>
+            <span className="text-xs text-[#76777d]">Showing {filteredIssues.length} of {issues.length} tickets</span>
           </div>
-          <p className="text-xs sm:text-sm text-slate-400 mt-1">
-            Prioritized municipal inbox for Kopargaon Municipal Council departments.
+          <h1 className="text-xl sm:text-2xl font-bold text-[#1b1b1d] tracking-tight">
+            Civic Grievance Triage Queue
+          </h1>
+          <p className="text-xs sm:text-sm text-[#57657b] mt-1">
+            Inspect incoming complaints, audit mathematical scoring drivers, and trigger shift dispatches.
           </p>
         </div>
       </div>
 
-      {/* Filter Bar */}
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-sm space-y-3">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
-          {/* Search Input */}
+      {/* Filter Control Bar */}
+      <div className="bg-white border border-[#76777d]/20 rounded-2xl p-4 shadow-xs space-y-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 text-xs">
+          {/* Search */}
           <div className="relative lg:col-span-2">
-            <Search size={16} className="absolute left-3 top-2.5 text-slate-400" />
+            <Search size={15} className="absolute left-3 top-2.5 text-[#76777d]" />
             <input
               type="text"
-              placeholder="Search by ticket #, keywords, citizen..."
+              placeholder="Search Ticket, Title, Address, Resident..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-slate-950 border border-slate-700 rounded-xl pl-9 pr-3 py-2 text-xs text-white placeholder-slate-500 focus:ring-1 focus:ring-emerald-500"
+              className="w-full bg-[#f6f3f5] border border-[#76777d]/20 rounded-xl pl-9 pr-3 py-2 text-xs text-[#1b1b1d] placeholder:text-[#76777d]/70 focus:outline-none focus:border-[#131b2e] font-medium"
             />
           </div>
 
-          {/* Department Filter */}
+          {/* Department */}
           <div>
             <select
               value={selectedDept}
               onChange={(e) => setSelectedDept(e.target.value)}
-              className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-200 focus:ring-1 focus:ring-emerald-500"
+              className="w-full bg-[#f6f3f5] border border-[#76777d]/20 rounded-xl px-3 py-2 text-[#1b1b1d] focus:outline-none focus:border-[#131b2e] text-xs font-semibold"
             >
-              <option value="all">All Departments (5)</option>
+              <option value="all">All Departments</option>
               {departments.map((d) => (
                 <option key={d.id} value={d.id}>
-                  {d.code} - {d.name}
+                  {d.code}: {d.name}
                 </option>
               ))}
             </select>
           </div>
 
-          {/* Ward Filter */}
+          {/* Ward */}
           <div>
             <select
               value={selectedZone}
               onChange={(e) => setSelectedZone(e.target.value)}
-              className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-200 focus:ring-1 focus:ring-emerald-500"
+              className="w-full bg-[#f6f3f5] border border-[#76777d]/20 rounded-xl px-3 py-2 text-[#1b1b1d] focus:outline-none focus:border-[#131b2e] text-xs font-semibold"
             >
-              <option value="all">All Kopargaon Wards (8)</option>
+              <option value="all">All Wards</option>
               {zones.map((z) => (
                 <option key={z.id} value={z.id}>
-                  {z.code}: {z.name}
+                  {z.code} - {z.name}
                 </option>
               ))}
             </select>
@@ -161,248 +162,163 @@ export const IssuesQueuePage: React.FC = () => {
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value as any)}
-              className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-emerald-400 font-medium focus:ring-1 focus:ring-emerald-500"
+              className="w-full bg-[#f6f3f5] border border-[#76777d]/20 rounded-xl px-3 py-2 text-[#1b1b1d] focus:outline-none focus:border-[#131b2e] text-xs font-semibold"
             >
-              <option value="priority">Sort: Priority Score (High → Low)</option>
-              <option value="sla">Sort: SLA Deadline (Urgent First)</option>
-              <option value="date">Sort: Reported Date (Newest First)</option>
+              <option value="priority">Rank: Priority Score</option>
+              <option value="date">Rank: Most Recent</option>
+              <option value="sla">Rank: SLA Urgency</option>
             </select>
           </div>
         </div>
-
-        {/* Secondary Pill Filters */}
-        <div className="flex items-center gap-2 overflow-x-auto pt-1 text-xs">
-          <span className="text-[11px] text-slate-500 font-semibold uppercase tracking-wider">Status:</span>
-          {['all', 'submitted', 'prioritized', 'scheduled', 'in_progress', 'resolved'].map((st) => (
-            <button
-              key={st}
-              onClick={() => setSelectedStatus(st)}
-              className={`px-2.5 py-1 rounded-lg capitalize text-[11px] font-medium transition-all ${
-                selectedStatus === st
-                  ? 'bg-emerald-600 text-white shadow-sm'
-                  : 'bg-slate-950 text-slate-400 hover:text-slate-200 border border-slate-800'
-              }`}
-            >
-              {st}
-            </button>
-          ))}
-        </div>
       </div>
 
-      {/* Main Grid: Queue Table (Left) + Detail Inspector (Right) */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Issues List / Table (2 Cols) */}
-        <div className="lg:col-span-2 bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-sm">
-          <div className="p-4 bg-slate-950/60 border-b border-slate-800 flex justify-between items-center text-xs text-slate-400">
-            <span>Showing {filteredIssues.length} civic tickets</span>
-            <span className="font-mono">Ranked by Priority Engine</span>
-          </div>
+      {/* Main Queue & Inspector Split */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+        {/* Left 2 Cols: Issue List */}
+        <div className="lg:col-span-2 space-y-3">
+          {filteredIssues.length === 0 ? (
+            <div className="bg-white border border-[#76777d]/20 rounded-2xl p-12 text-center text-[#76777d] text-xs space-y-1">
+              <p>No civic issues match the selected criteria.</p>
+              <p className="text-[11px] opacity-75">Try clearing your filters or search query.</p>
+            </div>
+          ) : (
+            filteredIssues.map((issue, idx) => {
+              const isSelected = issue.id === activeIssueId;
 
-          <div className="divide-y divide-slate-800/80 max-h-[750px] overflow-y-auto">
-            {filteredIssues.length === 0 ? (
-              <div className="p-12 text-center text-slate-500">
-                <FileText size={32} className="mx-auto mb-2 opacity-50" />
-                <p>No civic issues match the selected filters.</p>
-              </div>
-            ) : (
-              filteredIssues.map((issue, idx) => {
-                const zone = zones.find((z) => z.id === issue.zoneId);
-                const dept = departments.find((d) => d.id === issue.departmentId);
-                const isSelected = activeIssueId === issue.id;
-
-                return (
-                  <div
-                    key={issue.id}
-                    onClick={() => setActiveIssueId(issue.id)}
-                    className={`p-4 transition-all cursor-pointer hover:bg-slate-850 flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${
-                      isSelected
-                        ? 'bg-slate-800/60 border-l-4 border-emerald-500 pl-3'
-                        : 'bg-slate-900/40'
-                    }`}
-                  >
-                    <div className="space-y-1.5 flex-1 pr-2">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="text-xs font-mono font-bold text-emerald-400">
-                          {issue.ticketNumber}
-                        </span>
-                        <span className="text-slate-500">•</span>
-                        <span className="text-[10px] font-bold text-slate-300 bg-slate-800 px-2 py-0.5 rounded border border-slate-700">
-                          {dept?.code}
-                        </span>
-                        <span className="text-[11px] text-slate-400 flex items-center gap-1">
-                          <MapPin size={11} className="text-slate-500" />
-                          {zone?.code} ({zone?.name.slice(0, 20)}...)
-                        </span>
-                      </div>
-
-                      <h3 className="text-xs sm:text-sm font-bold text-white line-clamp-1">
-                        {issue.title}
-                      </h3>
-
-                      <p className="text-[11px] text-slate-400 line-clamp-1">
-                        {issue.rawDescription}
-                      </p>
-
-                      <div className="flex items-center gap-3 text-[10px] text-slate-500 pt-0.5">
-                        <span>Reported: {new Date(issue.reportedAt).toLocaleDateString()}</span>
-                        <span>•</span>
-                        <span className="text-amber-400/90 flex items-center gap-1 font-mono">
-                          <Clock size={11} />
-                          SLA Due: {new Date(issue.slaDueAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                        </span>
-                      </div>
+              return (
+                <div
+                  key={issue.id}
+                  onClick={() => setActiveIssueId(issue.id)}
+                  className={`bg-white border rounded-2xl p-4 cursor-pointer transition-all shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4 ${
+                    isSelected
+                      ? 'border-[#131b2e] ring-2 ring-[#131b2e]/10'
+                      : 'border-[#76777d]/20 hover:border-slate-400'
+                  }`}
+                >
+                  <div className="space-y-1.5 min-w-0">
+                    <div className="flex items-center gap-2 text-xs">
+                      <span className="font-mono font-bold text-[#131b2e]">
+                        #{idx + 1} • {issue.ticketNumber}
+                      </span>
+                      <span className="text-[#76777d]">•</span>
+                      <span className="text-[11px] text-[#76777d] truncate">
+                        {issue.locationAddress}
+                      </span>
                     </div>
 
-                    <div className="flex sm:flex-col items-center sm:items-end justify-between gap-2 shrink-0 border-t sm:border-t-0 border-slate-800 pt-2 sm:pt-0">
-                      <PriorityBadge
-                        score={issue.priorityScore?.finalScore}
-                        confidence={issue.confidenceScore}
-                        onClick={() => setExplainIssue(issue)}
-                        size="md"
-                      />
-                      <StatusBadge status={issue.status} size="sm" />
+                    <h3 className="font-bold text-sm text-[#1b1b1d] truncate">
+                      {issue.title}
+                    </h3>
+
+                    <p className="text-xs text-[#57657b] line-clamp-1">
+                      {issue.rawDescription}
+                    </p>
+
+                    <div className="flex items-center gap-3 text-[11px] text-[#76777d] font-mono pt-1">
+                      <span>Reported: {new Date(issue.reportedAt).toLocaleDateString()}</span>
+                      <span>SLA: {new Date(issue.slaDueAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                     </div>
                   </div>
-                );
-              })
-            )}
-          </div>
+
+                  <div className="flex sm:flex-col items-end justify-between sm:justify-center gap-2 shrink-0">
+                    <PriorityBadge
+                      score={issue.priorityScore?.finalScore}
+                      confidence={issue.confidenceScore}
+                      size="md"
+                    />
+                    <StatusBadge status={issue.status} />
+                  </div>
+                </div>
+              );
+            })
+          )}
         </div>
 
-        {/* Selected Issue Inspector Drawer (1 Col) */}
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-sm space-y-5">
+        {/* Right 1 Col: Selected Issue Telemetry & Action Drawer */}
+        <div className="bg-white border border-[#76777d]/20 rounded-2xl p-5 shadow-xs space-y-4 lg:sticky lg:top-24 self-start">
           {activeIssue ? (
-            <>
-              {/* Drawer Header */}
-              <div className="space-y-2 border-b border-slate-800 pb-4">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-mono font-bold text-emerald-400">
+            <div className="space-y-4 text-xs">
+              <div className="border-b border-[#76777d]/15 pb-3 flex justify-between items-start">
+                <div>
+                  <span className="font-mono font-bold text-xs text-[#131b2e]">
                     {activeIssue.ticketNumber}
                   </span>
-                  <StatusBadge status={activeIssue.status} />
+                  <h3 className="font-bold text-sm text-[#1b1b1d] mt-0.5">
+                    {activeIssue.title}
+                  </h3>
                 </div>
-                <h2 className="text-base font-bold text-white leading-snug">{activeIssue.title}</h2>
-                <div className="flex items-center gap-2 text-xs text-slate-400">
-                  <MapPin size={13} className="text-emerald-400 shrink-0" />
-                  <span>{activeIssue.locationAddress}</span>
-                </div>
+                <StatusBadge status={activeIssue.status} />
               </div>
 
-              {/* Priority Engine Quick Card */}
-              <div className="bg-slate-950/80 border border-slate-800 rounded-xl p-4 space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-semibold text-slate-300">Deterministic Priority</span>
-                  <PriorityBadge
-                    score={activeIssue.priorityScore?.finalScore}
-                    confidence={activeIssue.confidenceScore}
-                    size="md"
+              {/* Photo if present */}
+              {activeIssue.photoUrls && activeIssue.photoUrls.length > 0 && (
+                <div>
+                  <span className="text-[10px] font-bold text-[#76777d] uppercase tracking-wider block mb-1">
+                    Photo Evidence
+                  </span>
+                  <img
+                    src={activeIssue.photoUrls[0]}
+                    alt="Ticket Evidence"
+                    className="w-full h-36 object-cover rounded-xl border border-slate-200"
                   />
                 </div>
+              )}
 
-                <p className="text-xs text-slate-400 leading-relaxed bg-slate-900/60 p-2.5 rounded-lg border border-slate-800">
-                  {activeIssue.priorityScore?.explanationSummary}
+              {/* Priority Score Breakdown Card */}
+              <div className="p-3 bg-[#fcf8fa] border border-[#76777d]/15 rounded-xl space-y-2">
+                <div className="flex justify-between items-center">
+                  <span className="font-bold text-[#1b1b1d]">Deterministic Score:</span>
+                  <PriorityBadge score={activeIssue.priorityScore?.finalScore} size="sm" />
+                </div>
+                <p className="text-[11px] text-[#57657b] leading-relaxed">
+                  {activeIssue.priorityScore?.explanationSummary || 'Mathematical multi-factor ranking evaluated.'}
                 </p>
-
-                <div className="flex gap-2">
+                <div className="flex gap-2 pt-1">
                   <button
                     onClick={() => setExplainIssue(activeIssue)}
-                    className="flex-1 py-1.5 px-2.5 bg-slate-800 hover:bg-slate-700 text-emerald-300 border border-emerald-500/30 rounded-lg text-xs font-medium flex items-center justify-center gap-1.5 transition-colors"
+                    className="flex-1 py-1.5 bg-[#131b2e] hover:bg-[#1e2a47] text-white font-bold rounded-lg text-[10px] uppercase tracking-wider transition-colors"
                   >
-                    <HelpCircle size={13} />
-                    <span>Score Breakdown</span>
+                    Audit Formula
                   </button>
-
-                  {(userRole === 'officer' || userRole === 'admin') && (
-                    <button
-                      onClick={() => setOverrideIssue(activeIssue)}
-                      className="py-1.5 px-3 bg-slate-800 hover:bg-slate-700 text-amber-300 border border-amber-500/30 rounded-lg text-xs font-medium flex items-center gap-1 transition-colors"
-                      title="Override priority score with logged justification"
-                    >
-                      <ShieldAlert size={13} />
-                      <span>Override</span>
-                    </button>
-                  )}
+                  <button
+                    onClick={() => setOverrideIssue(activeIssue)}
+                    className="flex-1 py-1.5 bg-white border border-[#76777d]/30 hover:bg-slate-50 text-[#131b2e] font-bold rounded-lg text-[10px] uppercase tracking-wider transition-colors"
+                  >
+                    Override
+                  </button>
                 </div>
               </div>
 
-              {/* AI Structured Feature Extraction */}
-              <div className="space-y-2">
-                <h3 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
-                  <Layers size={14} className="text-emerald-400" />
-                  <span>AI Structured Intake Extraction</span>
-                </h3>
-                <div className="bg-slate-950/60 border border-slate-800 rounded-xl p-3 text-xs space-y-2">
-                  <div className="flex justify-between items-center text-slate-300">
-                    <span>Confidence Score:</span>
-                    <span className="font-mono text-emerald-400 font-bold">
-                      {((activeIssue.confidenceScore ?? 1.0) * 100).toFixed(0)}%
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center text-slate-300">
-                    <span>Affected Citizens:</span>
-                    <span className="font-mono text-white">
-                      ~{activeIssue.affectedPopulationEstimate.toLocaleString()}
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center text-slate-300">
-                    <span>Estimated Cost:</span>
-                    <span className="font-mono text-white">₹{activeIssue.estimatedCost.toLocaleString()}</span>
-                  </div>
-                  <div className="flex justify-between items-center text-slate-300">
-                    <span>Required Equipment:</span>
-                    <span className="font-mono text-amber-300 capitalize">
-                      {activeIssue.requiredEquipment?.replace('_', ' ') || 'Standard Kit'}
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center text-slate-300">
-                    <span>Required Crew:</span>
-                    <span className="font-mono text-white">{activeIssue.requiredStaffCount} staff</span>
-                  </div>
+              {/* Status Update Quick Buttons */}
+              <div className="space-y-1.5 pt-2 border-t border-[#76777d]/15">
+                <span className="text-[10px] font-bold text-[#76777d] uppercase tracking-wider block">
+                  Update Municipal Status
+                </span>
+                <div className="grid grid-cols-2 gap-1.5">
+                  <button
+                    onClick={() => updateIssueStatus(activeIssue.id, 'scheduled')}
+                    className="py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-900 border border-blue-200 rounded-lg font-bold text-[10px] uppercase transition-colors"
+                  >
+                    Schedule
+                  </button>
+                  <button
+                    onClick={() => updateIssueStatus(activeIssue.id, 'in_progress')}
+                    className="py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200 rounded-lg font-bold text-[10px] uppercase transition-colors"
+                  >
+                    In Progress
+                  </button>
+                  <button
+                    onClick={() => updateIssueStatus(activeIssue.id, 'resolved')}
+                    className="py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-900 border border-emerald-200 rounded-lg font-bold text-[10px] uppercase transition-colors col-span-2"
+                  >
+                    Mark Resolved
+                  </button>
                 </div>
               </div>
-
-              {/* Citizen Details */}
-              <div className="space-y-1.5 text-xs text-slate-400 border-t border-slate-800 pt-3">
-                <div className="font-semibold text-slate-300 flex items-center gap-1.5">
-                  <User size={13} /> Citizen Information
-                </div>
-                <div>Name: {activeIssue.citizenName || 'Verified Kopargaon Resident'}</div>
-                <div className="flex items-center gap-1">
-                  <Phone size={12} /> {activeIssue.citizenPhone || '+91 98XXX XXXXX'}
-                </div>
-              </div>
-
-              {/* Status Update Quick Controls for Officers */}
-              {(userRole === 'officer' || userRole === 'admin') && (
-                <div className="space-y-2 border-t border-slate-800 pt-3 text-xs">
-                  <span className="font-semibold text-slate-300">Quick Status Transition:</span>
-                  <div className="grid grid-cols-2 gap-2">
-                    <button
-                      onClick={() => updateIssueStatus(activeIssue.id, 'scheduled')}
-                      className="py-1.5 px-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg border border-slate-700 font-medium text-center"
-                    >
-                      Schedule for Shift
-                    </button>
-                    <button
-                      onClick={() => updateIssueStatus(activeIssue.id, 'in_progress')}
-                      className="py-1.5 px-2 bg-slate-800 hover:bg-slate-700 text-cyan-300 rounded-lg border border-cyan-800 font-medium text-center"
-                    >
-                      Mark In Progress
-                    </button>
-                    <button
-                      onClick={() => updateIssueStatus(activeIssue.id, 'resolved')}
-                      className="col-span-2 py-2 px-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg font-bold text-center shadow-md shadow-emerald-950 flex items-center justify-center gap-1.5"
-                    >
-                      <CheckCircle2 size={14} />
-                      <span>Mark Rectified & Resolved</span>
-                    </button>
-                  </div>
-                </div>
-              )}
-            </>
+            </div>
           ) : (
-            <div className="p-8 text-center text-slate-500">
-              Select an issue from the queue to inspect details.
+            <div className="p-8 text-center text-[#76777d] text-xs">
+              Select a ticket from the queue to inspect details.
             </div>
           )}
         </div>
@@ -410,10 +326,17 @@ export const IssuesQueuePage: React.FC = () => {
 
       {/* Modals */}
       {explainIssue && (
-        <ExplainabilityModal issue={explainIssue} onClose={() => setExplainIssue(null)} />
+        <ExplainabilityModal
+          issue={explainIssue}
+          onClose={() => setExplainIssue(null)}
+        />
       )}
+
       {overrideIssue && (
-        <OfficerOverrideModal issue={overrideIssue} onClose={() => setOverrideIssue(null)} />
+        <OfficerOverrideModal
+          issue={overrideIssue}
+          onClose={() => setOverrideIssue(null)}
+        />
       )}
     </div>
   );
