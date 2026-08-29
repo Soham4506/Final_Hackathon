@@ -174,6 +174,20 @@ const getStored = <T,>(key: string, fallback: T): T => {
   }
 };
 
+const isValidUuid = (val?: string): boolean =>
+  Boolean(val && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val));
+
+const generateUUID = (): string => {
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+    return crypto.randomUUID();
+  }
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0;
+    const v = c === 'x' ? r : (r & 0x3) | 0x8;
+    return v.toString(16);
+  });
+};
+
 function calculateDistanceMeters(lat1: number, lon1: number, lat2: number, lon2: number): number {
   const R = 6371e3;
   const φ1 = (lat1 * Math.PI) / 180;
@@ -308,33 +322,32 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         const session = sessionData?.session;
 
         if (session?.user) {
-          // We have a valid session — fetch the profile
+          // We have a valid session — fetch the profile safely with maybeSingle
           const { data: profile } = await supabase
             .from('profiles')
             .select('*')
             .eq('id', session.user.id)
-            .single();
+            .maybeSingle();
 
-          if (profile) {
-            const role = (profile.role as UserRole) || 'citizen';
-            const userObj: UserProfile = {
-              id: session.user.id,
-              role,
-              fullName: profile.full_name || session.user.email?.split('@')[0] || 'Citizen',
-              phone: profile.phone || '',
-              address: profile.address || 'Kopargaon',
-              wardId: profile.ward_id,
-              departmentId: profile.department_id,
-              employeeId: profile.employee_id,
-              isVerified: profile.is_verified ?? true,
-            };
-            setUserRole(role);
-            setCurrentUser(userObj);
-            setIsAuthenticated(true);
-            localStorage.setItem('civicpulse_is_auth', JSON.stringify(true));
-            localStorage.setItem('civicpulse_user_role', JSON.stringify(role));
-            localStorage.setItem('civicpulse_current_user', JSON.stringify(userObj));
-          }
+          const rawRole = profile?.role || session.user.user_metadata?.role || 'citizen';
+          const role = (rawRole as UserRole);
+          const userObj: UserProfile = {
+            id: session.user.id,
+            role,
+            fullName: profile?.full_name || session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || 'Citizen User',
+            phone: profile?.phone || session.user.user_metadata?.phone || '',
+            address: profile?.address || 'Kopargaon',
+            wardId: profile?.ward_id || session.user.user_metadata?.ward_id,
+            departmentId: profile?.department_id || session.user.user_metadata?.department_id,
+            employeeId: profile?.employee_id || session.user.user_metadata?.employee_id,
+            isVerified: profile?.is_verified ?? true,
+          };
+          setUserRole(role);
+          setCurrentUser(userObj);
+          setIsAuthenticated(true);
+          localStorage.setItem('civicpulse_is_auth', JSON.stringify(true));
+          localStorage.setItem('civicpulse_user_role', JSON.stringify(role));
+          localStorage.setItem('civicpulse_current_user', JSON.stringify(userObj));
         }
       } catch (err) {
         console.warn('Session restore failed:', err);
@@ -642,8 +655,9 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     const effectivePhone = data.citizenPhone || currentUser.phone || '';
     const effectiveName = data.citizenName || currentUser.fullName || 'Citizen User';
 
+    const newIssueId = generateUUID();
     const newIssue: CivicIssue = {
-      id: `iss-${Date.now()}`,
+      id: newIssueId,
       ticketNumber,
       citizenId: currentUser.id,
       citizenName: effectiveName,
@@ -723,8 +737,9 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
     if (isSupabaseConfigured) {
       supabase.from('issues').insert([{
+        id: newIssue.id,
         ticket_number: newIssue.ticketNumber,
-        citizen_id: currentUser.id,
+        citizen_id: isValidUuid(currentUser.id) ? currentUser.id : null,
         category_id: cat.id,
         department_id: dept.id,
         zone_id: zone.id,
@@ -746,7 +761,9 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         required_equipment: newIssue.requiredEquipment,
         reported_at: newIssue.reportedAt,
         sla_due_at: newIssue.slaDueAt,
-      }]).then();
+      }]).then(({ error }) => {
+        if (error) console.warn('Supabase issue insert note:', error.message);
+      });
     }
 
     return newIssue;
@@ -810,7 +827,11 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
 
     if (isSupabaseConfigured) {
-      supabase.from('issues').update({ status: newStatus }).eq('id', issueId).then();
+      if (isValidUuid(issueId)) {
+        supabase.from('issues').update({ status: newStatus }).eq('id', issueId).then();
+      } else if (targetIssue?.ticketNumber) {
+        supabase.from('issues').update({ status: newStatus }).eq('ticket_number', targetIssue.ticketNumber).then();
+      }
     }
   };
 

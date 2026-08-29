@@ -83,24 +83,81 @@ CREATE TABLE IF NOT EXISTS profiles (
 
 -- 3b. AUTO-CREATE PROFILE ON SIGNUP (Trigger on auth.users)
 -- Ensures a profiles row always exists when a user registers via Supabase Auth.
--- Defaults role to 'citizen' (lowest privilege) — only admins can promote via UPDATE.
+-- Reads role, full_name, phone, ward_id, department_id, employee_id from auth user metadata.
 CREATE OR REPLACE FUNCTION public.handle_new_user()
-RETURNS TRIGGER AS $$
+RETURNS TRIGGER 
+LANGUAGE plpgsql 
+SECURITY DEFINER 
+SET search_path = public, auth
+AS $$
+DECLARE
+    user_role_val public.user_role;
+    raw_role text;
+    user_name text;
+    user_phone text;
 BEGIN
-    INSERT INTO public.profiles (id, role, full_name, phone, is_verified)
+    raw_role := COALESCE(NEW.raw_user_meta_data->>'role', 'citizen');
+    IF raw_role = 'admin' THEN
+        user_role_val := 'admin'::public.user_role;
+    ELSIF raw_role = 'officer' THEN
+        user_role_val := 'officer'::public.user_role;
+    ELSE
+        user_role_val := 'citizen'::public.user_role;
+    END IF;
+
+    user_name := COALESCE(NULLIF(NEW.raw_user_meta_data->>'full_name', ''), split_part(COALESCE(NEW.email, 'User'), '@', 1));
+    user_phone := COALESCE(NEW.raw_user_meta_data->>'phone', '');
+
+    INSERT INTO public.profiles (
+        id, 
+        role, 
+        full_name, 
+        phone, 
+        ward_id, 
+        department_id, 
+        employee_id, 
+        is_verified
+    )
     VALUES (
         NEW.id,
-        'citizen'::user_role,
-        COALESCE(NEW.raw_user_meta_data->>'full_name', split_part(NEW.email, '@', 1)),
-        COALESCE(NEW.raw_user_meta_data->>'phone', ''),
-        FALSE
+        user_role_val,
+        user_name,
+        user_phone,
+        CASE WHEN (NEW.raw_user_meta_data->>'ward_id') IS NOT NULL AND (NEW.raw_user_meta_data->>'ward_id') ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$' THEN (NEW.raw_user_meta_data->>'ward_id')::uuid ELSE NULL END,
+        CASE WHEN (NEW.raw_user_meta_data->>'department_id') IS NOT NULL AND (NEW.raw_user_meta_data->>'department_id') ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$' THEN (NEW.raw_user_meta_data->>'department_id')::uuid ELSE NULL END,
+        COALESCE(NEW.raw_user_meta_data->>'employee_id', NULL),
+        TRUE
     )
-    ON CONFLICT (id) DO NOTHING;  -- Safety: skip if profile already exists
+    ON CONFLICT (id) DO UPDATE SET
+        role = EXCLUDED.role,
+        full_name = EXCLUDED.full_name,
+        phone = EXCLUDED.phone,
+        ward_id = COALESCE(EXCLUDED.ward_id, public.profiles.ward_id),
+        department_id = COALESCE(EXCLUDED.department_id, public.profiles.department_id),
+        employee_id = COALESCE(EXCLUDED.employee_id, public.profiles.employee_id),
+        is_verified = TRUE,
+        updated_at = NOW();
+
+    RETURN NEW;
+EXCEPTION WHEN OTHERS THEN
+    BEGIN
+        INSERT INTO public.profiles (id, role, full_name, phone, is_verified)
+        VALUES (
+            NEW.id,
+            'citizen'::public.user_role,
+            COALESCE(split_part(COALESCE(NEW.email, 'User'), '@', 1), 'User'),
+            '',
+            TRUE
+        )
+        ON CONFLICT (id) DO NOTHING;
+    EXCEPTION WHEN OTHERS THEN
+        NULL;
+    END;
     RETURN NEW;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$;
 
--- Drop and recreate the trigger to avoid duplicates
+-- Drop and recreate the trigger on auth.users
 DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
 CREATE TRIGGER on_auth_user_created
     AFTER INSERT ON auth.users

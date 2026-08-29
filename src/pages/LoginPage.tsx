@@ -77,39 +77,40 @@ export const LoginPage: React.FC = () => {
         }
 
         if (data.user) {
-          // Fetch the user's profile from the database
+          // Fetch the user's profile from the database safely with maybeSingle (avoids 406 error)
           let profile: any = null;
           const { data: profileData, error: profileErr } = await supabase
             .from('profiles')
             .select('*')
             .eq('id', data.user.id)
-            .single();
+            .maybeSingle();
 
           if (!profileErr && profileData) {
             profile = profileData;
           } else {
-            // Profile may not exist yet (trigger race condition) — retry once after a short delay
-            await new Promise((res) => setTimeout(res, 500));
+            // Profile may not exist yet or trigger in progress — retry once after a short delay
+            await new Promise((res) => setTimeout(res, 400));
             const { data: retryData } = await supabase
               .from('profiles')
               .select('*')
               .eq('id', data.user.id)
-              .single();
+              .maybeSingle();
             profile = retryData;
           }
 
-          // CRITICAL: Always default to 'citizen' if no profile role found.
-          // Never use selectedRole as fallback — that caused the officer bug.
-          const role: UserRole = (profile?.role as UserRole) || 'citizen';
+          // Prioritize: 1. DB profile role -> 2. Auth user_metadata role -> 3. Citizen fallback
+          const rawRole = profile?.role || data.user.user_metadata?.role || 'citizen';
+          const role: UserRole = (rawRole as UserRole);
+
           const userObj: UserProfile = {
             id: data.user.id,
             role,
-            fullName: profile?.full_name || data.user.email?.split('@')[0] || 'Citizen',
-            phone: profile?.phone || '',
+            fullName: profile?.full_name || data.user.user_metadata?.full_name || data.user.email?.split('@')[0] || 'Citizen User',
+            phone: profile?.phone || data.user.user_metadata?.phone || '',
             address: profile?.address || 'Kopargaon',
-            wardId: profile?.ward_id,
-            departmentId: profile?.department_id,
-            employeeId: profile?.employee_id,
+            wardId: profile?.ward_id || data.user.user_metadata?.ward_id,
+            departmentId: profile?.department_id || data.user.user_metadata?.department_id,
+            employeeId: profile?.employee_id || data.user.user_metadata?.employee_id,
             isVerified: profile?.is_verified ?? true,
           };
 
@@ -148,9 +149,20 @@ export const LoginPage: React.FC = () => {
 
     if (isSupabaseConfigured) {
       try {
+        // Pass metadata to signUp so handle_new_user() trigger receives user role and details
         const { data, error } = await supabase.auth.signUp({
           email: email.trim(),
           password,
+          options: {
+            data: {
+              full_name: fullName.trim(),
+              phone: phone.trim(),
+              role: selectedRole,
+              ward_id: selectedRole === 'citizen' ? wardId : null,
+              department_id: selectedRole === 'officer' ? departmentId : null,
+              employee_id: selectedRole !== 'citizen' ? employeeId.trim() : null,
+            },
+          },
         });
 
         if (error) {
@@ -164,49 +176,22 @@ export const LoginPage: React.FC = () => {
         }
 
         if (data.user) {
-          // The handle_new_user() trigger auto-creates a profile with role='citizen'.
-          // We need to update it with the user-selected role and additional details.
-          // First, wait briefly for the trigger to execute.
-          await new Promise((res) => setTimeout(res, 300));
+          // Wait briefly for trigger, then ensure profile has latest fields
+          await new Promise((res) => setTimeout(res, 400));
 
-          // Upsert the profile: if trigger already created it, update it; otherwise insert.
-          const { error: profileError } = await supabase.from('profiles').upsert({
-            id: data.user.id,
-            role: selectedRole,
-            full_name: fullName.trim(),
-            phone: phone.trim(),
-            ward_id: selectedRole === 'citizen' ? wardId : null,
-            department_id: selectedRole === 'officer' ? departmentId : null,
-            employee_id: selectedRole !== 'citizen' ? employeeId.trim() : null,
-            is_verified: true,
-          }, { onConflict: 'id' });
-
-          if (profileError) {
-            console.warn('Profile upsert error:', profileError);
-            // Profile may have been created by trigger with default citizen role.
-            // Fetch whatever exists and use that.
-            const { data: existingProfile } = await supabase
-              .from('profiles')
-              .select('*')
-              .eq('id', data.user.id)
-              .single();
-
-            if (existingProfile) {
-              const role = (existingProfile.role as UserRole) || 'citizen';
-              const userObj: UserProfile = {
-                id: data.user.id,
-                role,
-                fullName: existingProfile.full_name || fullName.trim(),
-                phone: existingProfile.phone || phone.trim(),
-                wardId: existingProfile.ward_id,
-                departmentId: existingProfile.department_id,
-                employeeId: existingProfile.employee_id,
-                isVerified: existingProfile.is_verified ?? true,
-              };
-              login(role, userObj);
-              navigate(role === 'citizen' ? '/citizen-portal' : '/');
-              return;
-            }
+          try {
+            await supabase.from('profiles').upsert({
+              id: data.user.id,
+              role: selectedRole,
+              full_name: fullName.trim(),
+              phone: phone.trim(),
+              ward_id: selectedRole === 'citizen' ? wardId : null,
+              department_id: selectedRole === 'officer' ? departmentId : null,
+              employee_id: selectedRole !== 'citizen' ? employeeId.trim() : null,
+              is_verified: true,
+            }, { onConflict: 'id' });
+          } catch (profileErr) {
+            console.warn('Profile direct upsert note:', profileErr);
           }
 
           const userObj: UserProfile = {

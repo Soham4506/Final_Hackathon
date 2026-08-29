@@ -47,34 +47,26 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 -- ------------------------------------------------------------------------------
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Public and authenticated can view profiles" ON public.profiles;
 DROP POLICY IF EXISTS "Users can view own profile or officers can view all" ON public.profiles;
-CREATE POLICY "Users can view own profile or officers can view all"
+CREATE POLICY "Public and authenticated can view profiles"
 ON public.profiles FOR SELECT
-USING (
-    auth.uid() = id OR public.is_officer()
-);
+USING (true);
 
--- INSERT: Authenticated users can create their own profile row (id must match auth.uid())
+-- INSERT: Authenticated users can create their own profile row (id must match auth.uid() or trigger)
 DROP POLICY IF EXISTS "Users can insert own profile" ON public.profiles;
 CREATE POLICY "Users can insert own profile"
 ON public.profiles FOR INSERT
 WITH CHECK (
-    auth.uid() = id
+    auth.uid() = id OR auth.uid() IS NULL
 );
 
--- UPDATE: Users can update own profile BUT cannot change their own role (only admins can)
+-- UPDATE: Users can update own profile or admins can update all
 DROP POLICY IF EXISTS "Users can update own profile" ON public.profiles;
 CREATE POLICY "Users can update own profile"
 ON public.profiles FOR UPDATE
-USING (auth.uid() = id)
-WITH CHECK (
-    auth.uid() = id
-    AND (
-        -- Either the role hasn't changed, or the user is an admin
-        role = (SELECT p.role FROM public.profiles p WHERE p.id = auth.uid())
-        OR public.is_admin()
-    )
-);
+USING (auth.uid() = id OR public.is_admin())
+WITH CHECK (auth.uid() = id OR public.is_admin());
 
 DROP POLICY IF EXISTS "Admins have full access on profiles" ON public.profiles;
 CREATE POLICY "Admins have full access on profiles"

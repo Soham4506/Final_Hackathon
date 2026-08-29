@@ -109,7 +109,10 @@ export class SMSAlertService {
 
     if (fast2smsKey && cleanDigits.length === 10) {
       try {
-        const response = await fetch('https://www.fast2sms.com/dev/bulkV2', {
+        const isDev = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+        const endpoint = isDev ? '/api/fast2sms' : 'https://www.fast2sms.com/dev/bulkV2';
+
+        const response = await fetch(endpoint, {
           method: 'POST',
           headers: {
             'authorization': fast2smsKey,
