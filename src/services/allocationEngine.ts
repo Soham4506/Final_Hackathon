@@ -7,8 +7,20 @@ import {
   ResourceType, 
   PlanItemStatus,
   SolverMode,
-  OptimalityComparison
+  OptimalityComparison,
+  ReproducibleExplanation,
+  ActionableCounterfactual,
 } from '../types';
+
+export const ACTIVE_POLICY_VERSION = 'KMC-2026-08-30-V3';
+export const ACTIVE_ALLOCATION_ALGORITHM_VERSION = 'ALLOCATOR-V2.1-HEURISTIC';
+export const ACTIVE_POLICY_WEIGHTS = {
+  severity: 0.35,
+  urgency: 0.25,
+  population: 0.20,
+  location: 0.10,
+  escalation: 0.10,
+};
 
 export interface AllocationEngineInput {
   department: Department;
@@ -35,8 +47,13 @@ export class AllocationEngine {
   public static readonly MAX_DP_CANDIDATES = 40;
 
   /**
-   * Solves exact 0/1 Knapsack via Dynamic Programming
-   * Discretizes budget in INR steps to compute theoretical optimal priority yield.
+   * Diagnostic Single-Dimensional Exact Baseline (Budget vs Priority).
+   *
+   * Note on Defensible Optimality (P0 Task 9):
+   * The production allocator uses a deterministic multi-constraint greedy heuristic
+   * (optimizing budget, crew staffing, equipment availability, and department capacity).
+   * For supported bounded scenarios, this DP solver provides a single-dimensional
+   * diagnostic baseline. It is a reference tool and does not claim global multi-constraint optimality.
    */
   public static solveExactKnapsackDP(
     candidateIssues: CivicIssue[],
@@ -76,7 +93,6 @@ export class AllocationEngine {
 
     const costs = candidateIssues.map((iss) => Math.max(1, Math.ceil((iss.estimatedCost || 2000) / STEP)));
     const values = candidateIssues.map((iss) => Math.max(1, Math.round((iss.priorityScore?.finalScore ?? 10) * 10)));
-    const staffs = candidateIssues.map((iss) => iss.requiredStaffCount || 2);
 
     // dp[i][w] = max value with first i items and weight <= w
     const dp: number[][] = Array.from({ length: n + 1 }, () => new Array(maxCapacity + 1).fill(0));
@@ -169,21 +185,27 @@ export class AllocationEngine {
     }
 
     const sortedIssues = [...candidateIssues]
-      .filter(
-        (iss) =>
-          iss.departmentId === department.id &&
-          iss.status !== 'resolved' &&
-          iss.status !== 'rejected' &&
-          iss.status !== 'pending_integrity_review' &&
-          iss.status !== 'rejected_fabricated'
-      )
+      .filter((iss) => {
+        if (iss.departmentId !== department.id) return false;
+        if (iss.status === 'resolved' || iss.status === 'rejected' || iss.status === 'rejected_fabricated') return false;
+        // PRE-ALLOCATION INTEGRITY GATE (P1 Tasks 7, 8, 17)
+        // Quarantined and blocked issues cannot consume scarce municipal machinery or budget
+        if (
+          iss.decisionEligibility === 'QUARANTINED' ||
+          iss.decisionEligibility === 'BLOCKED' ||
+          iss.status === 'pending_integrity_review'
+        ) {
+          return false;
+        }
+        return true;
+      })
       .sort((a, b) => {
         const scoreA = a.priorityScore?.finalScore ?? 0;
         const scoreB = b.priorityScore?.finalScore ?? 0;
         return scoreB - scoreA;
       });
 
-    // 1. Solve Exact 0/1 Knapsack via DP for theoretical optimality baseline
+    // 1. Solve Exact 0/1 Knapsack via DP for single-dimensional diagnostic baseline
     const dpResult = this.solveExactKnapsackDP(
       sortedIssues,
       budgetCap,
@@ -201,12 +223,11 @@ export class AllocationEngine {
     const blockedEquipmentCounts = new Map<ResourceType, { countNeeded: number; blockedIssuesCount: number }>();
     let scheduledOrder = 1;
 
-    // Use DP selection if mode is 'dp_knapsack' and not capped
     const useDP = solverMode === 'dp_knapsack' && !dpResult.isCapped && dpResult.selectedIssues.length > 0;
     const dpSelectedSet = new Set(dpResult.selectedIssues.map((i) => i.id));
 
     // -------------------------------------------------------------
-    // PASS 1: Allocation Pass (DP Knapsack or Priority Greedy)
+    // PASS 1: Allocation Pass (DP Diagnostic or Priority Greedy Heuristic)
     // -------------------------------------------------------------
     for (const issue of sortedIssues) {
       const estimatedCost = issue.estimatedCost || 2000;
@@ -272,6 +293,26 @@ export class AllocationEngine {
           );
         }
 
+        const explanation: ReproducibleExplanation = {
+          policyVersion: ACTIVE_POLICY_VERSION,
+          algorithmVersion: ACTIVE_ALLOCATION_ALGORITHM_VERSION,
+          scoreBreakdown: {
+            severity: issue.priorityScore?.breakdown?.weightedSeverity || 0,
+            urgency: issue.priorityScore?.breakdown?.weightedUrgency || 0,
+            population: issue.priorityScore?.breakdown?.weightedPopulation || 0,
+            location: issue.priorityScore?.breakdown?.weightedLocation || 0,
+            escalation: issue.priorityScore?.breakdown?.weightedEscalation || 0,
+            confidencePenalty: issue.priorityScore?.breakdown?.confidencePenaltyDeduction || 0,
+          },
+          allocatedResources: assignedResource
+            ? [{ type: assignedResource.resourceType, quantity: 1, identifier: assignedResource.identifierCode }]
+            : [],
+          isDeferred: false,
+          bottleneckConstraint: 'none',
+          budgetConsumed: estimatedCost,
+          staffConsumed: requiredStaff,
+        };
+
         approvedItems.push({
           id: `item-${issue.id}-${Date.now()}`,
           planId: '',
@@ -280,12 +321,14 @@ export class AllocationEngine {
           allocatedResourceId: assignedResource?.id,
           allocatedResource: assignedResource,
           itemStatus: 'approved',
-          allocationMethod: useDP ? 'priority' : 'priority',
+          allocationMethod: 'priority',
           priorityAtAllocation: issue.priorityScore?.finalScore ?? 0,
           allocatedStaffCount: requiredStaff,
           allocatedHours: estimatedHours,
           allocatedCost: estimatedCost,
           scheduledOrder: scheduledOrder++,
+          policyVersion: ACTIVE_POLICY_VERSION,
+          reproducibleExplanation: explanation,
         });
       } else {
         initiallyDeferredItems.push({ issue, bottleneck, deferralReason });
@@ -294,13 +337,13 @@ export class AllocationEngine {
 
     // -------------------------------------------------------------
     // PASS 2: Capacity Backfill Pass
-    // Greedily allocate smaller deferred items into remaining slack
+    // Greedily allocate smaller deferred items into remaining capacity
     // -------------------------------------------------------------
     const remainingDeferredItems: AllocationPlanItem[] = [];
     const sortedDeferred = [...initiallyDeferredItems].sort((a, b) => {
       const footprintA = (a.issue.estimatedCost || 2000) + (a.issue.requiredStaffCount || 2) * 1000;
       const footprintB = (b.issue.estimatedCost || 2000) + (b.issue.requiredStaffCount || 2) * 1000;
-      return footprintA - footprintB; // smallest footprint first
+      return footprintA - footprintB;
     });
 
     for (const item of sortedDeferred) {
@@ -336,6 +379,26 @@ export class AllocationEngine {
           );
         }
 
+        const explanation: ReproducibleExplanation = {
+          policyVersion: ACTIVE_POLICY_VERSION,
+          algorithmVersion: ACTIVE_ALLOCATION_ALGORITHM_VERSION,
+          scoreBreakdown: {
+            severity: issue.priorityScore?.breakdown?.weightedSeverity || 0,
+            urgency: issue.priorityScore?.breakdown?.weightedUrgency || 0,
+            population: issue.priorityScore?.breakdown?.weightedPopulation || 0,
+            location: issue.priorityScore?.breakdown?.weightedLocation || 0,
+            escalation: issue.priorityScore?.breakdown?.weightedEscalation || 0,
+            confidencePenalty: issue.priorityScore?.breakdown?.confidencePenaltyDeduction || 0,
+          },
+          allocatedResources: assignedResource
+            ? [{ type: assignedResource.resourceType, quantity: 1, identifier: assignedResource.identifierCode }]
+            : [],
+          isDeferred: false,
+          bottleneckConstraint: 'none',
+          budgetConsumed: cost,
+          staffConsumed: staff,
+        };
+
         approvedItems.push({
           id: `item-backfill-${issue.id}-${Date.now()}`,
           planId: '',
@@ -350,8 +413,70 @@ export class AllocationEngine {
           allocatedHours: hours,
           allocatedCost: cost,
           scheduledOrder: scheduledOrder++,
+          policyVersion: ACTIVE_POLICY_VERSION,
+          reproducibleExplanation: explanation,
         });
       } else {
+        let actionableCounterfactual: ActionableCounterfactual;
+        if (item.bottleneck === 'budget_funds') {
+          const diff = cost - remainingBudget;
+          actionableCounterfactual = {
+            bottleneckType: 'budget',
+            requiredChange: `+₹${Math.max(1000, diff).toLocaleString()} departmental budget`,
+            feasibility: diff <= 5000 ? 'HIGH' : 'MEDIUM',
+            simulatedOutcome: `Allocating ₹${cost.toLocaleString()} budget enables execution in Shift ${shiftNumber}`,
+          };
+        } else if (item.bottleneck === 'staff_crew') {
+          const staffDiff = Math.max(1, staff - remainingStaff);
+          actionableCounterfactual = {
+            bottleneckType: 'staff',
+            requiredChange: `+${staffDiff} technician(s)`,
+            feasibility: 'HIGH',
+            simulatedOutcome: `Assigning ${staff} technicians unblocks work order for immediate execution`,
+          };
+        } else if (item.bottleneck) {
+          const eqName = String(item.bottleneck).replace(/_/g, ' ');
+          actionableCounterfactual = {
+            bottleneckType: 'equipment',
+            requiredChange: `+1 ${eqName} unit`,
+            feasibility: 'HIGH',
+            simulatedOutcome: `Adding or leasing 1 ${eqName} unblocks this high-priority work order`,
+          };
+        } else {
+          actionableCounterfactual = {
+            bottleneckType: 'policy_rank',
+            requiredChange: 'MCDA weight adjustment or higher severity ranking',
+            feasibility: 'POLICY_CHANGE_REQUIRED',
+            simulatedOutcome: 'Simulate with higher urgency/severity policy in Decision Simulator',
+          };
+        }
+
+        const constraintType = item.bottleneck === 'budget_funds' 
+          ? 'budget' 
+          : (item.bottleneck === 'staff_crew' 
+            ? 'staff' 
+            : (item.bottleneck ? 'equipment' : 'none'));
+
+        const explanation: ReproducibleExplanation = {
+          policyVersion: ACTIVE_POLICY_VERSION,
+          algorithmVersion: ACTIVE_ALLOCATION_ALGORITHM_VERSION,
+          scoreBreakdown: {
+            severity: issue.priorityScore?.breakdown?.weightedSeverity || 0,
+            urgency: issue.priorityScore?.breakdown?.weightedUrgency || 0,
+            population: issue.priorityScore?.breakdown?.weightedPopulation || 0,
+            location: issue.priorityScore?.breakdown?.weightedLocation || 0,
+            escalation: issue.priorityScore?.breakdown?.weightedEscalation || 0,
+            confidencePenalty: issue.priorityScore?.breakdown?.confidencePenaltyDeduction || 0,
+          },
+          allocatedResources: [],
+          isDeferred: true,
+          bottleneckConstraint: constraintType,
+          bottleneckReason: item.deferralReason,
+          competingSelectedIssueIds: approvedItems
+            .filter((a) => a.allocatedResource?.resourceType === item.bottleneck)
+            .map((a) => a.issueId),
+        };
+
         remainingDeferredItems.push({
           id: `item-${issue.id}-${Date.now()}`,
           planId: '',
@@ -366,6 +491,9 @@ export class AllocationEngine {
           deferralReason: item.deferralReason,
           bottleneckResource: item.bottleneck,
           scheduledOrder: scheduledOrder++,
+          policyVersion: ACTIVE_POLICY_VERSION,
+          reproducibleExplanation: explanation,
+          actionableCounterfactual,
         });
       }
     }
@@ -374,12 +502,10 @@ export class AllocationEngine {
     const approvedCount = approvedItems.length;
     const deferredCount = remainingDeferredItems.length;
 
-    // Calculate achieved priority value for active plan
     const activeTotalValue = Math.round(
       approvedItems.reduce((sum, item) => sum + (item.priorityAtAllocation || 0), 0) * 10
     ) / 10;
 
-    // Greedy heuristic total value vs DP Knapsack value
     const greedyApprovedValue = solverMode === 'greedy' 
       ? activeTotalValue 
       : Math.round(sortedIssues.slice(0, approvedCount).reduce((s, i) => s + (i.priorityScore?.finalScore || 0), 0) * 10) / 10;
@@ -401,7 +527,7 @@ export class AllocationEngine {
       candidateCount: sortedIssues.length,
       isCapped: dpResult.isCapped,
       capMessage: dpResult.isCapped 
-        ? `Candidate issue count (${sortedIssues.length}) exceeds DP threshold (40) for real-time responsiveness. Fast greedy approximation utilized.` 
+        ? `Candidate issue count (${sortedIssues.length}) exceeds bounded DP threshold (40). Multi-constraint heuristic utilized.` 
         : undefined,
     };
 

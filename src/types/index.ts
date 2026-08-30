@@ -186,12 +186,16 @@ export interface CivicIssue {
   
   // Blackout Resilience & Recovery Metadata
   recoveryStatus?: 'normal' | 'recovered' | 'unconfirmed_in_flight' | 'unrecoverable_partial';
+  recoveryClassification?: RecoveredRecordClassification;
+  inFlightOperation?: InFlightOperation;
   recoveryNote?: string;
   lastKnownAuditTimestamp?: string;
 
   // Trust & Integrity Review Metadata (Challenge 2: The Bad Reading)
   integrityAssessment?: IssueIntegrityAssessment;
   perceptualPhotoHash?: string;
+  decisionEligibility?: DecisionEligibility;
+  trustState?: TrustState;
   
   status: IssueStatus;
   urgency: UrgencyLevel;
@@ -238,7 +242,10 @@ export interface AllocationPlanItem {
   bottleneckResource?: ResourceType;
   scheduledOrder: number;
   officerOverridden?: boolean;
-  overrideReason?: string;
+  officerOverrideReason?: string;
+  policyVersion?: string;
+  reproducibleExplanation?: ReproducibleExplanation;
+  actionableCounterfactual?: ActionableCounterfactual;
 }
 
 export type SolverMode = 'greedy' | 'dp_knapsack';
@@ -324,21 +331,112 @@ export interface AuditLog {
 }
 
 // ==============================================================================
-// BLACKOUT RESILIENCE & INDEPENDENT EVENT LEDGER TYPES
+// BLACKOUT RESILIENCE & INDEPENDENT EVENT LEDGER TYPES (P0 UPGRADES)
 // ==============================================================================
 
-export type LedgerEventType =
+export type RecoveryLedgerEventType =
   | 'ISSUE_CREATED'
   | 'ISSUE_UPDATED'
+  | 'PRIORITY_COMPUTED'
+  | 'ALLOCATION_DECIDED'
   | 'STATUS_CHANGED'
-  | 'PRIORITY_RECALCULATED'
   | 'FIELD_VERIFIED'
-  | 'OFFICER_OVERRIDDEN'
-  | 'ALLOCATION_APPROVED'
-  | 'ALLOCATION_DEFERRED'
-  | 'SMS_DISPATCHED'
-  | 'IN_FLIGHT_OPERATION_STARTED'
-  | 'IN_FLIGHT_OPERATION_COMPLETED';
+  | 'DISPATCH_STARTED'
+  | 'DISPATCH_ACKNOWLEDGED'
+  | 'NOTIFICATION_SENT'
+  | 'OFFICER_OVERRIDE'
+  | 'RECOVERY_STARTED'
+  | 'LEDGER_VERIFIED'
+  | 'PRIMARY_STORE_REBUILD_STARTED'
+  | 'RECORD_RECONSTRUCTED'
+  | 'RECORD_MARKED_UNCERTAIN'
+  | 'OFFICER_CONFIRMED_OPERATION'
+  | 'RECOVERY_COMPLETED';
+
+export type LedgerEventType = RecoveryLedgerEventType | 'PRIORITY_RECALCULATED' | 'OFFICER_OVERRIDDEN' | 'ALLOCATION_APPROVED' | 'ALLOCATION_DEFERRED' | 'SMS_DISPATCHED' | 'IN_FLIGHT_OPERATION_STARTED' | 'IN_FLIGHT_OPERATION_COMPLETED';
+
+export interface RecoveryLedgerEvent<T = any> {
+  id: string;
+  eventId: string;
+  sequenceNo: number;
+  issueId: string;
+  operationId?: string;
+  eventType: RecoveryLedgerEventType;
+  payload: T;
+  payloadHash: string;
+  previousHash: string;
+  occurredAt: string;
+  actorId: string;
+  operationStatus?: 'COMMITTED' | 'IN_FLIGHT' | 'ACKNOWLEDGED';
+  schemaVersion: number;
+}
+
+export interface LedgerVerificationResult {
+  valid: boolean;
+  checkedEvents: number;
+  firstBrokenSequence: number | null;
+  reason: 'OK' | 'HASH_MISMATCH' | 'BROKEN_LINKAGE' | 'SEQUENCE_GAP' | 'DUPLICATE_SEQUENCE' | 'GENESIS_MISMATCH';
+  brokenEventId?: string;
+  details?: string;
+}
+
+export type RecoveredRecordClassification =
+  | 'RECOVERED'
+  | 'RECOVERED_FROM_LEDGER'
+  | 'RECOVERED_BUT_UNCERTAIN'
+  | 'NOT_RECOVERABLE';
+
+export interface InFlightOperation {
+  operationId: string;
+  issueId: string;
+  operationType: 'DISPATCH_CREW' | 'STATUS_UPDATE' | 'RESOURCE_ALLOCATION' | 'FIELD_INSPECTION';
+  status: 'IN_FLIGHT' | 'CONFIRMED_COMPLETED' | 'RECOVERED_BUT_UNCERTAIN';
+  startedAt: string;
+  actorId: string;
+  payload: any;
+  ackReceived: boolean;
+  uncertainReason?: string;
+  officerConfirmedAt?: string;
+  officerNotes?: string;
+}
+
+export interface PolicyConfig {
+  policyVersion: string; // e.g. 'KMC-2026-08-30-V3'
+  algorithmVersion: string; // e.g. 'ALLOCATOR-V2.1-HEURISTIC'
+  weights: {
+    severity: number;
+    urgency: number;
+    population: number;
+    location: number;
+    escalation: number;
+  };
+  normalizationVersion: string;
+  createdAt: string;
+}
+
+export interface ReproducibleExplanation {
+  policyVersion: string;
+  algorithmVersion: string;
+  scoreBreakdown: {
+    severity: number;
+    urgency: number;
+    population: number;
+    location: number;
+    escalation: number;
+    confidencePenalty?: number;
+  };
+  allocatedResources: {
+    type: ResourceType;
+    quantity: number;
+    identifier?: string;
+  }[];
+  isDeferred: boolean;
+  bottleneckConstraint?: 'budget' | 'staff' | 'equipment' | 'department_capacity' | 'none';
+  bottleneckReason?: string;
+  competingSelectedIssueIds?: string[];
+  budgetConsumed?: number;
+  staffConsumed?: number;
+}
 
 export interface LedgerEvent<T = any> {
   eventId: string;
@@ -364,6 +462,9 @@ export interface RecoveryReport {
   unconfirmedInFlightTickets: { ticketNumber: string; issueId: string; operation: string; timestamp: string }[];
   fullyRecoveredCount: number;
   recoveredIssuesCount: number;
+  uncertainCount?: number;
+  unrecoverableCount?: number;
+  hashVerification?: LedgerVerificationResult;
   details: string[];
   acknowledgedByOfficer?: boolean;
   acknowledgedAt?: string;
@@ -426,6 +527,133 @@ export interface VerifiedClarification {
   viewCount: number;
   audioIvrScriptEn: string;
   audioIvrScriptMr: string;
+}
+
+export type DecisionEligibility =
+  | 'ELIGIBLE'
+  | 'ELIGIBLE_WITH_REVIEW'
+  | 'QUARANTINED'
+  | 'BLOCKED'
+  | 'VERIFIED'
+  | 'REJECTED';
+
+export type TrustState =
+  | 'CLEAN'
+  | 'SUSPICIOUS'
+  | 'HIGH_COORDINATION_RISK'
+  | 'OFFICER_REVIEWED'
+  | 'FABRICATED';
+
+export type CivicClaimStatus =
+  | 'UNVERIFIED'
+  | 'UNDER_REVIEW'
+  | 'VERIFIED_TRUE'
+  | 'VERIFIED_FALSE'
+  | 'PARTIALLY_TRUE'
+  | 'INSUFFICIENT_EVIDENCE'
+  | 'SUPERSEDED';
+
+export interface CivicEvidence {
+  id: string;
+  type: 'OFFICIAL_DOCUMENT' | 'OFFICIAL_RECORD' | 'FIELD_VERIFICATION' | 'PHOTO' | 'SYSTEM_RECORD' | 'OFFICER_NOTE';
+  title: string;
+  source: string;
+  sourceReference?: string;
+  contentHash?: string;
+  collectedAt?: string;
+  verifiedBy?: string;
+  verificationStatus: 'UNVERIFIED' | 'VERIFIED' | 'REJECTED';
+  description?: string;
+  documentUrl?: string;
+}
+
+export interface CivicClaim {
+  id: string;
+  relatedIssueId?: string;
+  title: string;
+  submittedText: string;
+  category: string;
+  sourceType: 'CITIZEN' | 'OFFICER' | 'SYSTEM' | 'OFFICIAL_NOTICE';
+  submittedBy?: string;
+  status: CivicClaimStatus;
+  riskScore: number;
+  evidenceIds: string[];
+  sourceAuthority?: string;
+  sourceDocumentId?: string;
+  reviewedBy?: string;
+  reviewedAt?: string;
+  reviewNotes?: string;
+  effectiveFrom?: string;
+  effectiveUntil?: string;
+  supersedesClaimId?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface OfficialAnswer {
+  id: string;
+  version: number;
+  claimId: string;
+  claimSummary: string;
+  verdict: CivicClaimStatus;
+  authority: string;
+  reviewedBy: string;
+  reviewedAt: string;
+  evidence: CivicEvidence[];
+  policyVersion: string;
+  validUntil: string;
+  supersedesId?: string;
+  officialStatementEn: string;
+  officialStatementMr: string;
+  isCitizenFacing: boolean;
+  publishedAt: string;
+  provenanceHash?: string;
+  supersededAt?: string;
+  supersededByAnswerId?: string;
+}
+
+export interface ActionableCounterfactual {
+  bottleneckType: 'equipment' | 'budget' | 'staff' | 'trust_quarantine' | 'field_verification' | 'policy_rank';
+  requiredChange: string;
+  feasibility: 'HIGH' | 'MEDIUM' | 'POLICY_CHANGE_REQUIRED';
+  simulatedOutcome: string;
+}
+
+export interface CounterfactualSimulationInput {
+  departmentId: string;
+  budgetCap?: number;
+  availableStaff?: number;
+  additionalEquipment?: Partial<Record<ResourceType, number>>;
+  policyWeights?: PriorityWeightConfig;
+  solverMode?: SolverMode;
+}
+
+export interface DecisionDiffItem {
+  issueId: string;
+  ticketNumber: string;
+  title: string;
+  baselineStatus: PlanItemStatus;
+  simulatedStatus: PlanItemStatus;
+  baselineRank: number;
+  simulatedRank: number;
+  changeType: 'NEWLY_EXECUTABLE' | 'NEWLY_DEFERRED' | 'RANK_SHIFT' | 'UNCHANGED';
+  reason: string;
+  actionableCounterfactual?: ActionableCounterfactual;
+}
+
+export interface CounterfactualSimulationResult {
+  baselinePlan: AllocationPlan;
+  simulatedPlan: AllocationPlan;
+  decisionDiff: DecisionDiffItem[];
+  resourceDelta: {
+    budgetDelta: number;
+    staffDelta: number;
+    equipmentDelta: Record<string, number>;
+  };
+  policyDelta?: Record<string, number>;
+  unblockedIssuesCount: number;
+  newlyDeferredIssuesCount: number;
+  simulatedAt: string;
 }
 
 export * from './wastewater';

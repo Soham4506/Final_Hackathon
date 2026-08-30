@@ -6,6 +6,7 @@ import { StatusBadge } from '../components/common/StatusBadge';
 import { ExplainabilityModal } from '../components/common/ExplainabilityModal';
 import { OfficerOverrideModal } from '../components/common/OfficerOverrideModal';
 import { WorkOrderModal } from '../components/common/WorkOrderModal';
+import { DecisionSimulator } from '../components/common/DecisionSimulator';
 import { ResourceDeficitReport } from '../services/allocationEngine';
 import { AllocationStrategy, StrategyComparisonMetric } from '../services/multiStrategyEngine';
 import {
@@ -58,7 +59,7 @@ export const PriorityEnginePage: React.FC = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [planCommitted, setPlanCommitted] = useState(false);
 
-  // Modals
+  const [activeTab, setActiveTab] = useState<'plan' | 'simulator'>('plan');
   const [explainIssue, setExplainIssue] = useState<CivicIssue | null>(null);
   const [overrideIssue, setOverrideIssue] = useState<CivicIssue | null>(null);
   const [showWorkOrderModal, setShowWorkOrderModal] = useState<boolean>(false);
@@ -120,17 +121,51 @@ export const PriorityEnginePage: React.FC = () => {
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
-          <button
-            onClick={() => handleRunEngine(selectedStrategy, solverMode)}
-            disabled={isGenerating}
-            className="flex items-center gap-2 bg-primary hover:bg-primary/90 text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow-xs transition-all tracking-wider uppercase"
-          >
-            <RefreshCw size={14} className={isGenerating ? 'animate-spin' : ''} />
-            <span>{isGenerating ? 'Running Engine...' : 'Re-Run Optimization'}</span>
-          </button>
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Tab Switcher */}
+          <div className="bg-muted/70 p-1 rounded-xl border border-border flex items-center gap-1">
+            <button
+              type="button"
+              onClick={() => setActiveTab('plan')}
+              className={`px-3 py-1.5 rounded-lg font-bold text-xs transition-all cursor-pointer ${
+                activeTab === 'plan'
+                  ? 'bg-primary text-white shadow-xs'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              📋 Shift Plan
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab('simulator')}
+              className={`px-3 py-1.5 rounded-lg font-bold text-xs transition-all cursor-pointer flex items-center gap-1 ${
+                activeTab === 'simulator'
+                  ? 'bg-indigo-600 text-white shadow-xs'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              <Sliders size={12} />
+              <span>Decision Simulator</span>
+            </button>
+          </div>
+
+          {activeTab === 'plan' && (
+            <button
+              onClick={() => handleRunEngine(selectedStrategy, solverMode)}
+              disabled={isGenerating}
+              className="flex items-center gap-2 bg-primary hover:bg-primary/90 text-white text-xs font-bold px-4 py-2 rounded-xl shadow-xs transition-all tracking-wider uppercase cursor-pointer"
+            >
+              <RefreshCw size={14} className={isGenerating ? 'animate-spin' : ''} />
+              <span>{isGenerating ? 'Running...' : 'Re-Run Engine'}</span>
+            </button>
+          )}
         </div>
       </div>
+
+      {activeTab === 'simulator' ? (
+        <DecisionSimulator />
+      ) : (
+        <>
 
       {/* Control Panel Strip (Department, Budget, Staff, Strategy, Solver Algorithm) */}
       <div className="bg-card border border-border rounded-2xl p-5 shadow-xs space-y-4">
@@ -399,6 +434,17 @@ export const PriorityEnginePage: React.FC = () => {
                       <strong>Deficit Driver:</strong> {item.deferralReason || 'Budget or staff capacity limit reached.'}
                     </div>
 
+                    {item.actionableCounterfactual && (
+                      <div className="flex items-center justify-between text-[10px] bg-indigo-50/80 border border-indigo-200 rounded-lg p-2 text-indigo-950 font-medium">
+                        <span className="flex items-center gap-1 font-bold text-indigo-900">
+                          <HelpCircle size={12} className="text-indigo-600" /> What would change this?
+                        </span>
+                        <span className="font-mono font-bold bg-white px-2 py-0.5 rounded border border-indigo-200 text-indigo-900">
+                          {item.actionableCounterfactual.requiredChange}
+                        </span>
+                      </div>
+                    )}
+
                     <div className="flex justify-between items-center text-[11px] pt-1">
                       <button
                         onClick={() => setOverrideIssue(issue)}
@@ -420,6 +466,8 @@ export const PriorityEnginePage: React.FC = () => {
           )}
         </div>
       </div>
+      </>
+      )}
 
       {/* Modals */}
       {explainIssue && (

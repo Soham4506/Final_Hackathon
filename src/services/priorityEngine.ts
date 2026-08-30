@@ -6,6 +6,7 @@ import {
   PriorityScore, 
   PriorityScoreBreakdown 
 } from '../types';
+import { ACTIVE_POLICY_VERSION } from './allocationEngine';
 
 /**
  * DETERMINISTIC PRIORITY ENGINE
@@ -33,12 +34,12 @@ export class PriorityEngine {
     let rawSeverity = category.baseSeverityScore;
     
     // Structured risk adjustments
-    if (issue.structuredData.healthHazardRisk === 'extreme') rawSeverity += 10;
-    else if (issue.structuredData.healthHazardRisk === 'high') rawSeverity += 5;
+    if (issue.structuredData?.healthHazardRisk === 'extreme') rawSeverity += 10;
+    else if (issue.structuredData?.healthHazardRisk === 'high') rawSeverity += 5;
     
-    if (issue.structuredData.waterContaminationSuspected) rawSeverity += 8;
-    if (issue.structuredData.nearHospitalOrSchool) rawSeverity += 6;
-    if (issue.structuredData.mainRoadBlockage) rawSeverity += 5;
+    if (issue.structuredData?.waterContaminationSuspected) rawSeverity += 8;
+    if (issue.structuredData?.nearHospitalOrSchool) rawSeverity += 6;
+    if (issue.structuredData?.mainRoadBlockage) rawSeverity += 5;
     
     // Cap raw severity between 0 and 100
     rawSeverity = Math.min(100, Math.max(0, rawSeverity));

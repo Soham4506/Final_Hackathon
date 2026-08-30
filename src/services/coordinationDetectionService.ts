@@ -1,4 +1,4 @@
-﻿/**
+/**
  * ===========================================================================
  * KoparNiti (कोपरनीती) - Coordination & Sybil Smear Detection Engine
  * Challenge 2: "The Bad Reading" Trust & Integrity Gate
@@ -192,7 +192,7 @@ export class CoordinationDetectionService {
       }
     }
 
-    if (matchedTextTickets.length >= 2) {
+    if (matchedTextTickets.length >= 1) {
       const highestSim = Math.max(...matchedTextTickets.map((m) => m.sim));
       flags.push({
         flagType: 'duplicate_text_cluster',
