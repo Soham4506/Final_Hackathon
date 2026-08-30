@@ -1,4 +1,4 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCivic } from '../context/CivicContext';
 import { UserRole, UserProfile } from '../types';
@@ -44,6 +44,7 @@ export const LoginPage: React.FC = () => {
   const [employeeId, setEmployeeId] = useState('');
 
   const [authError, setAuthError] = useState('');
+  const [authSuccess, setAuthSuccess] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
   const finalizeLoginWith2FA = (targetRole: UserRole, targetUser: UserProfile) => {
@@ -180,6 +181,7 @@ export const LoginPage: React.FC = () => {
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     setAuthError('');
+    setAuthSuccess('');
     setIsLoading(true);
 
     if (!fullName.trim() || !email.trim() || !password) {
@@ -214,7 +216,7 @@ export const LoginPage: React.FC = () => {
         }
 
         if (data.user) {
-          await new Promise((res) => setTimeout(res, 400));
+          await new Promise((res) => setTimeout(res, 300));
 
           try {
             await supabase.from('profiles').upsert({
@@ -231,29 +233,23 @@ export const LoginPage: React.FC = () => {
             console.warn('Profile direct upsert note:', profileErr);
           }
 
-          const userObj: UserProfile = {
-            id: data.user.id,
-            role: targetRole,
-            fullName: fullName.trim(),
-            phone: phone.trim(),
-            wardId: targetRole === 'citizen' ? wardId : undefined,
-            departmentId: targetRole === 'officer' ? departmentId : undefined,
-            employeeId: targetRole !== 'citizen' ? employeeId.trim() : undefined,
-            isVerified: true,
-          };
-
-          finalizeLoginWith2FA(targetRole, userObj);
-          return;
+          // Sign out immediately so user is not automatically logged in
+          try {
+            await supabase.auth.signOut();
+          } catch (signOutErr) {
+            console.warn('Sign out after registration notice:', signOutErr);
+          }
         }
       } catch (err: any) {
-        console.warn('Supabase signup attempt failed:', err);
+        console.warn('Supabase signup attempt notice:', err);
       }
     }
 
-    setTimeout(() => {
-      proceedWithLocalAuth(selectedRole, fullName.trim());
-      setIsLoading(false);
-    }, 300);
+    // Switch back to Login screen and prompt user to sign in
+    setPassword('');
+    setMode('signin');
+    setAuthSuccess('Registration successful! Please sign in with your email and password.');
+    setIsLoading(false);
   };
 
   const handleGoogleSignIn = async () => {
@@ -360,6 +356,7 @@ export const LoginPage: React.FC = () => {
             onClick={() => {
               setMode('signin');
               setAuthError('');
+              setAuthSuccess('');
             }}
             className={`flex-1 py-2 font-bold rounded-lg transition-all cursor-pointer ${
               mode === 'signin'
@@ -374,6 +371,7 @@ export const LoginPage: React.FC = () => {
             onClick={() => {
               setMode('signup');
               setAuthError('');
+              setAuthSuccess('');
             }}
             className={`flex-1 py-2 font-bold rounded-lg transition-all cursor-pointer ${
               mode === 'signup'
@@ -419,6 +417,16 @@ export const LoginPage: React.FC = () => {
         {/* SIGN IN FORM */}
         {mode === 'signin' && (
           <form onSubmit={handleSignIn} className="space-y-4 text-xs">
+            {authSuccess && (
+              <div className="p-3.5 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-900 text-xs space-y-1">
+                <div className="flex items-center gap-2 font-bold text-emerald-950">
+                  <CheckCircle2 size={16} className="text-emerald-600 shrink-0" />
+                  <span>Registration Successful</span>
+                </div>
+                <p className="leading-relaxed text-[11px] text-emerald-800">{authSuccess}</p>
+              </div>
+            )}
+
             <div>
               <label className="block text-slate-700 font-semibold mb-1">Email Address</label>
               <div className="relative">
